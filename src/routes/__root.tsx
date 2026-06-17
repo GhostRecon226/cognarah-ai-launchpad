@@ -84,6 +84,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:description", content: "Cognarah is launching soon. Everything AI. Nothing else." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
+      { name: "twitter:title", content: "Cognarah — Everything AI. Nothing Else." },
+      { name: "twitter:description", content: "Cognarah is launching soon. Everything AI. Nothing else." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e3e023e1-fbe7-4085-9b59-dfc0fcfd9875/id-preview-903bf1ce--c66fe103-5e02-4808-a9a8-a307d05762f2.lovable.app-1781695496327.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e3e023e1-fbe7-4085-9b59-dfc0fcfd9875/id-preview-903bf1ce--c66fe103-5e02-4808-a9a8-a307d05762f2.lovable.app-1781695496327.png" },
     ],
     links: [
       {
