@@ -70,7 +70,7 @@ function CategoryPage() {
             <p className="text-muted-foreground">No articles yet in this category.</p>
           ) : (
             <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
-              {articles.map((a) => <ArticleCard key={a.id} article={a} />)}
+              {articles.map((a: Article) => <ArticleCard key={a.id} article={a} />)}
             </div>
           )}
         </section>
