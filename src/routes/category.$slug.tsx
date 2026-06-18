@@ -7,20 +7,21 @@ import { ArticleCard } from "@/components/site/article-card";
 import type { Article, Category } from "@/lib/types";
 import { SITE_URL } from "@/lib/types";
 
-async function loadCategory(slug: string) {
+async function loadCategory(slug: string): Promise<{ category: Category; articles: Article[] }> {
   const { data: category } = await supabase
     .from("categories")
     .select("*")
     .eq("slug", slug)
     .maybeSingle();
   if (!category) throw notFound();
+  const c = category as unknown as Category;
   const { data: articles } = await supabase
     .from("articles")
     .select("*, author:authors(*), category:categories(*)")
     .eq("status", "published")
-    .eq("category_id", category.id)
+    .eq("category_id", c.id)
     .order("published_at", { ascending: false });
-  return { category: category as Category, articles: (articles ?? []) as Article[] };
+  return { category: c, articles: (articles ?? []) as unknown as Article[] };
 }
 
 export const Route = createFileRoute("/category/$slug")({

@@ -10,7 +10,7 @@ import { SITE_URL } from "@/lib/types";
 import { format } from "date-fns";
 import { Twitter, Linkedin, Facebook, MessageCircle } from "lucide-react";
 
-async function loadArticle(slug: string) {
+async function loadArticle(slug: string): Promise<{ article: Article; related: Article[] }> {
   const { data: article } = await supabase
     .from("articles")
     .select("*, author:authors(*), category:categories(*)")
@@ -18,19 +18,20 @@ async function loadArticle(slug: string) {
     .eq("status", "published")
     .maybeSingle();
   if (!article) throw notFound();
+  const a = article as unknown as Article;
   let related: Article[] = [];
-  if (article.category_id) {
+  if (a.category_id) {
     const { data } = await supabase
       .from("articles")
       .select("*, author:authors(*), category:categories(*)")
       .eq("status", "published")
-      .eq("category_id", article.category_id)
-      .neq("id", article.id)
+      .eq("category_id", a.category_id)
+      .neq("id", a.id)
       .order("published_at", { ascending: false })
       .limit(3);
-    related = (data ?? []) as Article[];
+    related = (data ?? []) as unknown as Article[];
   }
-  return { article: article as Article, related };
+  return { article: a, related };
 }
 
 export const Route = createFileRoute("/article/$slug")({

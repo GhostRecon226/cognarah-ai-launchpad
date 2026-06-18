@@ -8,14 +8,14 @@ import type { Article } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
 import { SITE_URL } from "@/lib/types";
 
-async function loadHome() {
+async function loadHome(): Promise<{ articles: Article[] }> {
   const { data: articles } = await supabase
     .from("articles")
     .select("*, author:authors(*), category:categories(*)")
     .eq("status", "published")
     .order("published_at", { ascending: false })
     .limit(13);
-  return { articles: (articles ?? []) as Article[] };
+  return { articles: (articles ?? []) as unknown as Article[] };
 }
 
 export const Route = createFileRoute("/")({
