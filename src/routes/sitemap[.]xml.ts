@@ -10,7 +10,7 @@ const CATEGORIES = [
   "analysis", "interviews", "africa-ai", "policy-ethics", "events",
 ];
 
-export const Route = createFileRoute("/sitemap[.]xml")({
+export const Route = createFileRoute("/sitemap.xml")({
   server: {
     handlers: {
       GET: async () => {

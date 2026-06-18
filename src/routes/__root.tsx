@@ -78,26 +78,28 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Cognarah — Everything AI. Nothing Else." },
-      { name: "description", content: "Cognarah is launching soon. Everything AI. Nothing else." },
+      { name: "description", content: "The definitive media platform for everything artificial intelligence. News, startups, funding, tools, policy, and the global builders shaping AI." },
       { name: "author", content: "Cognarah" },
-      { property: "og:title", content: "Cognarah — Everything AI. Nothing Else." },
-      { property: "og:description", content: "Cognarah is launching soon. Everything AI. Nothing else." },
+      { property: "og:site_name", content: "Cognarah" },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
-      { name: "twitter:title", content: "Cognarah — Everything AI. Nothing Else." },
-      { name: "twitter:description", content: "Cognarah is launching soon. Everything AI. Nothing else." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e3e023e1-fbe7-4085-9b59-dfc0fcfd9875/id-preview-903bf1ce--c66fe103-5e02-4808-a9a8-a307d05762f2.lovable.app-1781695496327.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/e3e023e1-fbe7-4085-9b59-dfc0fcfd9875/id-preview-903bf1ce--c66fe103-5e02-4808-a9a8-a307d05762f2.lovable.app-1781695496327.png" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:site", content: "@cognarah" },
     ],
     links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "icon", type: "image/png", href: "/__l5e/assets-v1/1ba8d09a-14df-43f5-b409-61947d7ccfba/cognarah-logo.png" },
+    ],
+    scripts: [
       {
-        rel: "stylesheet",
-        href: appCss,
-      },
-      {
-        rel: "icon",
-        type: "image/png",
-        href: "/__l5e/assets-v1/1ba8d09a-14df-43f5-b409-61947d7ccfba/cognarah-logo.png",
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          name: "Cognarah",
+          url: "https://cognarah.com",
+          logo: "https://cognarah.com/__l5e/assets-v1/1ba8d09a-14df-43f5-b409-61947d7ccfba/cognarah-logo.png",
+          sameAs: [],
+        }),
       },
     ],
   }),
@@ -126,8 +128,15 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <Outlet />
+      <ToasterMount />
     </QueryClientProvider>
   );
+}
+
+function ToasterMount() {
+  // Lazy import to avoid SSR issues
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { Toaster } = require("sonner");
+  return <Toaster position="top-center" richColors />;
 }
