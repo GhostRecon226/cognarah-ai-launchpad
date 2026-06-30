@@ -1,14 +1,15 @@
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
-@import "@fontsource/space-grotesk/400.css";
-@import "@fontsource/space-grotesk/500.css";
-@import "@fontsource/space-grotesk/600.css";
-@import "@fontsource/space-grotesk/700.css";
+@import "@fontsource/archivo-black/400.css";
+@import "@fontsource/inter/400.css";
+@import "@fontsource/inter/500.css";
+@import "@fontsource/inter/600.css";
+@import "@fontsource/inter/700.css";
 
 @theme {
-  --font-sans: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Archivo Black", "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 @custom-variant dark (&:is(.dark *));
@@ -42,20 +43,23 @@
   --color-navy-foreground: var(--navy-foreground);
   --color-brand: var(--brand);
   --color-brand-foreground: var(--brand-foreground);
+  --color-brand-soft: var(--brand-soft);
   --color-africa: var(--africa);
   --color-africa-foreground: var(--africa-foreground);
+  --color-africa-surface: var(--africa-surface);
+  --color-africa-coral: var(--africa-coral);
+  --color-category: var(--category);
 }
 
 :root {
   --radius: 0.5rem;
-  /* Cognarah light surfaces for article reading */
   --background: oklch(1 0 0);
   --foreground: oklch(0.18 0.04 270);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.18 0.04 270);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.18 0.04 270);
-  --primary: oklch(0.18 0.07 274); /* Dark navy #0A0F2C */
+  --primary: oklch(0.18 0.07 274);
   --primary-foreground: oklch(0.985 0.005 270);
   --secondary: oklch(0.96 0.01 270);
   --secondary-foreground: oklch(0.2 0.04 270);
@@ -67,14 +71,18 @@
   --destructive-foreground: oklch(0.985 0.005 270);
   --border: oklch(0.9 0.01 270);
   --input: oklch(0.9 0.01 270);
-  --ring: oklch(0.55 0.15 165);
-  /* Brand */
-  --navy: oklch(0.18 0.07 274); /* #0A0F2C */
-  --navy-foreground: oklch(0.985 0.005 270);
-  --brand: oklch(0.62 0.13 165); /* #1D9E75 accent green */
-  --brand-foreground: oklch(0.985 0.005 270);
-  --africa: oklch(0.7 0.18 50); /* warm orange for Africa AI */
-  --africa-foreground: oklch(1 0 0);
+  --ring: oklch(0.75 0.08 290);
+  /* Brand — pulled from logo */
+  --navy: #0A0F2C;
+  --navy-foreground: #ffffff;
+  --brand: #AFA9EC;            /* lavender accent */
+  --brand-foreground: #0A0F2C;
+  --brand-soft: #D9D6F7;       /* softer lavender */
+  --africa: #EF9F27;           /* spotlight orange */
+  --africa-foreground: #ffffff;
+  --africa-surface: #2A1A3D;   /* deep plum band */
+  --africa-coral: #F0997B;
+  --category: #888780;         /* neutral gray category labels */
 }
 
 .dark {
@@ -103,7 +111,12 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
-    font-feature-settings: "ss01", "cv11";
+    font-family: var(--font-sans);
+  }
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--font-display);
+    font-weight: 400;
+    letter-spacing: -0.01em;
   }
 }
 
@@ -115,8 +128,8 @@
 }
 .prose-article > * + * { margin-top: 1.25rem; }
 .prose-article h1, .prose-article h2, .prose-article h3 {
-  font-weight: 700;
-  letter-spacing: -0.02em;
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
   color: var(--foreground);
   margin-top: 2.5rem;
 }
@@ -132,7 +145,7 @@
   color: var(--muted-foreground);
 }
 .prose-article img { border-radius: 0.75rem; width: 100%; height: auto; }
-.prose-article pre { background: oklch(0.18 0.07 274); color: oklch(0.985 0.005 270); padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+.prose-article pre { background: var(--navy); color: #fff; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
 .prose-article code { font-family: ui-monospace, monospace; font-size: 0.95em; }
 
 /* Tiptap editor */
