@@ -54,8 +54,8 @@ function SearchPage() {
         <section className="bg-navy py-12 text-navy-foreground">
           <div className="mx-auto max-w-4xl px-4 sm:px-6">
             <h1 className="text-3xl font-bold">Search Cognarah</h1>
-            <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-              <div className="relative flex-1">
+            <div className="mt-6 space-y-3">
+              <div className="relative">
                 <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
                 <input
                   autoFocus
@@ -65,14 +65,16 @@ function SearchPage() {
                   className="w-full rounded-md border border-white/20 bg-white/5 py-3 pl-11 pr-4 text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-brand"
                 />
               </div>
-              <select value={cat} onChange={(e) => setCat(e.target.value)} className="rounded-md border border-white/20 bg-white/5 px-3 py-3 text-white">
-                <option value="">All categories</option>
-                {NAV_CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-              </select>
-              <select value={sort} onChange={(e) => setSort(e.target.value as "newest" | "oldest")} className="rounded-md border border-white/20 bg-white/5 px-3 py-3 text-white">
-                <option value="newest">Newest first</option>
-                <option value="oldest">Oldest first</option>
-              </select>
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <select value={cat} onChange={(e) => setCat(e.target.value)} className="w-full min-w-0 rounded-md border border-white/20 bg-white/5 px-3 py-3 text-white sm:flex-1">
+                  <option value="">All categories</option>
+                  {NAV_CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
+                </select>
+                <select value={sort} onChange={(e) => setSort(e.target.value as "newest" | "oldest")} className="w-full min-w-0 rounded-md border border-white/20 bg-white/5 px-3 py-3 text-white sm:w-auto">
+                  <option value="newest">Newest first</option>
+                  <option value="oldest">Oldest first</option>
+                </select>
+              </div>
             </div>
           </div>
         </section>

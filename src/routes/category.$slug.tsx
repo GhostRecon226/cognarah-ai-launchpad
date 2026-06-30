@@ -56,16 +56,16 @@ function CategoryPage() {
     <div className="flex min-h-screen flex-col">
       <SiteNav />
       <main className="flex-1">
-        <section className="bg-navy py-16 text-navy-foreground">
+        <section className="bg-navy py-10 text-navy-foreground sm:py-16">
           <div className="mx-auto max-w-5xl px-4 sm:px-6">
             <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: category.color ?? undefined }}>
               Category
             </p>
-            <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">{category.name}</h1>
-            {category.description && <p className="mt-4 max-w-2xl text-lg text-white/70">{category.description}</p>}
+            <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">{category.name}</h1>
+            {category.description && <p className="mt-4 max-w-2xl text-base text-white/70 sm:text-lg">{category.description}</p>}
           </div>
         </section>
-        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
+        <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16">
           {articles.length === 0 ? (
             <p className="text-muted-foreground">No articles yet in this category.</p>
           ) : (

@@ -51,12 +51,12 @@ function CategoriesAdmin() {
       </div>
       <div className="mt-6 space-y-3">
         {cats.map((c) => (
-          <div key={c.id} className="grid gap-3 rounded-lg border border-border bg-background p-4 md:grid-cols-[1fr_2fr_120px_80px_auto]">
-            <input value={c.name} onChange={(e) => setCats(cs => cs.map(x => x.id === c.id ? { ...x, name: e.target.value } : x))} className="rounded border border-border bg-background px-2 py-1.5 text-sm font-semibold" />
-            <input value={c.description ?? ""} placeholder="Description" onChange={(e) => setCats(cs => cs.map(x => x.id === c.id ? { ...x, description: e.target.value } : x))} className="rounded border border-border bg-background px-2 py-1.5 text-sm" />
-            <input value={c.color ?? ""} placeholder="#1D9E75" onChange={(e) => setCats(cs => cs.map(x => x.id === c.id ? { ...x, color: e.target.value } : x))} className="rounded border border-border bg-background px-2 py-1.5 text-sm" />
-            <input type="number" value={c.sort_order} onChange={(e) => setCats(cs => cs.map(x => x.id === c.id ? { ...x, sort_order: Number(e.target.value) } : x))} className="rounded border border-border bg-background px-2 py-1.5 text-sm" />
-            <div className="flex gap-2">
+          <div key={c.id} className="grid min-w-0 gap-3 rounded-lg border border-border bg-background p-4 md:grid-cols-[1fr_2fr_120px_80px_auto]">
+            <input value={c.name} onChange={(e) => setCats(cs => cs.map(x => x.id === c.id ? { ...x, name: e.target.value } : x))} className="min-w-0 rounded border border-border bg-background px-2 py-1.5 text-sm font-semibold" />
+            <input value={c.description ?? ""} placeholder="Description" onChange={(e) => setCats(cs => cs.map(x => x.id === c.id ? { ...x, description: e.target.value } : x))} className="min-w-0 rounded border border-border bg-background px-2 py-1.5 text-sm" />
+            <input value={c.color ?? ""} placeholder="#1D9E75" onChange={(e) => setCats(cs => cs.map(x => x.id === c.id ? { ...x, color: e.target.value } : x))} className="min-w-0 rounded border border-border bg-background px-2 py-1.5 text-sm" />
+            <input type="number" value={c.sort_order} onChange={(e) => setCats(cs => cs.map(x => x.id === c.id ? { ...x, sort_order: Number(e.target.value) } : x))} className="min-w-0 rounded border border-border bg-background px-2 py-1.5 text-sm" />
+            <div className="flex flex-wrap items-center gap-2">
               <button onClick={() => save(c)} className="rounded bg-brand px-3 py-1.5 text-sm font-medium text-white">Save</button>
               <button onClick={() => del(c.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>
             </div>

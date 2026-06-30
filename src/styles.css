@@ -125,6 +125,13 @@
   font-size: 1.125rem;
   line-height: 1.75;
   color: var(--foreground);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+.prose-article pre,
+.prose-article code {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .prose-article > * + * { margin-top: 1.25rem; }
 .prose-article h1, .prose-article h2, .prose-article h3 {
