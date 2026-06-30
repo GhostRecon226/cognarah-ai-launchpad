@@ -91,7 +91,7 @@ function ArticlePage() {
     <div className="flex min-h-screen flex-col">
       <SiteNav />
       <main className="flex-1">
-        <article className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:py-16">
+        <article className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12 lg:py-16">
           {article.category && (
             <Link
               to="/category/$slug"
@@ -102,8 +102,8 @@ function ArticlePage() {
               {article.category.name}
             </Link>
           )}
-          <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">{article.title}</h1>
-          {article.excerpt && <p className="mt-4 text-xl text-muted-foreground">{article.excerpt}</p>}
+          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">{article.title}</h1>
+          {article.excerpt && <p className="mt-4 text-lg text-muted-foreground sm:text-xl">{article.excerpt}</p>}
           <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             {article.author?.name && <span className="font-medium text-foreground">{article.author.name}</span>}
             {article.published_at && (

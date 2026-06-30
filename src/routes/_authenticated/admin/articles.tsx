@@ -34,18 +34,18 @@ function ArticlesList() {
 
   return (
     <AdminShell title="Articles">
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex gap-1 rounded-md border border-border bg-background p-1">
+      <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
+        <div className="flex gap-1 self-start rounded-md border border-border bg-background p-1">
           {(["all", "published", "draft"] as const).map((f) => (
             <button key={f} onClick={() => setFilter(f)} className={`rounded px-3 py-1.5 text-sm capitalize ${filter === f ? "bg-navy text-white" : "text-muted-foreground"}`}>{f}</button>
           ))}
         </div>
-        <Link to="/admin/articles/new" className="inline-flex items-center gap-1.5 rounded-md bg-navy px-4 py-2 text-sm font-medium text-white hover:bg-navy/90">
+        <Link to="/admin/articles/new" className="inline-flex items-center justify-center gap-1.5 rounded-md bg-navy px-4 py-2 text-sm font-medium text-white hover:bg-navy/90">
           <Plus className="h-4 w-4" /> New article
         </Link>
       </div>
-      <div className="mt-6 overflow-hidden rounded-lg border border-border bg-background">
-        <table className="w-full">
+      <div className="mt-6 overflow-x-auto rounded-lg border border-border bg-background">
+        <table className="w-full min-w-[640px]">
           <thead className="bg-secondary text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr><th className="px-4 py-3">Title</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Updated</th><th></th></tr>
           </thead>

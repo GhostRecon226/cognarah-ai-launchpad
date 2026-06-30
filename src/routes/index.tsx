@@ -93,7 +93,7 @@ function HomePage() {
                     </Link>
                   )}
                   <Link to="/article/$slug" params={{ slug: lead.slug }}>
-                    <h1 className="font-display mt-3 text-3xl leading-[1.05] text-white sm:text-4xl lg:text-5xl">
+                    <h1 className="font-display mt-3 text-[28px] leading-[1.05] text-white sm:text-4xl lg:text-5xl">
                       {lead.title}
                     </h1>
                   </Link>
@@ -192,8 +192,8 @@ function HomePage() {
         {/* Africa AI Spotlight band — deep plum, full-width, 60px breathing room above */}
         {africa && (
           <section
-            className="border-y border-white/5"
-            style={{ backgroundColor: "var(--africa-surface)", marginTop: "60px" }}
+            className="mt-8 border-y border-white/5 sm:mt-[60px]"
+            style={{ backgroundColor: "var(--africa-surface)" }}
           >
             <div className="mx-auto grid max-w-7xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-12 lg:gap-12 lg:py-20">
               <div className="lg:col-span-5">
