@@ -21,8 +21,16 @@ export function SiteFooter() {
       <div className="mx-auto max-w-7xl px-4 py-12 sm:px-6">
         <div className="grid gap-10 md:grid-cols-4">
           <div className="md:col-span-2">
-            <Link to="/" className="inline-flex items-center">
-              <img src={logoMark} alt="Cognarah" className="h-12 w-auto sm:h-14" />
+            <Link
+              to="/"
+              className="block w-full max-w-[18rem] sm:max-w-[24rem] lg:max-w-[28rem]"
+              aria-label="Cognarah home"
+            >
+              <img
+                src={logoMark}
+                alt="Cognarah"
+                className="block h-auto w-full max-w-full object-contain"
+              />
             </Link>
             <p className="mt-5 max-w-sm text-sm text-white/70">
               Cognarah is the definitive media platform for everything artificial intelligence — news, startups, funding, policy, and the global builders shaping it.
