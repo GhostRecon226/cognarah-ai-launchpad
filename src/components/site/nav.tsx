@@ -75,6 +75,12 @@ export function SiteNav() {
 
         <div className="hidden items-center gap-1 lg:flex">
           <nav className="flex items-center gap-1">
+            <Link
+              to="/"
+              className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
+            >
+              Home
+            </Link>
             {NAV_GROUPS.map((group) => (
               <div key={group.label} className="group relative">
                 <button
@@ -126,6 +132,13 @@ export function SiteNav() {
       {open && (
         <div className="border-t border-white/10 lg:hidden">
           <nav className="mx-auto max-w-7xl px-4 py-2">
+            <Link
+              to="/"
+              onClick={() => setOpen(false)}
+              className="block rounded-md px-3 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-brand"
+            >
+              Home
+            </Link>
             {NAV_GROUPS.map((group, idx) => {
               const isOpen = mobileOpenIdx === idx;
               return (
