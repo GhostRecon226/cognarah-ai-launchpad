@@ -67,9 +67,9 @@ export function SiteNav() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-white/10 bg-navy text-navy-foreground backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+      <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6 sm:py-5">
         <Link to="/" className="flex items-center gap-2 shrink-0">
-          <img src={logoAsset.url} alt="Cognarah" className="h-11 w-auto sm:h-12" />
+          <img src={logoAsset.url} alt="Cognarah" className="h-16 w-auto sm:h-20" />
           <span className="sr-only">Cognarah</span>
         </Link>
 
