@@ -27,7 +27,7 @@ function AboutPage() {
         <section className="bg-navy py-20 text-navy-foreground">
           <div className="mx-auto max-w-3xl px-4 sm:px-6">
             <p className="text-xs font-semibold uppercase tracking-widest text-brand">About</p>
-            <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">Everything AI. Nothing Else.</h1>
+            <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">About Cognarah</h1>
             <p className="mt-6 text-lg text-white/75">
               Cognarah is a media platform built exclusively around artificial intelligence. We cover the people, products, capital, policy, and culture shaping the most consequential technology of our era.
             </p>
