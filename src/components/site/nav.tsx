@@ -73,53 +73,54 @@ export function SiteNav() {
           <span className="sr-only">Cognarah</span>
         </Link>
 
-        <nav className="hidden flex-1 items-center justify-center gap-1 lg:flex">
-          {NAV_GROUPS.map((group) => (
-            <div key={group.label} className="group relative">
-              <button
-                type="button"
-                className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
-              >
-                {group.label}
-                <ChevronDown className="h-3.5 w-3.5 transition group-hover:rotate-180" />
-              </button>
-              <div className="invisible absolute left-1/2 top-full z-50 w-56 -translate-x-1/2 pt-2 opacity-0 transition group-hover:visible group-hover:opacity-100">
-                <div className="overflow-hidden rounded-md border border-white/10 bg-navy shadow-xl ring-1 ring-black/40">
-                  {group.children.map((child) => (
-                    <Link
-                      key={`${group.label}-${child.name}`}
-                      to={child.to}
-                      params={child.slug ? { slug: child.slug } : undefined}
-                      className={cn(
-                        "block px-4 py-2.5 text-sm text-white/85 transition hover:bg-white/5 hover:text-brand",
-                        child.highlight && "text-africa-foreground bg-africa/80 hover:bg-africa hover:text-white",
-                      )}
-                    >
-                      {child.name}
-                    </Link>
-                  ))}
+        <div className="hidden items-center gap-1 lg:flex">
+          <nav className="flex items-center gap-1">
+            {NAV_GROUPS.map((group) => (
+              <div key={group.label} className="group relative">
+                <button
+                  type="button"
+                  className="flex items-center gap-1 rounded-md px-3 py-2 text-sm font-medium text-white/80 transition hover:bg-white/10 hover:text-white"
+                >
+                  {group.label}
+                  <ChevronDown className="h-3.5 w-3.5 transition group-hover:rotate-180" />
+                </button>
+                <div className="invisible absolute left-1/2 top-full z-50 w-56 -translate-x-1/2 pt-2 opacity-0 transition group-hover:visible group-hover:opacity-100">
+                  <div className="overflow-hidden rounded-md border border-white/10 bg-navy shadow-xl ring-1 ring-black/40">
+                    {group.children.map((child) => (
+                      <Link
+                        key={`${group.label}-${child.name}`}
+                        to={child.to}
+                        params={child.slug ? { slug: child.slug } : undefined}
+                        className={cn(
+                          "block px-4 py-2.5 text-sm text-white/85 transition hover:bg-white/5 hover:text-brand",
+                          child.highlight && "text-africa-foreground bg-africa/80 hover:bg-africa hover:text-white",
+                        )}
+                      >
+                        {child.name}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </nav>
+            ))}
+          </nav>
 
-        <div className="flex items-center gap-2">
           <Link
             to="/search"
-            className="hidden items-center justify-center rounded-full bg-white/10 p-2 text-white/80 transition hover:bg-white/20 hover:text-white lg:flex"
+            className="ml-2 flex items-center justify-center rounded-full bg-white/10 p-2 text-white/80 transition hover:bg-white/20 hover:text-white"
             aria-label="Search"
           >
             <Search className="h-4 w-4" />
           </Link>
-          <button
-            className="lg:hidden text-white"
-            onClick={() => setOpen(!open)}
-            aria-label="Menu"
-          >
-            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </button>
         </div>
+
+        <button
+          className="lg:hidden text-white"
+          onClick={() => setOpen(!open)}
+          aria-label="Menu"
+        >
+          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+        </button>
       </div>
 
       {open && (
