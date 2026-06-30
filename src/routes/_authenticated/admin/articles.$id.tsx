@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router"
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/admin-shell";
+import { useRoles } from "@/lib/admin-roles";
 import { TiptapEditor } from "@/components/admin/tiptap-editor";
 import { toast } from "sonner";
 import slugify from "slugify";
@@ -16,6 +17,8 @@ function EditArticle() {
   const { id } = useParams({ from: "/_authenticated/admin/articles/$id" });
   const isNew = id === "new";
   const navigate = useNavigate();
+  const { userId, hasAny } = useRoles();
+  const canPublish = hasAny(["admin", "editor"]);
   const [cats, setCats] = useState<Category[]>([]);
   const [authors, setAuthors] = useState<Author[]>([]);
   const [a, setA] = useState<Partial<Article>>({
@@ -62,12 +65,15 @@ function EditArticle() {
       tags: tagsInput.split(",").map((t) => t.trim()).filter(Boolean),
       seo_title: a.seo_title || null, meta_description: a.meta_description || null,
       read_time: Number(a.read_time) || 3, is_featured: !!a.is_featured,
-      status: publish ? "published" : (a.status ?? "draft"),
-      published_at: publish ? new Date().toISOString() : (a.published_at ?? null),
+      status: publish && canPublish ? "published" : (publish ? a.status ?? "draft" : a.status ?? "draft"),
+      published_at: publish && canPublish ? new Date().toISOString() : (a.published_at ?? null),
     };
     let res;
-    if (isNew) res = await supabase.from("articles").insert(payload).select("id").maybeSingle();
-    else res = await supabase.from("articles").update(payload).eq("id", id).select("id").maybeSingle();
+    if (isNew) {
+      res = await supabase.from("articles").insert({ ...payload, author_user_id: userId }).select("id").maybeSingle();
+    } else {
+      res = await supabase.from("articles").update(payload).eq("id", id).select("id").maybeSingle();
+    }
     setLoading(false);
     if (res.error) { toast.error(res.error.message); return; }
     toast.success(publish ? "Published" : "Saved");
@@ -88,9 +94,11 @@ function EditArticle() {
             <h3 className="text-sm font-semibold">Publish</h3>
             <div className="mt-3 space-y-2">
               <button disabled={loading} onClick={() => save(false)} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-secondary">Save draft</button>
-              <button disabled={loading} onClick={() => save(true)} className="w-full rounded-md bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand/90">Publish</button>
+              {canPublish && (
+                <button disabled={loading} onClick={() => save(true)} className="w-full rounded-md bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand/90">Publish</button>
+              )}
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">Status: {a.status}</p>
+            <p className="mt-2 text-xs text-muted-foreground">Status: {a.status}{!canPublish && " · You can save drafts; an editor will publish."}</p>
           </div>
           <div className="rounded-lg border border-border bg-background p-4 space-y-3">
             <h3 className="text-sm font-semibold">Hero image</h3>

@@ -35,12 +35,12 @@ function SettingsPage() {
     if (error) toast.error(error.message); else toast.success("Saved");
   }
 
-  if (!s) return <AdminShell title="Settings"><p>Loading…</p></AdminShell>;
+  if (!s) return <AdminShell title="Settings" requiredRoles={["admin"]}><p>Loading…</p></AdminShell>;
 
   const upd = (k: keyof Settings, v: string) => setS({ ...s, [k]: v });
 
   return (
-    <AdminShell title="Settings">
+    <AdminShell title="Settings" requiredRoles={["admin"]}>
       <div className="max-w-2xl space-y-4 rounded-lg border border-border bg-background p-6">
         <Field label="Site name" value={s.site_name} onChange={(v) => upd("site_name", v)} />
         <Field label="Tagline" value={s.tagline} onChange={(v) => upd("tagline", v)} />

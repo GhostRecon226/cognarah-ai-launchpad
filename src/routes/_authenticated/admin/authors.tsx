@@ -41,7 +41,7 @@ function AuthorsAdmin() {
   }
 
   return (
-    <AdminShell title="Authors">
+    <AdminShell title="Authors" requiredRoles={["admin", "editor"]}>
       <div className="rounded-lg border border-border bg-background p-4">
         <div className="flex gap-2">
           <input placeholder="Author name" value={newName} onChange={(e) => setNewName(e.target.value)} className="flex-1 rounded border border-border bg-background px-3 py-2 text-sm" />

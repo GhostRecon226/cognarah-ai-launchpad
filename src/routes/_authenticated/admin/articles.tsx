@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/admin-shell";
+import { useRoles } from "@/lib/admin-roles";
 import { Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
@@ -14,6 +15,8 @@ export const Route = createFileRoute("/_authenticated/admin/articles")({
 });
 
 function ArticlesList() {
+  const { hasAny } = useRoles();
+  const canDelete = hasAny(["admin", "editor"]);
   const [rows, setRows] = useState<Row[]>([]);
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
 
@@ -57,7 +60,7 @@ function ArticlesList() {
                 <td className="px-4 py-3 text-muted-foreground">{r.category?.name ?? "—"}</td>
                 <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-xs ${r.status === "published" ? "bg-brand/15 text-brand" : "bg-secondary"}`}>{r.status}</span></td>
                 <td className="px-4 py-3 text-muted-foreground">{format(new Date(r.updated_at), "MMM d, yyyy")}</td>
-                <td className="px-4 py-3 text-right"><button onClick={() => del(r.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button></td>
+                <td className="px-4 py-3 text-right">{canDelete && <button onClick={() => del(r.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>}</td>
               </tr>
             ))}
           </tbody>

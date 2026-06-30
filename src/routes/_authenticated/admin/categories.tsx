@@ -42,7 +42,7 @@ function CategoriesAdmin() {
   }
 
   return (
-    <AdminShell title="Categories">
+    <AdminShell title="Categories" requiredRoles={["admin", "editor"]}>
       <div className="rounded-lg border border-border bg-background p-4">
         <div className="flex gap-2">
           <input placeholder="New category name" value={newName} onChange={(e) => setNewName(e.target.value)} className="flex-1 rounded border border-border bg-background px-3 py-2 text-sm" />
