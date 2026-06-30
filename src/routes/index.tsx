@@ -42,7 +42,7 @@ export const Route = createFileRoute("/")({
 });
 
 function HomePage() {
-  const { articles, africa } = Route.useLoaderData();
+  const { articles, africa } = Route.useLoaderData() as { articles: Article[]; africa: Article | null };
 
   // Exclude the Africa spotlight from the rest of the layout so it has a dedicated band.
   const pool = africa ? articles.filter((a) => a.id !== africa.id) : articles;
