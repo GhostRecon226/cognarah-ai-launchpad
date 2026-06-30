@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { Search, Menu, X, ChevronDown } from "lucide-react";
 import { useState } from "react";
-import logoAsset from "@/assets/cognarah-logo.png.asset.json";
+import logoMark from "@/assets/cognarah-logo-mark.png";
 import { cn } from "@/lib/utils";
 
 type NavChild = {
