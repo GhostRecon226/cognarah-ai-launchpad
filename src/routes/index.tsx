@@ -157,6 +157,38 @@ function HomePage() {
           </section>
         )}
 
+        {/* Cognarah at a Glance */}
+        <section className="mx-auto max-w-7xl bg-white px-4 py-6 sm:px-6 sm:py-8">
+          <h2 className="mb-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+            Cognarah at a Glance
+          </h2>
+          <ol className="divide-y divide-border">
+            {[
+              { num: 1, entity: "OpenAI", rest: "'s new reasoning model can now plan and execute multi-step tasks autonomously." },
+              { num: 2, entity: "Anthropic", rest: " crosses a $150B valuation in its latest secondary sale." },
+              { num: 3, entity: "EU AI Act", rest: " enforcement begins, raising the stakes for builders." },
+              { num: 4, entity: "Lagos startup", rest: " raises $12M to bring multilingual AI to West Africa." },
+              { num: 5, entity: "Nvidia", rest: " posts another blowout quarter as AI capex keeps climbing." },
+              { num: 6, entity: "Coding tools ranked", rest: ": the best AI assistants for developers in 2026." },
+            ].map((item) => (
+              <li key={item.num} className="flex items-baseline gap-3 py-2">
+                <span
+                  className="text-sm font-bold tabular-nums"
+                  style={{
+                    color: item.num === 4 ? "var(--africa)" : "var(--brand)",
+                  }}
+                >
+                  {item.num}
+                </span>
+                <Link to="/search" className="text-sm text-foreground hover:text-[color:var(--brand)]">
+                  <strong className="font-semibold">{item.entity}</strong>
+                  {item.rest}
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </section>
+
         {/* Africa AI Spotlight band — deep plum, full-width, 60px breathing room above */}
         {africa && (
           <section
