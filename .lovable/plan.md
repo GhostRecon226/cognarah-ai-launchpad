@@ -1,66 +1,45 @@
-# Cognarah — Full-Stack AI Publication
+# Mobile responsiveness audit & fixes
 
-A complete editorial platform: public blog (TechCrunch-style, AI-only) plus an authenticated CMS. Built on the existing TanStack Start template with Lovable Cloud for database, auth, and storage. The current "coming soon" landing page will be replaced.
+I scanned every page at 375px (mobile) and 768px (tablet). Good news: no horizontal scroll anywhere — the global layout is sound. The issues are smaller polish problems plus one real gap: the admin CMS has no mobile navigation at all.
 
-## Scope
+## What I found
 
-### Public site
-- **Home** — dark navy hero with featured article, latest articles grid (thumbnail, category tag, title, author, date, read time), newsletter signup, footer.
-- **Article page** — title, meta row, hero image, rich body, social share (X, LinkedIn, Facebook, WhatsApp), related articles, newsletter.
-- **Category pages** — one route per category, with title + description and article grid.
-- **About** — mission, coverage, contact.
-- **Search** — query input, filter by category and date, empty state.
-- **Newsletter signup** — email-only, stored in Cloud.
+### Public pages
+- **Homepage** — works, but headline `text-3xl` on the lead hero is a bit cramped at 375px (the `text-4xl sm:` jump happens at 640px). Tighten to `text-[28px]`/`text-3xl sm:text-4xl lg:text-5xl`. The Africa AI Spotlight has `marginTop: 60px` inline — keep on desktop, drop to ~32px on mobile so the band doesn't float in dead space.
+- **Article page** — `text-4xl sm:text-5xl` H1 is loud on small phones; step down to `text-3xl sm:text-4xl lg:text-5xl`. Body prose font-size 1.125rem is fine; confirm long inline code/URLs don't overflow by adding `overflow-wrap: anywhere` to `.prose-article`.
+- **Category page** — same H1 sizing pass as article. Hero section padding `py-16` is heavy on mobile → `py-10 sm:py-16`.
+- **Search page** — filter row stacks correctly, but the two `<select>`s don't shrink (no `min-w-0`) and on a tight 360-ish viewport between the input + selects it can feel cramped. Make selects full-width on mobile (`w-full sm:w-auto`) and keep them on their own row.
+- **About page** — "What we cover" uses `grid-cols-2` on every breakpoint; at 320–360px the category pills can squeeze. Use `grid-cols-1 sm:grid-cols-2`.
+- **Newsletter** — already stacks correctly; no change.
+- **Footer** — already responsive; no change.
+- **Nav** — already has mobile hamburger + accordion; no change.
 
-### CMS (`/admin`, auth-gated)
-- **Dashboard** — counts (published, drafts, categories) and recent activity.
-- **Articles** — list with status/date/category, create/edit with rich text editor (headers, bold, italic, quotes, lists, inline images), fields: title, slug, author, category, tags, featured image, SEO title, meta description, read time, status (draft/published).
-- **Categories** — 11 seeded categories, edit name/description/color.
-- **Media library** — upload, list, copy URL.
-- **Authors** — name, bio, photo, social links.
-- **SEO** — per-article meta plus auto sitemap.
-- **Settings** — site name, tagline, logo, social links, newsletter integration field.
+### Admin CMS (currently desktop-only)
+- `AdminShell` hides the sidebar with `hidden md:flex` and provides **no** mobile menu — admin is unusable below 768px. Add a hamburger button in the admin header that opens the nav as a `Sheet` (slide-in drawer) on mobile. Keep desktop sidebar unchanged.
+- **Articles list table** — `<table>` will overflow on mobile. Wrap in `overflow-x-auto` so it can scroll horizontally rather than break the layout.
+- **Article editor** (`articles.$id.tsx`) — two-column form layouts need `grid-cols-1 lg:grid-cols-X` audit; Tiptap toolbar should wrap (`flex-wrap`).
+- **Media / Categories / Authors / Settings** — quick audit pass for the same patterns (tables → scroll wrapper, form grids → stack on mobile, action buttons → wrap).
 
-### Branding
-- Primary `#0A0F2C` navy, accent `#1D9E75` green, plus purple/orange logo accents.
-- Cognarah logo top-left (already uploaded as asset).
-- Modern sans-serif (Space Grotesk + Inter pairing).
-- Dark navy nav + hero; white article body for readability.
-- Africa AI nav item visually highlighted.
+### Auth page
+- Quick check + ensure the form card is full-width with comfortable padding on small screens.
 
-## Technical approach
+## Changes
 
-- **Stack**: TanStack Start (already configured) + Lovable Cloud (Supabase under the hood) for Postgres, Auth, Storage. Tailwind v4 + shadcn for UI.
-- **Hosting**: Lovable hosting (works for Vercel-ready output too; TanStack Start builds standard output).
-- **Auth**: Email/password via Cloud. `_authenticated` route gate already exists. CMS lives under `/admin/*` inside the auth group. First signup becomes admin via a `user_roles` table + `has_role` security-definer function.
-- **Database tables** (`public` schema, RLS + GRANTs):
-  - `categories` (slug, name, description, color, icon, sort_order) — public read, admin write.
-  - `authors` (name, slug, bio, photo_url, social JSONB) — public read, admin write.
-  - `articles` (title, slug, excerpt, body markdown, hero_image, author_id, category_id, tags text[], seo_title, meta_description, read_time, status, published_at) — public read where `status='published'`, admin full.
-  - `newsletter_subscribers` (email, created_at) — public insert only, admin read.
-  - `site_settings` (singleton: name, tagline, logo_url, socials JSONB, newsletter_provider) — public read, admin write.
-  - `user_roles` (user_id, role enum) + `has_role()` security-definer.
-- **Storage**: public `media` bucket for hero/inline images and logo.
-- **Rich text**: Tiptap (with image, link, heading, list, blockquote extensions) in CMS; render markdown/HTML on public pages with safe sanitization.
-- **Routes**:
-  - `/` home, `/about`, `/search`, `/category/$slug`, `/article/$slug`
-  - `/auth` (sign-in/up)
-  - `/_authenticated/admin` dashboard, `/admin/articles`, `/admin/articles/new`, `/admin/articles/$id`, `/admin/categories`, `/admin/authors`, `/admin/media`, `/admin/settings`
-  - `/sitemap.xml` server route generated from published articles.
-- **SEO**: per-route `head()` with title, description, OG, canonical; article routes include Article JSON-LD and og:image from hero.
-- **Server functions** for newsletter signup (public) and CMS mutations (auth + admin role).
-- **Seed**: 11 categories inserted via migration.
+Files to edit:
+- `src/routes/index.tsx` — hero headline sizing, spotlight top margin responsive.
+- `src/routes/article.$slug.tsx` — H1 sizing.
+- `src/routes/category.$slug.tsx` — H1 + hero padding.
+- `src/routes/search.tsx` — filter row: selects full-width on mobile.
+- `src/routes/about.tsx` — "What we cover" grid stacks on mobile.
+- `src/routes/auth.tsx` — verify + minor padding tweaks.
+- `src/styles.css` — add `overflow-wrap: anywhere` to `.prose-article` and to long-word containers.
+- `src/components/admin/admin-shell.tsx` — add mobile hamburger + `Sheet`-based nav drawer; ensure header is sticky and tappable.
+- `src/routes/_authenticated/admin/articles.tsx` — wrap table in `overflow-x-auto` container.
+- `src/routes/_authenticated/admin/articles.$id.tsx` — stack form grid, wrap Tiptap toolbar, ensure inputs are `w-full`.
+- `src/routes/_authenticated/admin/categories.tsx`, `authors.tsx`, `media.tsx`, `settings.tsx`, `index.tsx` — pass for table scroll wrappers, grid stacking, button wrapping.
 
-## Deliverables (this build)
+No content, copy, data, or behavior changes — purely presentation/responsive classes.
 
-1. Enable Lovable Cloud, create schema + RLS + grants, seed categories, create `media` storage bucket.
-2. Replace landing page; build public site (home, article, category, about, search, newsletter, footer, nav).
-3. Build `/auth` and CMS shell with all managers (articles w/ Tiptap, categories, authors, media, settings).
-4. Sitemap route, per-route SEO metadata, Africa AI highlight.
-5. Verify build + smoke test preview.
+## Verification
 
-## Open items to confirm before I start
-
-1. **Sign-up policy**: Should CMS sign-up be open (first user auto-admin, then admin-only invites) or do you want me to lock it down and grant your specific email admin? If the latter, paste the email.
-2. **Newsletter delivery**: Store subscribers in DB only for now, or wire up a provider (Resend, Mailchimp) — needs an API key if so.
-3. **Initial content**: Seed a few placeholder articles so the homepage isn't empty, or leave it blank for you to fill in via CMS?
+After implementing, I'll re-run the Playwright sweep at 375px and 768px across home / about / search / category / article / auth / admin / admin/articles / admin/articles/:id and confirm no horizontal scroll and that all interactive elements are reachable on mobile.
