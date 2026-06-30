@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import logoAsset from "@/assets/cognarah-logo.png.asset.json";
+import logoMark from "@/assets/cognarah-logo-mark.png";
 
 const FOOTER_CATEGORIES: { slug: string; name: string }[] = [
   { slug: "news", name: "News" },
