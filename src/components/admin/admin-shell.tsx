@@ -1,8 +1,8 @@
 import { Link, useRouter, useLocation } from "@tanstack/react-router";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import logoAsset from "@/assets/cognarah-logo.png.asset.json";
-import { LayoutDashboard, FileText, Tags, Users, Image, Settings, LogOut, ExternalLink, Menu, X, Shield } from "lucide-react";
+import { LayoutDashboard, FileText, Tags, Users, Image, Settings, LogOut, ExternalLink, Menu, X, Shield, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RolesContext, type AppRole, ROLE_LABELS } from "@/lib/admin-roles";
 
@@ -30,23 +30,42 @@ export function AdminShell({ children, title, requiredRoles = ["admin", "editor"
   const loc = useLocation();
   const [userId, setUserId] = useState<string | null>(null);
   const [roles, setRoles] = useState<AppRole[] | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  useEffect(() => {
-    (async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) {
-        router.navigate({ to: "/auth" });
-        return;
-      }
-      setUserId(u.user.id);
-      const { data } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", u.user.id);
-      setRoles(((data ?? []).map((r: any) => r.role)) as AppRole[]);
-    })();
+  const fetchRoles = useCallback(async (): Promise<boolean> => {
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) {
+      router.navigate({ to: "/auth" });
+      return false;
+    }
+    setUserId(u.user.id);
+    const { data, error } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", u.user.id);
+    if (error) {
+      setFetchError(error.message);
+      setRoles([]);
+      return false;
+    }
+    setFetchError(null);
+    setRoles(((data ?? []).map((r: any) => r.role)) as AppRole[]);
+    return true;
   }, [router]);
+
+  useEffect(() => {
+    fetchRoles();
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+        fetchRoles();
+      } else if (event === "SIGNED_OUT") {
+        router.navigate({ to: "/auth" });
+      }
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [fetchRoles, router]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -55,6 +74,15 @@ export function AdminShell({ children, title, requiredRoles = ["admin", "editor"
   async function signOut() {
     await supabase.auth.signOut();
     router.navigate({ to: "/auth" });
+  }
+
+  async function retry() {
+    setRetrying(true);
+    try {
+      await fetchRoles();
+    } finally {
+      setRetrying(false);
+    }
   }
 
   const authorized = useMemo(() => {
@@ -75,9 +103,15 @@ export function AdminShell({ children, title, requiredRoles = ["admin", "editor"
         <p className="max-w-md text-center text-white/70">
           {hasAnyRole
             ? `Your role (${roles.map((r) => ROLE_LABELS[r]).join(", ")}) doesn't have access to this page. Required: ${requiredRoles.map((r) => ROLE_LABELS[r]).join(" or ")}.`
-            : "Your account is signed in but hasn't been granted CMS access yet. Contact a Cognarah admin to request a role."}
+            : "Your account is signed in but hasn't been granted CMS access yet. If a role was just granted, click Retry."}
         </p>
-        <div className="flex gap-2">
+        {fetchError && (
+          <p className="max-w-md text-center text-xs text-white/40">Role lookup error: {fetchError}</p>
+        )}
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <button onClick={retry} disabled={retrying} className="flex items-center gap-2 rounded-md bg-white/15 px-4 py-2 hover:bg-white/25 disabled:opacity-60">
+            <RefreshCw className={cn("h-4 w-4", retrying && "animate-spin")} /> {retrying ? "Checking…" : "Retry"}
+          </button>
           {hasAnyRole && (
             <Link to="/admin" className="rounded-md bg-white/15 px-4 py-2 hover:bg-white/25">Back to dashboard</Link>
           )}
