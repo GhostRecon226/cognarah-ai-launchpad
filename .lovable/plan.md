@@ -1,19 +1,17 @@
 ## Problem
 
-SSR crashes on `/article/$slug` (and any path that touches `src/lib/sanitize.ts`) with `TypeError: Cannot read properties of undefined (reading 'bind')`. The fallback "This page didn't load" page is shown.
-
-Root cause: `isomorphic-dompurify` lazy-loads `jsdom` on the server. `jsdom` depends on Node APIs (notably `EventTarget` / Web stream internals) that aren't available in the Cloudflare Workers runtime where the app runs, so a `.bind` call on `undefined` throws during HTML sanitization.
+Uploaded images in `/admin/media` show a broken image icon. The `media` storage bucket is private (`public = false`), but the code uses `getPublicUrl(...)` — which returns a URL that only works for public buckets. Same URL is embedded into article hero images and Tiptap inline images, so those are broken too.
 
 ## Fix
 
-Swap the sanitizer for a Worker-compatible, pure-JS one. `sanitize-html` is the standard choice — no DOM/jsdom, works identically in Node, Workers, and the browser.
+Flip the `media` bucket to public via `supabase--storage_update_bucket(name="media", public=true)`.
 
-### Steps
+Rationale: hero images and inline article images are meant to be publicly viewable on the blog, so public-read is the correct posture. Existing RLS policies on `storage.objects` already restrict write/delete to authorized CMS roles, so making the bucket public only exposes SELECT — which is what we want.
 
-1. `bun add sanitize-html` and `bun add -d @types/sanitize-html`. Remove `isomorphic-dompurify` from `package.json`.
-2. Rewrite `src/lib/sanitize.ts` to use `sanitize-html` with the same allow-list currently in place (tags: `p, br, strong, em, u, s, a, ul, ol, li, h1–h4, blockquote, code, pre, img, figure, figcaption, hr, span, div`; attrs: `href, src, alt, title, target, rel, class`). Preserve the `sanitizeHtml(html: string): string` signature so callers don't change.
-3. Verify by reloading `/article/<slug>` in preview — page should render the article body instead of the error fallback. Re-check server logs to confirm the `bind` TypeError stops appearing.
+If the workspace policy `cloud_block_public_buckets` rejects it, fallback is to switch `media.tsx`, `articles.$id.tsx`, `tiptap-editor.tsx`, and public article rendering to use `createSignedUrl` — larger change, so only if the flip is blocked.
 
-### Out of scope
+## Technical
 
-No UI, route, RLS, or schema changes. The admin "New article" link already works (`/admin/articles/new` is handled by `articles.$id.tsx` via `id === "new"`); it only appeared broken because the same SSR error page rendered when the server entry blew up.
+- Single tool call: `supabase--storage_update_bucket(name="media", public=true)`.
+- No code changes needed; existing `getPublicUrl` calls will start returning working URLs.
+- No migration to `storage.buckets` (that path is unsupported).
