@@ -7,7 +7,7 @@ import { ArticleCard } from "@/components/site/article-card";
 import type { Article } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
 import { SITE_URL } from "@/lib/types";
-import { mediaUrl } from "@/lib/media-url";
+import { MediaImage } from "@/components/site/media-image";
 
 async function loadHome(): Promise<{ articles: Article[]; africa: Article | null }> {
   const { data: articles } = await supabase
@@ -76,10 +76,11 @@ function HomePage() {
                   className="block overflow-hidden rounded-md"
                 >
                   {lead.hero_image && (
-                    <img
-                      src={mediaUrl(lead.hero_image)}
+                    <MediaImage
+                      src={lead.hero_image}
                       alt={lead.title}
                       className="aspect-[16/10] w-full object-cover"
+                      fallbackClassName="aspect-[16/10] w-full"
                     />
                   )}
                 </Link>
@@ -221,10 +222,11 @@ function HomePage() {
                   className="block overflow-hidden rounded-md"
                 >
                   {africa.hero_image && (
-                    <img
-                      src={mediaUrl(africa.hero_image)}
+                    <MediaImage
+                      src={africa.hero_image}
                       alt={africa.title}
                       className="aspect-[16/9] w-full object-cover"
+                      fallbackClassName="aspect-[16/9] w-full"
                     />
                   )}
                 </Link>

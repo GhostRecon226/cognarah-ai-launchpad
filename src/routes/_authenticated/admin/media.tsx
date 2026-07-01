@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/admin-shell";
+import { MediaImage } from "@/components/site/media-image";
 import { toast } from "sonner";
 import { Copy, Trash2, Upload } from "lucide-react";
 
@@ -53,7 +54,7 @@ function Media() {
         {items.length === 0 && <p className="col-span-full text-muted-foreground">No media uploaded.</p>}
         {items.map((m) => (
           <div key={m.name} className="overflow-hidden rounded-lg border border-border bg-background">
-            <img src={m.url} alt="" className="aspect-video w-full object-cover" />
+            <MediaImage src={m.url} alt="" className="aspect-video w-full object-cover" fallbackClassName="aspect-video w-full" />
             <div className="flex items-center gap-1 p-2">
               <input readOnly value={m.url} className="min-w-0 flex-1 rounded bg-secondary px-2 py-1 text-xs" />
               <button onClick={() => { navigator.clipboard.writeText(m.url); toast.success("Copied"); }} className="rounded p-1.5 hover:bg-secondary"><Copy className="h-3.5 w-3.5" /></button>
