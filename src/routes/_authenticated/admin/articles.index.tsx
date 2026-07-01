@@ -27,12 +27,36 @@ function ArticlesListInner() {
   const canDelete = hasAny(["admin", "editor"]);
   const [rows, setRows] = useState<Row[]>([]);
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   async function load() {
-    let q = supabase.from("articles").select("id,title,slug,status,updated_at,category:categories(name)").order("updated_at", { ascending: false });
-    if (filter !== "all") q = q.eq("status", filter);
-    const { data } = await q;
-    setRows((data ?? []) as unknown as Row[]);
+    setLoading(true);
+    setLoadError(null);
+    console.log("[admin/articles] loading", { filter });
+    try {
+      let q = supabase.from("articles").select("id,title,slug,status,updated_at,category:categories(name)").order("updated_at", { ascending: false });
+      if (filter !== "all") q = q.eq("status", filter);
+      const { data, error, status, statusText } = await q;
+      if (error) {
+        console.error("[admin/articles] supabase error", { status, statusText, error });
+        const msg = `${error.message}${error.code ? ` (code ${error.code})` : ""}${error.details ? ` – ${error.details}` : ""}${error.hint ? ` – hint: ${error.hint}` : ""}`;
+        setLoadError(msg);
+        toast.error(`Failed to load articles: ${msg}`);
+        setRows([]);
+        return;
+      }
+      console.log("[admin/articles] loaded", { count: data?.length ?? 0 });
+      setRows((data ?? []) as unknown as Row[]);
+    } catch (e) {
+      const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+      console.error("[admin/articles] load threw", e);
+      setLoadError(msg);
+      toast.error(`Failed to load articles: ${msg}`);
+      setRows([]);
+    } finally {
+      setLoading(false);
+    }
   }
   useEffect(() => { load(); }, [filter]);
 
