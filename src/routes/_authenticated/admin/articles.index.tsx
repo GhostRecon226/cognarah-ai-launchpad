@@ -15,6 +15,14 @@ export const Route = createFileRoute("/_authenticated/admin/articles/")({
 });
 
 function ArticlesList() {
+  return (
+    <AdminShell title="Articles">
+      <ArticlesListInner />
+    </AdminShell>
+  );
+}
+
+function ArticlesListInner() {
   const { hasAny } = useRoles();
   const canDelete = hasAny(["admin", "editor"]);
   const [rows, setRows] = useState<Row[]>([]);
@@ -36,7 +44,7 @@ function ArticlesList() {
   }
 
   return (
-    <AdminShell title="Articles">
+    <>
       <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
         <div className="flex gap-1 self-start rounded-md border border-border bg-background p-1">
           {(["all", "published", "draft"] as const).map((f) => (
@@ -66,6 +74,6 @@ function ArticlesList() {
           </tbody>
         </table>
       </div>
-    </AdminShell>
+    </>
   );
 }
