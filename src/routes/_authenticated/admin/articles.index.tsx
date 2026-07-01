@@ -35,7 +35,7 @@ function ArticlesListInner() {
     setLoadError(null);
     console.log("[admin/articles] loading", { filter });
     try {
-      let q = supabase.from("articles").select("id,title,slug,status,updated_at,category:categories(name)").order("updated_at", { ascending: false });
+      let q = supabase.from("articles").select("id,title,slug,status,updated_at,view_count,category:categories(name)").order("updated_at", { ascending: false });
       if (filter !== "all") q = q.eq("status", filter);
       const { data, error, status, statusText } = await q;
       if (error) {
