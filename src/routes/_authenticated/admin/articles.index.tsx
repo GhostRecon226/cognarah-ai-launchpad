@@ -7,7 +7,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
-interface Row { id: string; title: string; slug: string; status: string; updated_at: string; category?: { name: string } | null }
+interface Row { id: string; title: string; slug: string; status: string; updated_at: string; view_count: number; category?: { name: string } | null }
 
 export const Route = createFileRoute("/_authenticated/admin/articles/")({
   head: () => ({ meta: [{ title: "Articles — Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
