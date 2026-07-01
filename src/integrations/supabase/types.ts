@@ -14,8 +14,156 @@ export type Database = {
   }
   public: {
     Tables: {
+      agent_runs: {
+        Row: {
+          drafts_created: number
+          error: string | null
+          finished_at: string | null
+          focus: string | null
+          id: string
+          log: string | null
+          requested_count: number
+          started_at: string
+          status: string
+          trigger: string
+          triggered_by: string | null
+        }
+        Insert: {
+          drafts_created?: number
+          error?: string | null
+          finished_at?: string | null
+          focus?: string | null
+          id?: string
+          log?: string | null
+          requested_count?: number
+          started_at?: string
+          status?: string
+          trigger?: string
+          triggered_by?: string | null
+        }
+        Update: {
+          drafts_created?: number
+          error?: string | null
+          finished_at?: string | null
+          focus?: string | null
+          id?: string
+          log?: string | null
+          requested_count?: number
+          started_at?: string
+          status?: string
+          trigger?: string
+          triggered_by?: string | null
+        }
+        Relationships: []
+      }
+      agent_seen_sources: {
+        Row: {
+          article_id: string | null
+          created_at: string
+          run_id: string | null
+          url: string
+          url_hash: string
+        }
+        Insert: {
+          article_id?: string | null
+          created_at?: string
+          run_id?: string | null
+          url: string
+          url_hash: string
+        }
+        Update: {
+          article_id?: string | null
+          created_at?: string
+          run_id?: string | null
+          url?: string
+          url_hash?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_seen_sources_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_seen_sources_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_settings: {
+        Row: {
+          created_at: string
+          cron_expression: string
+          default_count: number
+          default_focus: string | null
+          enabled: boolean
+          id: string
+          singleton: boolean
+          system_prompt: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cron_expression?: string
+          default_count?: number
+          default_focus?: string | null
+          enabled?: boolean
+          id?: string
+          singleton?: boolean
+          system_prompt?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cron_expression?: string
+          default_count?: number
+          default_focus?: string | null
+          enabled?: boolean
+          id?: string
+          singleton?: boolean
+          system_prompt?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      agent_sources: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          kind: string
+          label: string
+          updated_at: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          kind?: string
+          label: string
+          updated_at?: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          kind?: string
+          label?: string
+          updated_at?: string
+          value?: string
+        }
+        Relationships: []
+      }
       articles: {
         Row: {
+          agent_run_id: string | null
           author_id: string | null
           author_user_id: string | null
           body: string
@@ -30,12 +178,14 @@ export type Database = {
           read_time: number
           seo_title: string | null
           slug: string
+          source_urls: string[]
           status: Database["public"]["Enums"]["article_status"]
           tags: string[]
           title: string
           updated_at: string
         }
         Insert: {
+          agent_run_id?: string | null
           author_id?: string | null
           author_user_id?: string | null
           body?: string
@@ -50,12 +200,14 @@ export type Database = {
           read_time?: number
           seo_title?: string | null
           slug: string
+          source_urls?: string[]
           status?: Database["public"]["Enums"]["article_status"]
           tags?: string[]
           title: string
           updated_at?: string
         }
         Update: {
+          agent_run_id?: string | null
           author_id?: string | null
           author_user_id?: string | null
           body?: string
@@ -70,12 +222,20 @@ export type Database = {
           read_time?: number
           seo_title?: string | null
           slug?: string
+          source_urls?: string[]
           status?: Database["public"]["Enums"]["article_status"]
           tags?: string[]
           title?: string
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "articles_agent_run_id_fkey"
+            columns: ["agent_run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_runs"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "articles_author_id_fkey"
             columns: ["author_id"]
