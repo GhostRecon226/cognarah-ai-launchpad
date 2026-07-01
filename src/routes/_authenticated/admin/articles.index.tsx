@@ -7,7 +7,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 
-interface Row { id: string; title: string; slug: string; status: string; updated_at: string; category?: { name: string } | null }
+interface Row { id: string; title: string; slug: string; status: string; updated_at: string; view_count: number; category?: { name: string } | null }
 
 export const Route = createFileRoute("/_authenticated/admin/articles/")({
   head: () => ({ meta: [{ title: "Articles — Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
@@ -35,7 +35,7 @@ function ArticlesListInner() {
     setLoadError(null);
     console.log("[admin/articles] loading", { filter });
     try {
-      let q = supabase.from("articles").select("id,title,slug,status,updated_at,category:categories(name)").order("updated_at", { ascending: false });
+      let q = supabase.from("articles").select("id,title,slug,status,updated_at,view_count,category:categories(name)").order("updated_at", { ascending: false });
       if (filter !== "all") q = q.eq("status", filter);
       const { data, error, status, statusText } = await q;
       if (error) {
@@ -90,15 +90,16 @@ function ArticlesListInner() {
         {loading && <div className="p-4 text-xs text-muted-foreground">Loading…</div>}
         <table className="w-full min-w-[640px]">
           <thead className="bg-secondary text-left text-xs uppercase tracking-wider text-muted-foreground">
-            <tr><th className="px-4 py-3">Title</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Updated</th><th></th></tr>
+            <tr><th className="px-4 py-3">Title</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Views</th><th className="px-4 py-3">Updated</th><th></th></tr>
           </thead>
           <tbody className="divide-y divide-border text-sm">
-            {rows.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No articles yet.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">No articles yet.</td></tr>}
             {rows.map((r) => (
               <tr key={r.id} className="hover:bg-secondary/50">
                 <td className="px-4 py-3"><Link to="/admin/articles/$id" params={{ id: r.id }} className="font-medium hover:text-brand">{r.title}</Link></td>
                 <td className="px-4 py-3 text-muted-foreground">{r.category?.name ?? "—"}</td>
                 <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-xs ${r.status === "published" ? "bg-brand/15 text-brand" : "bg-secondary"}`}>{r.status}</span></td>
+                <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{(r.view_count ?? 0).toLocaleString()}</td>
                 <td className="px-4 py-3 text-muted-foreground">{format(new Date(r.updated_at), "MMM d, yyyy")}</td>
                 <td className="px-4 py-3 text-right">{canDelete && <button onClick={() => del(r.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>}</td>
               </tr>
