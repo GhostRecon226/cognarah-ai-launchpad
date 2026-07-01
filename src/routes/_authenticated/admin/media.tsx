@@ -19,8 +19,8 @@ function Media() {
     const { data } = await supabase.storage.from("media").list("hero", { limit: 100, sortBy: { column: "created_at", order: "desc" } });
     const { data: inline } = await supabase.storage.from("media").list("inline", { limit: 100, sortBy: { column: "created_at", order: "desc" } });
     const combine = [
-      ...(data ?? []).map((f) => ({ name: `hero/${f.name}`, url: supabase.storage.from("media").getPublicUrl(`hero/${f.name}`).data.publicUrl, created_at: f.created_at })),
-      ...(inline ?? []).map((f) => ({ name: `inline/${f.name}`, url: supabase.storage.from("media").getPublicUrl(`inline/${f.name}`).data.publicUrl, created_at: f.created_at })),
+      ...(data ?? []).map((f) => ({ name: `hero/${f.name}`, url: `/api/public/media/hero/${f.name}`, created_at: f.created_at })),
+      ...(inline ?? []).map((f) => ({ name: `inline/${f.name}`, url: `/api/public/media/inline/${f.name}`, created_at: f.created_at })),
     ];
     setItems(combine);
   }

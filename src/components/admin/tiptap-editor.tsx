@@ -33,8 +33,7 @@ export function TiptapEditor({ value, onChange }: { value: string; onChange: (ht
       const path = `inline/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
       const { error } = await supabase.storage.from("media").upload(path, file);
       if (error) { toast.error(error.message); return; }
-      const { data } = supabase.storage.from("media").getPublicUrl(path);
-      editor!.chain().focus().setImage({ src: data.publicUrl }).run();
+      editor!.chain().focus().setImage({ src: `/api/public/media/${path}` }).run();
     };
     input.click();
   }

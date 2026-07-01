@@ -60,8 +60,7 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
     const path = `hero/${Date.now()}-${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
     const { error } = await supabase.storage.from("media").upload(path, file);
     if (error) { toast.error(error.message); return; }
-    const { data } = supabase.storage.from("media").getPublicUrl(path);
-    setA((s) => ({ ...s, hero_image: data.publicUrl }));
+    setA((s) => ({ ...s, hero_image: `/api/public/media/${path}` }));
   }
 
   async function save(publish?: boolean) {
