@@ -6,6 +6,7 @@ import { NewsletterSignup } from "@/components/site/newsletter";
 import { ArticleCard } from "@/components/site/article-card";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { mediaUrl } from "@/lib/media-url";
+import { MediaImage } from "@/components/site/media-image";
 import type { Article } from "@/lib/types";
 import { SITE_URL } from "@/lib/types";
 import { format } from "date-fns";
@@ -117,10 +118,11 @@ function ArticlePage() {
             <span>{article.read_time} min read</span>
           </div>
           {article.hero_image && (
-            <img
-              src={mediaUrl(article.hero_image)}
+            <MediaImage
+              src={article.hero_image}
               alt={article.title}
               className="mt-8 aspect-[16/9] w-full rounded-xl object-cover"
+              fallbackClassName="mt-8 aspect-[16/9] w-full rounded-xl"
             />
           )}
           <div

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { Article } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
-import { mediaUrl } from "@/lib/media-url";
+import { MediaImage } from "@/components/site/media-image";
 
 export function ArticleCard({
   article,
@@ -26,16 +26,14 @@ export function ArticleCard({
         params={{ slug: article.slug }}
         className="overflow-hidden rounded-md bg-secondary"
       >
-        {article.hero_image ? (
-          <img
-            src={mediaUrl(article.hero_image)}
-            alt={article.title}
-            className={`${aspect} w-full object-cover transition duration-500 group-hover:scale-105`}
-            loading="lazy"
-          />
-        ) : (
-          <div className={`${aspect} w-full bg-gradient-to-br from-navy to-[var(--africa-surface)]`} />
-        )}
+        <MediaImage
+          src={article.hero_image}
+          alt={article.title}
+          className={`${aspect} w-full object-cover transition duration-500 group-hover:scale-105`}
+          fallbackClassName={`${aspect} w-full`}
+          loading="lazy"
+          showIcon={false}
+        />
       </Link>
       <div className={size === "sm" ? "mt-3 flex flex-col" : "mt-4 flex flex-col"}>
         {article.category && (

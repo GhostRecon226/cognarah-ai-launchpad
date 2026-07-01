@@ -7,7 +7,7 @@ import { TiptapEditor } from "@/components/admin/tiptap-editor";
 import { toast } from "sonner";
 import slugify from "slugify";
 import type { Article, Category, Author } from "@/lib/types";
-import { mediaUrl } from "@/lib/media-url";
+import { MediaImage } from "@/components/site/media-image";
 
 export const Route = createFileRoute("/_authenticated/admin/articles/$id")({
   head: () => ({ meta: [{ title: "Edit article — Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
