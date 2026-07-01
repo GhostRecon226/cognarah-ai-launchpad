@@ -9,7 +9,7 @@ import { toast } from "sonner";
 
 interface Row { id: string; title: string; slug: string; status: string; updated_at: string; category?: { name: string } | null }
 
-export const Route = createFileRoute("/_authenticated/admin/articles")({
+export const Route = createFileRoute("/_authenticated/admin/articles/")({
   head: () => ({ meta: [{ title: "Articles — Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
   component: ArticlesList,
 });
