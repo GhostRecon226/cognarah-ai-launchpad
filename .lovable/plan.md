@@ -1,23 +1,19 @@
 ## Problem
 
-Your account already has the `admin` role. The CMS still fails because a prior "lock down" migration revoked EXECUTE on `public.has_role` and `public.has_any_role` from PUBLIC/authenticated. Every RLS policy on `articles`, `user_roles`, storage, etc. calls one of these SECURITY DEFINER functions, so the Data API returns:
+SSR crashes on `/article/$slug` (and any path that touches `src/lib/sanitize.ts`) with `TypeError: Cannot read properties of undefined (reading 'bind')`. The fallback "This page didn't load" page is shown.
 
-```
-permission denied for function has_role
-permission denied for function has_any_role
-```
-
-That's why `/admin` shows access denied even though the row exists in `user_roles`.
+Root cause: `isomorphic-dompurify` lazy-loads `jsdom` on the server. `jsdom` depends on Node APIs (notably `EventTarget` / Web stream internals) that aren't available in the Cloudflare Workers runtime where the app runs, so a `.bind` call on `undefined` throws during HTML sanitization.
 
 ## Fix
 
-One migration that re-grants EXECUTE to `authenticated` (and `anon` where needed by public-read policies) on both helper functions. They're already `SECURITY DEFINER` with a pinned `search_path`, so they remain safe to expose — granting EXECUTE only lets callers ask "does user X have role Y?", not read the table directly.
+Swap the sanitizer for a Worker-compatible, pure-JS one. `sanitize-html` is the standard choice — no DOM/jsdom, works identically in Node, Workers, and the browser.
 
-```sql
-GRANT EXECUTE ON FUNCTION public.has_role(uuid, public.app_role) TO authenticated, anon;
-GRANT EXECUTE ON FUNCTION public.has_any_role(uuid, public.app_role[]) TO authenticated, anon;
-```
+### Steps
 
-## Verify
+1. `bun add sanitize-html` and `bun add -d @types/sanitize-html`. Remove `isomorphic-dompurify` from `package.json`.
+2. Rewrite `src/lib/sanitize.ts` to use `sanitize-html` with the same allow-list currently in place (tags: `p, br, strong, em, u, s, a, ul, ol, li, h1–h4, blockquote, code, pre, img, figure, figcaption, hr, span, div`; attrs: `href, src, alt, title, target, rel, class`). Preserve the `sanitizeHtml(html: string): string` signature so callers don't change.
+3. Verify by reloading `/article/<slug>` in preview — page should render the article body instead of the error fallback. Re-check server logs to confirm the `bind` TypeError stops appearing.
 
-After approval, hard-refresh `/admin`. The dashboard stat queries and role lookup should return 200 and the admin shell should load.
+### Out of scope
+
+No UI, route, RLS, or schema changes. The admin "New article" link already works (`/admin/articles/new` is handled by `articles.$id.tsx` via `id === "new"`); it only appeared broken because the same SSR error page rendered when the server entry blew up.
