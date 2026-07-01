@@ -90,10 +90,10 @@ function ArticlesListInner() {
         {loading && <div className="p-4 text-xs text-muted-foreground">Loading…</div>}
         <table className="w-full min-w-[640px]">
           <thead className="bg-secondary text-left text-xs uppercase tracking-wider text-muted-foreground">
-            <tr><th className="px-4 py-3">Title</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Updated</th><th></th></tr>
+            <tr><th className="px-4 py-3">Title</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Views</th><th className="px-4 py-3">Updated</th><th></th></tr>
           </thead>
           <tbody className="divide-y divide-border text-sm">
-            {rows.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No articles yet.</td></tr>}
+            {rows.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">No articles yet.</td></tr>}
             {rows.map((r) => (
               <tr key={r.id} className="hover:bg-secondary/50">
                 <td className="px-4 py-3"><Link to="/admin/articles/$id" params={{ id: r.id }} className="font-medium hover:text-brand">{r.title}</Link></td>
