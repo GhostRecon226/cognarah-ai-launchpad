@@ -44,7 +44,7 @@ function ArticlesListInner() {
   }
 
   return (
-    <AdminShell title="Articles">
+    <>
       <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center sm:gap-4">
         <div className="flex gap-1 self-start rounded-md border border-border bg-background p-1">
           {(["all", "published", "draft"] as const).map((f) => (
@@ -74,6 +74,6 @@ function ArticlesListInner() {
           </tbody>
         </table>
       </div>
-    </AdminShell>
+    </>
   );
 }
