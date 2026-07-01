@@ -99,6 +99,7 @@ function ArticlesListInner() {
                 <td className="px-4 py-3"><Link to="/admin/articles/$id" params={{ id: r.id }} className="font-medium hover:text-brand">{r.title}</Link></td>
                 <td className="px-4 py-3 text-muted-foreground">{r.category?.name ?? "—"}</td>
                 <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-xs ${r.status === "published" ? "bg-brand/15 text-brand" : "bg-secondary"}`}>{r.status}</span></td>
+                <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{(r.view_count ?? 0).toLocaleString()}</td>
                 <td className="px-4 py-3 text-muted-foreground">{format(new Date(r.updated_at), "MMM d, yyyy")}</td>
                 <td className="px-4 py-3 text-right">{canDelete && <button onClick={() => del(r.id)} className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></button>}</td>
               </tr>
