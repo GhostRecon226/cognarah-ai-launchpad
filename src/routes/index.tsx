@@ -7,6 +7,7 @@ import { ArticleCard } from "@/components/site/article-card";
 import type { Article } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
 import { SITE_URL } from "@/lib/types";
+import { mediaUrl } from "@/lib/media-url";
 
 async function loadHome(): Promise<{ articles: Article[]; africa: Article | null }> {
   const { data: articles } = await supabase
@@ -76,7 +77,7 @@ function HomePage() {
                 >
                   {lead.hero_image && (
                     <img
-                      src={lead.hero_image}
+                      src={mediaUrl(lead.hero_image)}
                       alt={lead.title}
                       className="aspect-[16/10] w-full object-cover"
                     />
@@ -221,7 +222,7 @@ function HomePage() {
                 >
                   {africa.hero_image && (
                     <img
-                      src={africa.hero_image}
+                      src={mediaUrl(africa.hero_image)}
                       alt={africa.title}
                       className="aspect-[16/9] w-full object-cover"
                     />

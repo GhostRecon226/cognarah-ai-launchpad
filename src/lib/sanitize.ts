@@ -1,4 +1,5 @@
 import sanitizeHtmlLib from "sanitize-html";
+import { mediaUrl } from "./media-url";
 
 export function sanitizeHtml(html: string): string {
   return sanitizeHtmlLib(html, {
@@ -14,5 +15,11 @@ export function sanitizeHtml(html: string): string {
     },
     allowedSchemes: ["http", "https", "mailto", "data"],
     allowedSchemesByTag: { img: ["http", "https", "data"] },
+    transformTags: {
+      img: (tagName, attribs) => ({
+        tagName,
+        attribs: { ...attribs, src: mediaUrl(attribs.src) || attribs.src },
+      }),
+    },
   });
 }

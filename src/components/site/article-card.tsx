@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import type { Article } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
+import { mediaUrl } from "@/lib/media-url";
 
 export function ArticleCard({
   article,
@@ -27,7 +28,7 @@ export function ArticleCard({
       >
         {article.hero_image ? (
           <img
-            src={article.hero_image}
+            src={mediaUrl(article.hero_image)}
             alt={article.title}
             className={`${aspect} w-full object-cover transition duration-500 group-hover:scale-105`}
             loading="lazy"
