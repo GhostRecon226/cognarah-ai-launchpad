@@ -25,8 +25,10 @@ import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminMediaRouteImport } from './routes/_authenticated/admin/media'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
 import { Route as AuthenticatedAdminAuthorsRouteImport } from './routes/_authenticated/admin/authors'
+import { Route as AuthenticatedAdminAgentRouteImport } from './routes/_authenticated/admin/agent'
 import { Route as AuthenticatedAdminArticlesIndexRouteImport } from './routes/_authenticated/admin/articles.index'
 import { Route as ApiPublicMediaSplatRouteImport } from './routes/api/public/media.$'
+import { Route as ApiPublicHooksAgentRunRouteImport } from './routes/api/public/hooks/agent-run'
 import { Route as AuthenticatedAdminArticlesIdRouteImport } from './routes/_authenticated/admin/articles.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -111,6 +113,11 @@ const AuthenticatedAdminAuthorsRoute =
     path: '/admin/authors',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminAgentRoute = AuthenticatedAdminAgentRouteImport.update({
+  id: '/admin/agent',
+  path: '/admin/agent',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedAdminArticlesIndexRoute =
   AuthenticatedAdminArticlesIndexRouteImport.update({
     id: '/admin/articles/',
@@ -120,6 +127,11 @@ const AuthenticatedAdminArticlesIndexRoute =
 const ApiPublicMediaSplatRoute = ApiPublicMediaSplatRouteImport.update({
   id: '/api/public/media/$',
   path: '/api/public/media/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPublicHooksAgentRunRoute = ApiPublicHooksAgentRunRouteImport.update({
+  id: '/api/public/hooks/agent-run',
+  path: '/api/public/hooks/agent-run',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminArticlesIdRoute =
@@ -139,6 +151,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/admin/agent': typeof AuthenticatedAdminAgentRoute
   '/admin/authors': typeof AuthenticatedAdminAuthorsRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/media': typeof AuthenticatedAdminMediaRoute
@@ -146,6 +159,7 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
+  '/api/public/hooks/agent-run': typeof ApiPublicHooksAgentRunRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/admin/articles/': typeof AuthenticatedAdminArticlesIndexRoute
 }
@@ -159,6 +173,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/admin/agent': typeof AuthenticatedAdminAgentRoute
   '/admin/authors': typeof AuthenticatedAdminAuthorsRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/media': typeof AuthenticatedAdminMediaRoute
@@ -166,6 +181,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
+  '/api/public/hooks/agent-run': typeof ApiPublicHooksAgentRunRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/admin/articles': typeof AuthenticatedAdminArticlesIndexRoute
 }
@@ -181,6 +197,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/_authenticated/admin/agent': typeof AuthenticatedAdminAgentRoute
   '/_authenticated/admin/authors': typeof AuthenticatedAdminAuthorsRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/media': typeof AuthenticatedAdminMediaRoute
@@ -188,6 +205,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
+  '/api/public/hooks/agent-run': typeof ApiPublicHooksAgentRunRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/_authenticated/admin/articles/': typeof AuthenticatedAdminArticlesIndexRoute
 }
@@ -203,6 +221,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/article/$slug'
     | '/category/$slug'
+    | '/admin/agent'
     | '/admin/authors'
     | '/admin/categories'
     | '/admin/media'
@@ -210,6 +229,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin/'
     | '/admin/articles/$id'
+    | '/api/public/hooks/agent-run'
     | '/api/public/media/$'
     | '/admin/articles/'
   fileRoutesByTo: FileRoutesByTo
@@ -223,6 +243,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/article/$slug'
     | '/category/$slug'
+    | '/admin/agent'
     | '/admin/authors'
     | '/admin/categories'
     | '/admin/media'
@@ -230,6 +251,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin'
     | '/admin/articles/$id'
+    | '/api/public/hooks/agent-run'
     | '/api/public/media/$'
     | '/admin/articles'
   id:
@@ -244,6 +266,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/article/$slug'
     | '/category/$slug'
+    | '/_authenticated/admin/agent'
     | '/_authenticated/admin/authors'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/media'
@@ -251,6 +274,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/users'
     | '/_authenticated/admin/'
     | '/_authenticated/admin/articles/$id'
+    | '/api/public/hooks/agent-run'
     | '/api/public/media/$'
     | '/_authenticated/admin/articles/'
   fileRoutesById: FileRoutesById
@@ -266,6 +290,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ArticleSlugRoute: typeof ArticleSlugRoute
   CategorySlugRoute: typeof CategorySlugRoute
+  ApiPublicHooksAgentRunRoute: typeof ApiPublicHooksAgentRunRoute
   ApiPublicMediaSplatRoute: typeof ApiPublicMediaSplatRoute
 }
 
@@ -383,6 +408,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuthorsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/agent': {
+      id: '/_authenticated/admin/agent'
+      path: '/admin/agent'
+      fullPath: '/admin/agent'
+      preLoaderRoute: typeof AuthenticatedAdminAgentRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/articles/': {
       id: '/_authenticated/admin/articles/'
       path: '/admin/articles'
@@ -397,6 +429,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMediaSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/agent-run': {
+      id: '/api/public/hooks/agent-run'
+      path: '/api/public/hooks/agent-run'
+      fullPath: '/api/public/hooks/agent-run'
+      preLoaderRoute: typeof ApiPublicHooksAgentRunRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/admin/articles/$id': {
       id: '/_authenticated/admin/articles/$id'
       path: '/admin/articles/$id'
@@ -408,6 +447,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminAgentRoute: typeof AuthenticatedAdminAgentRoute
   AuthenticatedAdminAuthorsRoute: typeof AuthenticatedAdminAuthorsRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminMediaRoute: typeof AuthenticatedAdminMediaRoute
@@ -419,6 +459,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminAgentRoute: AuthenticatedAdminAgentRoute,
   AuthenticatedAdminAuthorsRoute: AuthenticatedAdminAuthorsRoute,
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedAdminMediaRoute: AuthenticatedAdminMediaRoute,
@@ -443,6 +484,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ArticleSlugRoute: ArticleSlugRoute,
   CategorySlugRoute: CategorySlugRoute,
+  ApiPublicHooksAgentRunRoute: ApiPublicHooksAgentRunRoute,
   ApiPublicMediaSplatRoute: ApiPublicMediaSplatRoute,
 }
 export const routeTree = rootRouteImport
