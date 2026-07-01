@@ -79,7 +79,15 @@ function ArticlesListInner() {
           <Plus className="h-4 w-4" /> New article
         </Link>
       </div>
+      {loadError && (
+        <div className="mt-4 rounded-md border border-destructive/40 bg-destructive/10 p-4 text-sm">
+          <div className="font-semibold text-destructive">Failed to load articles</div>
+          <pre className="mt-2 whitespace-pre-wrap break-words text-xs text-destructive/90">{loadError}</pre>
+          <button onClick={load} className="mt-3 rounded-md border border-destructive/40 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10">Retry</button>
+        </div>
+      )}
       <div className="mt-6 overflow-x-auto rounded-lg border border-border bg-background">
+        {loading && <div className="p-4 text-xs text-muted-foreground">Loading…</div>}
         <table className="w-full min-w-[640px]">
           <thead className="bg-secondary text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr><th className="px-4 py-3">Title</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Status</th><th className="px-4 py-3">Updated</th><th></th></tr>
