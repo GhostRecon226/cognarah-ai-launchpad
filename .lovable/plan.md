@@ -1,31 +1,37 @@
-## Problem
+## Plan
 
-`/admin/articles` crashes with `useRoles must be used inside AdminShell` (visible in console logs). The `ArticlesList` component calls `useRoles()` at its top level, but `AdminShell` (which provides the roles context) is rendered *inside* its return — so the hook runs before the provider exists.
+Add per-article view counts, incremented on each public article page load, and shown in the admin articles list.
 
-The articles table is fine (it exists, with all needed columns) and Supabase is connected. This is purely a component-structure bug — the same pattern that was fixed previously for the edit page, but `articles.index.tsx` was left in the broken shape.
+### 1. Database
 
-## Fix
+Migration:
+- Add `view_count integer NOT NULL DEFAULT 0` to `public.articles`.
+- Create `public.increment_article_views(_slug text)` — SECURITY DEFINER, `SET search_path = public`. Updates `view_count = view_count + 1` where `slug = _slug AND status = 'published'`. Returns void.
+- `GRANT EXECUTE ON FUNCTION public.increment_article_views(text) TO anon, authenticated;`
 
-Refactor `src/routes/_authenticated/admin/articles.index.tsx` so `useRoles()` is called from an inner component wrapped by `AdminShell`:
+Using an RPC avoids needing a broad UPDATE RLS policy on `articles` and works for anonymous readers.
 
-```
-function ArticlesList() {
-  return (
-    <AdminShell title="Articles">
-      <ArticlesListInner />
-    </AdminShell>
-  );
-}
+### 2. Increment on article load
 
-function ArticlesListInner() {
-  const { hasAny } = useRoles();
-  // ...existing state, load(), del(), and JSX (minus the AdminShell wrapper)
-}
+In `src/routes/article.$slug.tsx`, inside `loadArticle`, after confirming the article exists, call:
+
+```ts
+await supabase.rpc("increment_article_views", { _slug: slug });
 ```
 
-No other files change. No DB changes — the `articles` table and all referenced columns already exist.
+Fire-and-forget style (wrapped so an error can't break the page load). Runs during the loader on both SSR and client navigations — each page load counts once. No dedupe (matches the "each time the article page is loaded" spec).
 
-## Out of scope
+### 3. Admin list display
 
-- Adding a `source_url` column or recreating the `articles` table: current schema already has `source_urls text[]` used by the agent; a scalar `source_url` isn't needed and would conflict.
-- Broader error-boundary work: the route already inherits `errorComponent` from the root; once the context bug is fixed the page renders normally (including the existing empty-state row "No articles yet.").
+In `src/routes/_authenticated/admin/articles.index.tsx`:
+- Add `view_count` to the select and to the `Row` interface.
+- Add a "Views" column between Status and Updated, right-aligned numeric, formatted with `toLocaleString()`.
+
+### 4. Types
+
+Add `view_count: number` to the `Article` interface in `src/lib/types.ts`. Supabase `types.ts` is auto-regenerated after the migration.
+
+### Out of scope
+
+- Deduping views per session/IP.
+- Analytics dashboards, trending sorts, or public view badges on article cards.
