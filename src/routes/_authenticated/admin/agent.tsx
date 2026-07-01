@@ -201,8 +201,8 @@ function AgentInner() {
             </thead>
             <tbody className="divide-y divide-border">
               {runs.map((r) => (
-                <>
-                  <tr key={r.id}>
+                <Fragment key={r.id}>
+                  <tr>
                     <td className="py-2">{format(new Date(r.started_at), "MMM d, HH:mm")}</td>
                     <td>{r.trigger}</td>
                     <td className="text-muted-foreground">{r.focus ?? "—"}</td>
@@ -213,14 +213,14 @@ function AgentInner() {
                     <td><button onClick={() => setExpandedRun(expandedRun === r.id ? null : r.id)} className="text-xs text-brand hover:underline">{expandedRun === r.id ? "hide" : "log"}</button></td>
                   </tr>
                   {expandedRun === r.id && (
-                    <tr key={r.id + "-log"}>
+                    <tr>
                       <td colSpan={6} className="bg-secondary/40 p-3">
                         {r.error && <div className="mb-2 text-xs text-rose-700">Error: {r.error}</div>}
                         <pre className="max-h-64 overflow-auto whitespace-pre-wrap text-[11px] text-muted-foreground">{r.log || "(no log)"}</pre>
                       </td>
                     </tr>
                   )}
-                </>
+                </Fragment>
               ))}
               {runs.length === 0 && <tr><td colSpan={6} className="py-6 text-center text-muted-foreground">No runs yet.</td></tr>}
             </tbody>
