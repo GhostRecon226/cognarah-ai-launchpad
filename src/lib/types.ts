@@ -32,6 +32,7 @@ export interface Article {
   meta_description: string | null;
   read_time: number;
   status: "draft" | "published";
+  view_count: number;
   is_featured: boolean;
   published_at: string | null;
   created_at: string;
