@@ -1,52 +1,61 @@
-# Signed URLs for the private `media` bucket
 
-Keep the `media` bucket private and serve every image through a stable app URL that redirects to a fresh signed URL on each request. This way stored URLs never expire and nothing in the DB needs re-migration when tokens rotate.
+# AI News Curation Agent
 
-## 1. New public server route: `/api/public/media/$`
+Build an agent that discovers AI news from the web, writes full articles, attaches a hero image, and saves everything as a **draft** in the CMS. You keep full editorial control — nothing publishes until you flip the status to Published.
 
-File: `src/routes/api/public/media.$.ts`
+## How it works
 
-- `GET` handler takes the splat as the storage path (e.g. `hero/abc.jpg`).
-- Loads `supabaseAdmin` inside the handler and calls `storage.from("media").createSignedUrl(path, 3600)`.
-- Returns `302` redirect to the signed URL with `Cache-Control: public, max-age=1800` so browsers/CDN reuse the redirect for 30 min (well under the 1h signature).
-- 404 on missing path or Supabase error.
+1. **Sources**
+   - Web search via **Firecrawl** (broad live discovery across the web for AI news, events, funding, Africa AI).
+   - Plus a **Trusted Sources** list you manage in the CMS (RSS feeds / domains like TechCrunch AI, MIT Tech Review, The Verge AI, etc.). Broad search + trusted sources both feed the same pipeline.
 
-This is safe to expose publicly: it only serves objects from the `media` bucket, which we already intended to be publicly viewable.
+2. **Triggers**
+   - **Scheduled**: runs automatically on a cron schedule you set (e.g. daily at 7am).
+   - **Manual**: a "Generate Drafts" button in `/admin` where you can pick a topic/category, a source preset, and go.
 
-## 2. Store stable paths on upload
+3. **Per run**
+   - Produces **1–3 draft articles** (you configure the exact count per run).
+   - Each draft gets: title, dek/subtitle, category, tags, full body (~500–900 words) in rich HTML compatible with the Tiptap editor, SEO title + meta description, source citations, and a hero image.
 
-Replace every `getPublicUrl(path).data.publicUrl` with `/api/public/media/${path}` in:
+4. **Images**
+   - Try to pull the source article's hero image first (via Firecrawl scrape → open graph / main image).
+   - Store it in the `media` bucket via the signed-URL proxy already in place.
+   - If unavailable or unusable → fall back to **AI-generated image** (Lovable AI: `google/gemini-3.1-flash-image` / Nano Banana 2), styled to match Cognarah's editorial look.
 
-- `src/components/admin/tiptap-editor.tsx` (inline image insert)
-- `src/routes/_authenticated/admin/articles.$id.tsx` (cover image upload)
-- `src/routes/_authenticated/admin/media.tsx` (media library previews)
+5. **De-duplication**
+   - New `agent_runs` and `agent_seen_sources` tables track URLs already ingested so the agent never drafts the same story twice.
 
-Upload calls themselves stay the same.
+6. **Safety rails**
+   - All output saved as `status = 'draft'` — never auto-publishes.
+   - Every draft shows a "Curated by AI" badge in the article list plus source URLs, so you can verify before publishing.
+   - Admin-only: only users with `admin` or `editor` role can trigger runs.
 
-## 3. Backward-compat for existing DB rows
+## What you'll see in the CMS
 
-Some articles/cover images may already contain the old `.../storage/v1/object/public/media/<path>` URLs. Add a tiny helper:
+- **New page `/admin/agent`**
+  - "Run Now" button (choose count 1–3, optional category/topic).
+  - Recent runs table: timestamp, drafts created, status, errors.
+  - Schedule settings: enable/disable, cron expression, default count, default category focus.
+  - Trusted sources manager: add/remove RSS feeds and domains.
+- **Article list** shows an "AI Draft" tag for agent-generated posts.
 
-```ts
-// src/lib/media-url.ts
-export function mediaUrl(input?: string | null): string {
-  if (!input) return "";
-  const m = input.match(/\/storage\/v1\/object\/(?:public|sign)\/media\/([^?]+)/);
-  if (m) return `/api/public/media/${m[1]}`;
-  return input;
-}
-```
+## Technical outline (for reference)
 
-Use `mediaUrl(...)` when rendering:
-- article cover images on home, category, article, search pages
-- inline `<img src>` inside article HTML — sanitize step already runs; extend `src/lib/sanitize.ts` to rewrite `src` attributes through `mediaUrl` after sanitization.
+- **Firecrawl connector** — link via `standard_connectors--connect` for search + scrape.
+- **DB additions** (single migration): `agent_settings`, `agent_sources`, `agent_runs`, `agent_drafts_log` (dedupe by URL hash); `articles` gets nullable `agent_run_id` + `source_urls text[]`.
+- **Server functions** (`src/lib/agent.functions.ts`, admin-gated via `requireSupabaseAuth` + `has_role`):
+  - `runAgent({ count, category? })` — orchestrates: search → scrape top N → LLM curation → image → insert draft.
+  - `listRuns`, `getSettings`, `updateSettings`, `listSources`, `addSource`, `removeSource`.
+- **LLM**: `google/gemini-3-flash-preview` for curation & writing (structured output via `Output.object` for title/dek/body/tags/SEO). Prompt is Cognarah editorial voice, no plagiarism (rewrites in own words), always cites sources at the bottom.
+- **Image pipeline**: Firecrawl scrape returns metadata → download → upload to `media` bucket → store storage path. Fallback: call Lovable AI image endpoint → upload result → store path. Uses existing `MediaImage` + signed-URL proxy.
+- **Cron**: `/api/public/hooks/agent-run` route (apikey-auth) + `pg_cron` job created from `agent_settings.cron_expression`.
+- **Draft insert**: matches existing `articles` schema (status='draft', author = a dedicated "Cognarah AI" author row auto-seeded in the migration).
 
-## 4. No bucket change required
+## Setup you'll need to do
 
-Bucket stays private, so no workspace policy change is needed. If public buckets ever get enabled later, this route keeps working unchanged.
+1. Confirm plan → I run the migration and scaffold the code.
+2. Link the **Firecrawl** connector when I prompt (one click).
+3. Open `/admin/agent`, hit "Run Now" for a test → review the drafts in `/admin/articles`.
+4. Enable the schedule when you're happy with output quality.
 
-## Technical notes
-
-- `supabaseAdmin` must be loaded via `await import("@/integrations/supabase/client.server")` inside the handler (route files are client-reachable).
-- `/api/public/*` bypasses auth on published sites — intentional here.
-- Redirect (302) rather than proxying bytes keeps the Worker cheap and lets the browser/CDN cache the image directly from Supabase.
+Say the word and I'll build it.
