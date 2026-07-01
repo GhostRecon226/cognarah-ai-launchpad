@@ -5,6 +5,7 @@ import { SiteFooter } from "@/components/site/footer";
 import { NewsletterSignup } from "@/components/site/newsletter";
 import { ArticleCard } from "@/components/site/article-card";
 import { sanitizeHtml } from "@/lib/sanitize";
+import { mediaUrl } from "@/lib/media-url";
 import type { Article } from "@/lib/types";
 import { SITE_URL } from "@/lib/types";
 import { format } from "date-fns";
@@ -50,8 +51,8 @@ export const Route = createFileRoute("/article/$slug")({
         { property: "og:type", content: "article" },
         { property: "og:url", content: url },
         ...(a?.hero_image ? [
-          { property: "og:image", content: a.hero_image },
-          { name: "twitter:image", content: a.hero_image },
+          { property: "og:image", content: mediaUrl(a.hero_image, SITE_URL) },
+          { name: "twitter:image", content: mediaUrl(a.hero_image, SITE_URL) },
           { name: "twitter:card", content: "summary_large_image" },
         ] : []),
       ],
@@ -62,7 +63,7 @@ export const Route = createFileRoute("/article/$slug")({
           "@context": "https://schema.org",
           "@type": "Article",
           headline: a.title,
-          image: a.hero_image ? [a.hero_image] : undefined,
+          image: a.hero_image ? [mediaUrl(a.hero_image, SITE_URL)] : undefined,
           datePublished: a.published_at,
           author: a.author ? { "@type": "Person", name: a.author.name } : undefined,
           publisher: { "@type": "Organization", name: "Cognarah" },
@@ -117,7 +118,7 @@ function ArticlePage() {
           </div>
           {article.hero_image && (
             <img
-              src={article.hero_image}
+              src={mediaUrl(article.hero_image)}
               alt={article.title}
               className="mt-8 aspect-[16/9] w-full rounded-xl object-cover"
             />

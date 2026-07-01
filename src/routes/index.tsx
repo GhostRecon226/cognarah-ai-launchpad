@@ -7,6 +7,7 @@ import { ArticleCard } from "@/components/site/article-card";
 import type { Article } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
 import { SITE_URL } from "@/lib/types";
+import { mediaUrl } from "@/lib/media-url";
 
 async function loadHome(): Promise<{ articles: Article[]; africa: Article | null }> {
   const { data: articles } = await supabase

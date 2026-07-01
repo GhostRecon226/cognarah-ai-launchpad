@@ -108,7 +108,7 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
           </div>
           <div className="rounded-lg border border-border bg-background p-4 space-y-3">
             <h3 className="text-sm font-semibold">Hero image</h3>
-            {a.hero_image && <img src={a.hero_image} alt="" className="aspect-video w-full rounded object-cover" />}
+            {a.hero_image && <img src={mediaUrl(a.hero_image)} alt="" className="aspect-video w-full rounded object-cover" />}
             <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && uploadHero(e.target.files[0])} className="block w-full text-xs" />
             <input placeholder="…or paste image URL" value={a.hero_image ?? ""} onChange={(e) => setA({ ...a, hero_image: e.target.value })} className="w-full rounded border border-border bg-background px-2 py-1.5 text-xs" />
           </div>
