@@ -27,6 +27,7 @@ import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminAuthorsRouteImport } from './routes/_authenticated/admin/authors'
 import { Route as AuthenticatedAdminArticlesIndexRouteImport } from './routes/_authenticated/admin/articles.index'
 import { Route as ApiPublicMediaSplatRouteImport } from './routes/api/public/media.$'
+import { Route as ApiPublicHooksAgentRunRouteImport } from './routes/api/public/hooks/agent-run'
 import { Route as AuthenticatedAdminArticlesIdRouteImport } from './routes/_authenticated/admin/articles.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -122,6 +123,11 @@ const ApiPublicMediaSplatRoute = ApiPublicMediaSplatRouteImport.update({
   path: '/api/public/media/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksAgentRunRoute = ApiPublicHooksAgentRunRouteImport.update({
+  id: '/api/public/hooks/agent-run',
+  path: '/api/public/hooks/agent-run',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAdminArticlesIdRoute =
   AuthenticatedAdminArticlesIdRouteImport.update({
     id: '/admin/articles/$id',
@@ -146,6 +152,7 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
+  '/api/public/hooks/agent-run': typeof ApiPublicHooksAgentRunRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/admin/articles/': typeof AuthenticatedAdminArticlesIndexRoute
 }
@@ -166,6 +173,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
+  '/api/public/hooks/agent-run': typeof ApiPublicHooksAgentRunRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/admin/articles': typeof AuthenticatedAdminArticlesIndexRoute
 }
@@ -188,6 +196,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
+  '/api/public/hooks/agent-run': typeof ApiPublicHooksAgentRunRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/_authenticated/admin/articles/': typeof AuthenticatedAdminArticlesIndexRoute
 }
@@ -210,6 +219,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin/'
     | '/admin/articles/$id'
+    | '/api/public/hooks/agent-run'
     | '/api/public/media/$'
     | '/admin/articles/'
   fileRoutesByTo: FileRoutesByTo
@@ -230,6 +240,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin'
     | '/admin/articles/$id'
+    | '/api/public/hooks/agent-run'
     | '/api/public/media/$'
     | '/admin/articles'
   id:
@@ -251,6 +262,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/users'
     | '/_authenticated/admin/'
     | '/_authenticated/admin/articles/$id'
+    | '/api/public/hooks/agent-run'
     | '/api/public/media/$'
     | '/_authenticated/admin/articles/'
   fileRoutesById: FileRoutesById
@@ -266,6 +278,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ArticleSlugRoute: typeof ArticleSlugRoute
   CategorySlugRoute: typeof CategorySlugRoute
+  ApiPublicHooksAgentRunRoute: typeof ApiPublicHooksAgentRunRoute
   ApiPublicMediaSplatRoute: typeof ApiPublicMediaSplatRoute
 }
 
@@ -397,6 +410,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMediaSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/agent-run': {
+      id: '/api/public/hooks/agent-run'
+      path: '/api/public/hooks/agent-run'
+      fullPath: '/api/public/hooks/agent-run'
+      preLoaderRoute: typeof ApiPublicHooksAgentRunRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/admin/articles/$id': {
       id: '/_authenticated/admin/articles/$id'
       path: '/admin/articles/$id'
@@ -443,6 +463,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ArticleSlugRoute: ArticleSlugRoute,
   CategorySlugRoute: CategorySlugRoute,
+  ApiPublicHooksAgentRunRoute: ApiPublicHooksAgentRunRoute,
   ApiPublicMediaSplatRoute: ApiPublicMediaSplatRoute,
 }
 export const routeTree = rootRouteImport
