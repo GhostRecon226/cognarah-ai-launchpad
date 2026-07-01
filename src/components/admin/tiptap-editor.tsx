@@ -9,6 +9,7 @@ import { toast } from "sonner";
 
 export function TiptapEditor({ value, onChange }: { value: string; onChange: (html: string) => void }) {
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
       StarterKit,
       Image,

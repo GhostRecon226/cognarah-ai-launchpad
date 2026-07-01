@@ -25,7 +25,7 @@ import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminMediaRouteImport } from './routes/_authenticated/admin/media'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
 import { Route as AuthenticatedAdminAuthorsRouteImport } from './routes/_authenticated/admin/authors'
-import { Route as AuthenticatedAdminArticlesRouteImport } from './routes/_authenticated/admin/articles'
+import { Route as AuthenticatedAdminArticlesIndexRouteImport } from './routes/_authenticated/admin/articles.index'
 import { Route as AuthenticatedAdminArticlesIdRouteImport } from './routes/_authenticated/admin/articles.$id'
 
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -110,17 +110,17 @@ const AuthenticatedAdminAuthorsRoute =
     path: '/admin/authors',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAdminArticlesRoute =
-  AuthenticatedAdminArticlesRouteImport.update({
-    id: '/admin/articles',
-    path: '/admin/articles',
+const AuthenticatedAdminArticlesIndexRoute =
+  AuthenticatedAdminArticlesIndexRouteImport.update({
+    id: '/admin/articles/',
+    path: '/admin/articles/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAdminArticlesIdRoute =
   AuthenticatedAdminArticlesIdRouteImport.update({
-    id: '/$id',
-    path: '/$id',
-    getParentRoute: () => AuthenticatedAdminArticlesRoute,
+    id: '/admin/articles/$id',
+    path: '/admin/articles/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -133,7 +133,6 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/category/$slug': typeof CategorySlugRoute
-  '/admin/articles': typeof AuthenticatedAdminArticlesRouteWithChildren
   '/admin/authors': typeof AuthenticatedAdminAuthorsRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/media': typeof AuthenticatedAdminMediaRoute
@@ -141,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
+  '/admin/articles/': typeof AuthenticatedAdminArticlesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -152,7 +152,6 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/category/$slug': typeof CategorySlugRoute
-  '/admin/articles': typeof AuthenticatedAdminArticlesRouteWithChildren
   '/admin/authors': typeof AuthenticatedAdminAuthorsRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/media': typeof AuthenticatedAdminMediaRoute
@@ -160,6 +159,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
+  '/admin/articles': typeof AuthenticatedAdminArticlesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -173,7 +173,6 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/category/$slug': typeof CategorySlugRoute
-  '/_authenticated/admin/articles': typeof AuthenticatedAdminArticlesRouteWithChildren
   '/_authenticated/admin/authors': typeof AuthenticatedAdminAuthorsRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/media': typeof AuthenticatedAdminMediaRoute
@@ -181,6 +180,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
+  '/_authenticated/admin/articles/': typeof AuthenticatedAdminArticlesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -194,7 +194,6 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/article/$slug'
     | '/category/$slug'
-    | '/admin/articles'
     | '/admin/authors'
     | '/admin/categories'
     | '/admin/media'
@@ -202,6 +201,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin/'
     | '/admin/articles/$id'
+    | '/admin/articles/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -213,7 +213,6 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/article/$slug'
     | '/category/$slug'
-    | '/admin/articles'
     | '/admin/authors'
     | '/admin/categories'
     | '/admin/media'
@@ -221,6 +220,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/admin'
     | '/admin/articles/$id'
+    | '/admin/articles'
   id:
     | '__root__'
     | '/'
@@ -233,7 +233,6 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/article/$slug'
     | '/category/$slug'
-    | '/_authenticated/admin/articles'
     | '/_authenticated/admin/authors'
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/media'
@@ -241,6 +240,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/users'
     | '/_authenticated/admin/'
     | '/_authenticated/admin/articles/$id'
+    | '/_authenticated/admin/articles/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -370,55 +370,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuthorsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/admin/articles': {
-      id: '/_authenticated/admin/articles'
+    '/_authenticated/admin/articles/': {
+      id: '/_authenticated/admin/articles/'
       path: '/admin/articles'
-      fullPath: '/admin/articles'
-      preLoaderRoute: typeof AuthenticatedAdminArticlesRouteImport
+      fullPath: '/admin/articles/'
+      preLoaderRoute: typeof AuthenticatedAdminArticlesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/articles/$id': {
       id: '/_authenticated/admin/articles/$id'
-      path: '/$id'
+      path: '/admin/articles/$id'
       fullPath: '/admin/articles/$id'
       preLoaderRoute: typeof AuthenticatedAdminArticlesIdRouteImport
-      parentRoute: typeof AuthenticatedAdminArticlesRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
-interface AuthenticatedAdminArticlesRouteChildren {
-  AuthenticatedAdminArticlesIdRoute: typeof AuthenticatedAdminArticlesIdRoute
-}
-
-const AuthenticatedAdminArticlesRouteChildren: AuthenticatedAdminArticlesRouteChildren =
-  {
-    AuthenticatedAdminArticlesIdRoute: AuthenticatedAdminArticlesIdRoute,
-  }
-
-const AuthenticatedAdminArticlesRouteWithChildren =
-  AuthenticatedAdminArticlesRoute._addFileChildren(
-    AuthenticatedAdminArticlesRouteChildren,
-  )
-
 interface AuthenticatedRouteRouteChildren {
-  AuthenticatedAdminArticlesRoute: typeof AuthenticatedAdminArticlesRouteWithChildren
   AuthenticatedAdminAuthorsRoute: typeof AuthenticatedAdminAuthorsRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminMediaRoute: typeof AuthenticatedAdminMediaRoute
   AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
+  AuthenticatedAdminArticlesIdRoute: typeof AuthenticatedAdminArticlesIdRoute
+  AuthenticatedAdminArticlesIndexRoute: typeof AuthenticatedAdminArticlesIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
-  AuthenticatedAdminArticlesRoute: AuthenticatedAdminArticlesRouteWithChildren,
   AuthenticatedAdminAuthorsRoute: AuthenticatedAdminAuthorsRoute,
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedAdminMediaRoute: AuthenticatedAdminMediaRoute,
   AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
+  AuthenticatedAdminArticlesIdRoute: AuthenticatedAdminArticlesIdRoute,
+  AuthenticatedAdminArticlesIndexRoute: AuthenticatedAdminArticlesIndexRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
