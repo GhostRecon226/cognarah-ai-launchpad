@@ -16,6 +16,14 @@ export const Route = createFileRoute("/_authenticated/admin/articles/$id")({
 function EditArticle() {
   const { id } = useParams({ from: "/_authenticated/admin/articles/$id" });
   const isNew = id === "new";
+  return (
+    <AdminShell title={isNew ? "New article" : "Edit article"}>
+      <EditArticleInner id={id} isNew={isNew} />
+    </AdminShell>
+  );
+}
+
+function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
   const navigate = useNavigate();
   const { userId, hasAny } = useRoles();
   const canPublish = hasAny(["admin", "editor"]);
@@ -81,8 +89,7 @@ function EditArticle() {
   }
 
   return (
-    <AdminShell title={isNew ? "New article" : "Edit article"}>
-      <div className="grid gap-6 lg:grid-cols-3">
+    <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
           <input placeholder="Title" value={a.title ?? ""} onChange={(e) => setA({ ...a, title: e.target.value, slug: a.slug || slugify(e.target.value, { lower: true, strict: true }) })} className="w-full rounded-md border border-border bg-background px-4 py-3 text-2xl font-bold outline-none focus:ring-2 focus:ring-brand" />
           <input placeholder="article-slug" value={a.slug ?? ""} onChange={(e) => setA({ ...a, slug: e.target.value })} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-brand" />
@@ -137,6 +144,5 @@ function EditArticle() {
           </div>
         </aside>
       </div>
-    </AdminShell>
   );
 }
