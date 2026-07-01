@@ -15,6 +15,14 @@ export const Route = createFileRoute("/_authenticated/admin/articles/")({
 });
 
 function ArticlesList() {
+  return (
+    <AdminShell title="Articles">
+      <ArticlesListInner />
+    </AdminShell>
+  );
+}
+
+function ArticlesListInner() {
   const { hasAny } = useRoles();
   const canDelete = hasAny(["admin", "editor"]);
   const [rows, setRows] = useState<Row[]>([]);
