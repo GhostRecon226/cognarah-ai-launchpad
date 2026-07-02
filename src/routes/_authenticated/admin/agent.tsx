@@ -64,11 +64,23 @@ function AgentInner() {
   const [focus, setFocus] = useState("");
   const [newSrc, setNewSrc] = useState({ label: "", kind: "domain" as "domain" | "rss" | "url", value: "" });
   const [expandedRun, setExpandedRun] = useState<string | null>(null);
+  const [presetsText, setPresetsText] = useState("");
 
   async function loadAll() {
     try {
       const [s, src, r] = await Promise.all([_getSettings(), _listSources(), _listRuns()]);
-      setSettings(s as Settings);
+      const raw = (s ?? {}) as Partial<Settings>;
+      const normalized: Settings = {
+        enabled: !!raw.enabled,
+        cron_expression: raw.cron_expression ?? "0 7 * * *",
+        default_count: raw.default_count ?? 2,
+        default_focus: raw.default_focus ?? null,
+        system_prompt: raw.system_prompt ?? null,
+        search_time_window: (raw.search_time_window as Settings["search_time_window"]) ?? "qdr:w",
+        query_presets: Array.isArray(raw.query_presets) ? raw.query_presets : [],
+      };
+      setSettings(normalized);
+      setPresetsText(normalized.query_presets.join("\n"));
       setSources(src as Source[]);
       setRuns(r as Run[]);
     } catch (e: any) {
@@ -80,10 +92,13 @@ function AgentInner() {
   async function saveSettings() {
     if (!settings) return;
     try {
-      await _updateSettings({ data: settings });
+      const query_presets = presetsText.split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 20);
+      await _updateSettings({ data: { ...settings, query_presets } });
+      setSettings({ ...settings, query_presets });
       toast.success("Settings saved");
     } catch (e: any) { toast.error(e?.message); }
   }
+
 
   async function doRun() {
     setRunning(true);
