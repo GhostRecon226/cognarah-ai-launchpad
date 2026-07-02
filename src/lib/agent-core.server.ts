@@ -217,7 +217,7 @@ async function generateAiImage(title: string, dek: string): Promise<Buffer | nul
   }
 }
 
-async function downloadImage(url: string): Promise<{ buf: Buffer; contentType: string } | null> {
+export async function downloadImage(url: string): Promise<{ buf: Buffer; contentType: string } | null> {
   try {
     const res = await fetch(url, { headers: { "User-Agent": "CognarahBot/1.0" } });
     if (!res.ok) return null;
@@ -231,7 +231,7 @@ async function downloadImage(url: string): Promise<{ buf: Buffer; contentType: s
   }
 }
 
-async function uploadToMedia(buf: Buffer, contentType: string, slug: string): Promise<string | null> {
+export async function uploadToMedia(buf: Buffer, contentType: string, slug: string): Promise<string | null> {
   const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
   const ext = contentType.includes("png") ? "png" : contentType.includes("webp") ? "webp" : "jpg";
   const path = `hero/agent/${Date.now()}-${slug}.${ext}`;
@@ -245,6 +245,10 @@ async function uploadToMedia(buf: Buffer, contentType: string, slug: string): Pr
   }
   return `/api/public/media/${path}`;
 }
+
+// Re-exports for use by regenerate/validate hero server functions.
+export { generateAiImage, isImageRelevant, sniffImageDimensions, isGenericOgImage };
+
 
 function wordCount(html: string): number {
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().split(" ").filter(Boolean).length;
