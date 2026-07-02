@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { useRoles } from "@/lib/admin-roles";
@@ -8,6 +9,9 @@ import { toast } from "sonner";
 import slugify from "slugify";
 import type { Article, Category, Author } from "@/lib/types";
 import { MediaImage } from "@/components/site/media-image";
+import { regenerateArticleHero, validateArticleHero } from "@/lib/agent.functions";
+import { Sparkles, ShieldCheck, RefreshCw } from "lucide-react";
+
 
 export const Route = createFileRoute("/_authenticated/admin/articles/$id")({
   head: () => ({ meta: [{ title: "Edit article — Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
