@@ -171,7 +171,22 @@ function AgentInner() {
             <label className="block">Default topic focus
               <input value={settings.default_focus ?? ""} onChange={(e) => setSettings({ ...settings, default_focus: e.target.value })} className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5 text-sm" placeholder="artificial intelligence" />
             </label>
-            <button onClick={saveSettings} className="w-full rounded-md bg-navy px-3 py-2 text-sm font-medium text-white hover:bg-navy/90">Save schedule</button>
+            <label className="block">Search time window
+              <select value={settings.search_time_window} onChange={(e) => setSettings({ ...settings, search_time_window: e.target.value as Settings["search_time_window"] })} className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5 text-sm">
+                <option value="qdr:h">Past hour</option>
+                <option value="qdr:d">Past day</option>
+                <option value="qdr:w">Past week</option>
+                <option value="qdr:m">Past month</option>
+                <option value="qdr:y">Past year</option>
+              </select>
+              <span className="text-xs text-muted-foreground">How fresh search results must be.</span>
+            </label>
+            <label className="block">Query presets
+              <textarea rows={5} value={presetsText} onChange={(e) => setPresetsText(e.target.value)} className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5 font-mono text-xs" placeholder={"One query per line.\nUse {focus} to inject the topic focus.\nExample:\n{focus} enterprise deployment\nAfrican AI startup raise"} />
+              <span className="text-xs text-muted-foreground">Overrides the default query set. Leave empty to use built-in queries.</span>
+            </label>
+            <button onClick={saveSettings} className="w-full rounded-md bg-navy px-3 py-2 text-sm font-medium text-white hover:bg-navy/90">Save settings</button>
+
           </div>
         )}
       </section>
