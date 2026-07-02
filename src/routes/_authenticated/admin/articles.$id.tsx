@@ -62,6 +62,7 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
           const ar = data as unknown as Article;
           setA(ar);
           setTagsInput((ar.tags ?? []).join(", "));
+          initialHero.current = ar.hero_image ?? null;
         }
       }
     })();
@@ -72,12 +73,72 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
     const { error } = await supabase.storage.from("media").upload(path, file);
     if (error) { toast.error(error.message); return; }
     setA((s) => ({ ...s, hero_image: `/api/public/media/${path}` }));
+    setHeroValidation(null);
+  }
+
+  async function checkHero() {
+    if (isNew || !id || id === "new") { toast.info("Save the draft first, then check the hero."); return; }
+    if (!a.hero_image) { toast.error("No hero image to check."); return; }
+    setHeroBusy("check");
+    try {
+      const res: any = await _validate({ data: { article_id: id, image_url: a.hero_image } });
+      setHeroValidation({ ok: !!res.ok, reason: res.reason || (res.ok ? "Looks like a plausible hero." : "Rejected."), url: a.hero_image });
+      if (res.ok) toast.success("Hero looks relevant.");
+      else toast.error(`Hero rejected: ${res.reason}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Validation failed");
+    } finally {
+      setHeroBusy(null);
+    }
+  }
+
+  async function regenerateHero() {
+    if (isNew || !id || id === "new") { toast.info("Save the draft first, then regenerate."); return; }
+    if (!a.title || a.title.trim().length < 6) { toast.error("Article needs a real title before regenerating."); return; }
+    setHeroBusy("regen");
+    toast.info("Regenerating hero image…");
+    try {
+      const res: any = await _regen({ data: { article_id: id } });
+      setA((s) => ({ ...s, hero_image: res.hero_image }));
+      initialHero.current = res.hero_image;
+      setHeroValidation({ ok: true, reason: res.reason ?? "Regenerated and validated.", url: res.hero_image });
+      toast.success("New hero saved.");
+    } catch (e: any) {
+      toast.error(e?.message || "Regeneration failed");
+    } finally {
+      setHeroBusy(null);
+    }
   }
 
   async function save(publish?: boolean) {
+    // Pre-save hero validation: only when hero changed since load and article exists.
+    if (!isNew && a.hero_image && a.hero_image !== initialHero.current) {
+      const cached = heroValidation && heroValidation.url === a.hero_image ? heroValidation : null;
+      if (!cached) {
+        setHeroBusy("check");
+        try {
+          const res: any = await _validate({ data: { article_id: id, image_url: a.hero_image } });
+          setHeroValidation({ ok: !!res.ok, reason: res.reason || "", url: a.hero_image });
+          if (!res.ok) {
+            toast.error(`Hero rejected: ${res.reason || "does not match article."} Pick another image or regenerate.`);
+            setHeroBusy(null);
+            return;
+          }
+        } catch (e: any) {
+          toast.error(e?.message || "Could not validate hero");
+          setHeroBusy(null);
+          return;
+        }
+        setHeroBusy(null);
+      } else if (!cached.ok) {
+        toast.error(`Hero rejected: ${cached.reason}. Pick another image or regenerate.`);
+        return;
+      }
+    }
     setLoading(true);
     const slug = (a.slug || slugify(a.title ?? "", { lower: true, strict: true })).slice(0, 120);
     const payload: any = {
+
       title: a.title, slug, excerpt: a.excerpt, body: a.body, hero_image: a.hero_image || null,
       author_id: a.author_id || null, category_id: a.category_id || null,
       tags: tagsInput.split(",").map((t) => t.trim()).filter(Boolean),
