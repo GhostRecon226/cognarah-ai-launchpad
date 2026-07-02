@@ -352,7 +352,6 @@ export type Database = {
           instagram: string | null
           linkedin: string | null
           logo_url: string | null
-          newsletter_api_key: string | null
           newsletter_provider: string | null
           site_name: string
           tagline: string
@@ -365,7 +364,6 @@ export type Database = {
           instagram?: string | null
           linkedin?: string | null
           logo_url?: string | null
-          newsletter_api_key?: string | null
           newsletter_provider?: string | null
           site_name?: string
           tagline?: string
@@ -378,7 +376,6 @@ export type Database = {
           instagram?: string | null
           linkedin?: string | null
           logo_url?: string | null
-          newsletter_api_key?: string | null
           newsletter_provider?: string | null
           site_name?: string
           tagline?: string

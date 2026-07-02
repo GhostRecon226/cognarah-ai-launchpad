@@ -13,7 +13,7 @@ export function sanitizeHtml(html: string): string {
       a: ["href", "target", "rel"],
       img: ["src", "alt", "title"],
     },
-    allowedSchemes: ["http", "https", "mailto", "data"],
+    allowedSchemes: ["http", "https", "mailto"],
     allowedSchemesByTag: { img: ["http", "https", "data"] },
     transformTags: {
       img: (tagName, attribs) => ({

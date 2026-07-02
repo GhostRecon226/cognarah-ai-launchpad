@@ -6,9 +6,15 @@ export const Route = createFileRoute("/api/public/hooks/agent-run")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = request.headers.get("apikey");
-        const expected = process.env.SUPABASE_PUBLISHABLE_KEY;
-        if (!apiKey || !expected || apiKey !== expected) {
+        // Authenticate with a dedicated server-only shared secret.
+        // Accept either `Authorization: Bearer <secret>` or `x-agent-cron-secret` header.
+        const expected = process.env.AGENT_CRON_SECRET;
+        const authHeader = request.headers.get("authorization") ?? "";
+        const bearer = authHeader.toLowerCase().startsWith("bearer ")
+          ? authHeader.slice(7).trim()
+          : "";
+        const provided = bearer || request.headers.get("x-agent-cron-secret") || "";
+        if (!expected || !provided || provided !== expected) {
           return new Response("Unauthorized", { status: 401 });
         }
 
