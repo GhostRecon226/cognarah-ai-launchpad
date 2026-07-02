@@ -35,23 +35,29 @@ export const updateAgentSettings = createServerFn({ method: "POST" })
       default_count: z.number().int().min(1).max(3),
       default_focus: z.string().max(200).nullable().optional(),
       system_prompt: z.string().max(4000).nullable().optional(),
+      search_time_window: z.enum(["qdr:h", "qdr:d", "qdr:w", "qdr:m", "qdr:y"]).optional(),
+      query_presets: z.array(z.string().min(1).max(200)).max(20).optional(),
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
     await requireStaff(context);
+    const update: Record<string, unknown> = {
+      enabled: data.enabled,
+      cron_expression: data.cron_expression,
+      default_count: data.default_count,
+      default_focus: data.default_focus ?? null,
+      system_prompt: data.system_prompt ?? null,
+    };
+    if (data.search_time_window) update.search_time_window = data.search_time_window;
+    if (data.query_presets) update.query_presets = data.query_presets;
     const { error } = await context.supabase
       .from("agent_settings")
-      .update({
-        enabled: data.enabled,
-        cron_expression: data.cron_expression,
-        default_count: data.default_count,
-        default_focus: data.default_focus ?? null,
-        system_prompt: data.system_prompt ?? null,
-      })
+      .update(update)
       .eq("singleton", true);
     if (error) throw new Error(error.message);
     return { ok: true };
   });
+
 
 // ================== SOURCES ==================
 export const listAgentSources = createServerFn({ method: "GET" })
