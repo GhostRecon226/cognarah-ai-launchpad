@@ -22,6 +22,21 @@ export function TiptapEditor({ value, onChange }: { value: string; onChange: (ht
     editorProps: { attributes: { class: "prose-article focus:outline-none" } },
   });
 
+  // Sync editor content when the `value` prop changes after mount
+  // (e.g. article loaded async by the edit page). Without this, Tiptap
+  // keeps its initial empty content and the body appears blank even
+  // though it's saved in the database.
+  useEffect(() => {
+    if (!editor) return;
+    const current = editor.getHTML();
+    const next = value ?? "";
+    // Treat empty variants as equal to avoid a feedback loop with onUpdate.
+    const isSame = current === next || (current === "<p></p>" && next === "");
+    if (!isSame) {
+      editor.commands.setContent(next, { emitUpdate: false });
+    }
+  }, [editor, value]);
+
   if (!editor) return null;
 
   async function uploadInlineImage() {
