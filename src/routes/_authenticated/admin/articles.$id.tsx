@@ -41,6 +41,12 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
   });
   const [tagsInput, setTagsInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [heroBusy, setHeroBusy] = useState<null | "regen" | "check">(null);
+  const [heroValidation, setHeroValidation] = useState<null | { ok: boolean; reason: string; url: string }>(null);
+  const initialHero = useRef<string | null>(null);
+  const _regen = useServerFn(regenerateArticleHero);
+  const _validate = useServerFn(validateArticleHero);
+
 
   useEffect(() => {
     (async () => {
