@@ -303,23 +303,32 @@ export async function runAgentCore(args: RunAgentArgs) {
   const runId = runRow.id as string;
 
   try {
-    // 2. Load sources
-    const { data: sources } = await supabase
-      .from("agent_sources")
-      .select("kind,value")
-      .eq("enabled", true);
+    // 2. Load sources + settings (time window + query presets)
+    const [{ data: sources }, { data: settingsRow }] = await Promise.all([
+      supabase.from("agent_sources").select("kind,value").eq("enabled", true),
+      supabase.from("agent_settings").select("search_time_window,query_presets").eq("singleton", true).maybeSingle(),
+    ]);
     const domains: string[] = (sources ?? [])
       .filter((s: any) => s.kind === "domain")
       .map((s: any) => s.value);
+    const validWindows = new Set(["qdr:h", "qdr:d", "qdr:w", "qdr:m", "qdr:y"]);
+    const tbs: string = validWindows.has(settingsRow?.search_time_window) ? settingsRow.search_time_window : "qdr:w";
+    const presets: string[] = Array.isArray(settingsRow?.query_presets)
+      ? settingsRow.query_presets.filter((q: unknown): q is string => typeof q === "string" && q.trim().length > 0)
+      : [];
+    logLine(`Using time window ${tbs}; ${presets.length} custom query preset(s)`);
 
     // 3. Build search queries
     const focusPart = args.focus?.trim() || "artificial intelligence";
-    const genericQueries = [
-      `latest ${focusPart} news`,
-      `${focusPart} announcement this week`,
-      `${focusPart} startup funding round`,
-      `African AI ${focusPart}`,
-    ];
+    const substituted = presets.map((q) => q.replace(/\{focus\}/gi, focusPart));
+    const genericQueries = substituted.length
+      ? substituted
+      : [
+          `latest ${focusPart} news`,
+          `${focusPart} announcement this week`,
+          `${focusPart} startup funding round`,
+          `African AI ${focusPart}`,
+        ];
 
     // 4. Search via Firecrawl — one query per domain when configured, plus generic recent queries.
     if (!process.env.FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY missing — link Firecrawl in Connectors.");
@@ -330,8 +339,8 @@ export async function runAgentCore(args: RunAgentArgs) {
 
     async function runSearch(q: string) {
       try {
-        logLine(`Searching (past week): ${q}`);
-        const searchRes: any = await fc.search(q, { limit: 10, tbs: "qdr:w" });
+        logLine(`Searching (${tbs}): ${q}`);
+        const searchRes: any = await fc.search(q, { limit: 10, tbs });
         const results: any[] = searchRes?.web ?? searchRes?.data ?? [];
         for (const r of results) {
           const url = r.url as string | undefined;
@@ -344,7 +353,7 @@ export async function runAgentCore(args: RunAgentArgs) {
       }
     }
 
-    // Trusted domains first, then generic.
+    // Trusted domains first, then generic/preset queries.
     for (const d of domains.slice(0, 6)) {
       await runSearch(`${focusPart} site:${d}`);
       if (candidates.length >= 30) break;
@@ -354,6 +363,7 @@ export async function runAgentCore(args: RunAgentArgs) {
       await runSearch(q);
     }
     logLine(`Found ${candidates.length} raw candidates`);
+
 
     // 4b. URL-shape filter (drop tag/category/section pages).
     const shaped = candidates.filter((c) => {
