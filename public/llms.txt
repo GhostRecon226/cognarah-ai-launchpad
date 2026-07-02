@@ -1,0 +1,23 @@
+# Cognarah
+
+> Cognarah is an AI-focused media publication covering artificial intelligence news, startups, funding, tools, policy, and analysis — with a dedicated spotlight on Africa AI.
+
+## Pages
+
+- [Home](/): Latest AI news, features, and the Africa AI spotlight.
+- [About](/about): What Cognarah covers and who it's for.
+- [Search](/search): Search articles across every category.
+
+## Categories
+
+- [News](/category/news): Breaking AI news and industry updates.
+- [Africa AI](/category/africa-ai): AI developments, builders, and policy across Africa.
+- [Startups](/category/startups): AI startup launches and product news.
+- [Funding](/category/funding): AI funding rounds and investor moves.
+- [Tools](/category/tools): New AI tools, models, and platforms.
+- [Trends](/category/trends): Emerging trends and market shifts in AI.
+- [Analysis](/category/analysis): In-depth analysis of AI stories.
+- [Opinions](/category/opinions): Commentary on AI's impact.
+- [Interviews](/category/interviews): Conversations with AI leaders and builders.
+- [Policy & Ethics](/category/policy-ethics): AI regulation, governance, and ethics.
+- [Events](/category/events): AI conferences, summits, and gatherings.
