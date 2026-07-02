@@ -52,8 +52,9 @@ export const updateAgentSettings = createServerFn({ method: "POST" })
     if (data.query_presets) update.query_presets = data.query_presets;
     const { error } = await context.supabase
       .from("agent_settings")
-      .update(update)
+      .update(update as any)
       .eq("singleton", true);
+
     if (error) throw new Error(error.message);
     return { ok: true };
   });
