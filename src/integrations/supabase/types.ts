@@ -103,6 +103,8 @@ export type Database = {
           default_focus: string | null
           enabled: boolean
           id: string
+          query_presets: string[]
+          search_time_window: string
           singleton: boolean
           system_prompt: string | null
           updated_at: string
@@ -114,6 +116,8 @@ export type Database = {
           default_focus?: string | null
           enabled?: boolean
           id?: string
+          query_presets?: string[]
+          search_time_window?: string
           singleton?: boolean
           system_prompt?: string | null
           updated_at?: string
@@ -125,6 +129,8 @@ export type Database = {
           default_focus?: string | null
           enabled?: boolean
           id?: string
+          query_presets?: string[]
+          search_time_window?: string
           singleton?: boolean
           system_prompt?: string | null
           updated_at?: string
