@@ -97,14 +97,56 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         children: JSON.stringify({
           "@context": "https://schema.org",
           "@type": "Organization",
+          "@id": "https://cognarah.com/#organization",
           name: "Cognarah",
+          alternateName: "Cognarah Media",
           url: "https://cognarah.com",
-          logo: "https://cognarah.com/__l5e/assets-v1/1ba8d09a-14df-43f5-b409-61947d7ccfba/cognarah-logo.png",
-          sameAs: [],
+          logo: {
+            "@type": "ImageObject",
+            url: "https://cognarah.com/__l5e/assets-v1/1ba8d09a-14df-43f5-b409-61947d7ccfba/cognarah-logo.png",
+            width: 512,
+            height: 512,
+          },
+          description:
+            "The definitive media platform for everything AI. News, startups, funding, tools, policy, and the global builders shaping AI.",
+          slogan: "Everything AI. Nothing Else.",
+          foundingDate: "2026",
+          knowsAbout: [
+            "Artificial Intelligence",
+            "Machine Learning",
+            "AI Startups",
+            "AI Policy",
+            "Africa AI",
+            "Generative AI",
+          ],
+          sameAs: [
+            "https://twitter.com/cognarah",
+          ],
+        }),
+      },
+      {
+        type: "application/ld+json",
+        children: JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "@id": "https://cognarah.com/#website",
+          url: "https://cognarah.com",
+          name: "Cognarah",
+          description: "Everything AI. Nothing Else.",
+          publisher: { "@id": "https://cognarah.com/#organization" },
+          potentialAction: {
+            "@type": "SearchAction",
+            target: {
+              "@type": "EntryPoint",
+              urlTemplate: "https://cognarah.com/search?q={search_term_string}",
+            },
+            "query-input": "required name=search_term_string",
+          },
         }),
       },
     ],
   }),
+
   shellComponent: RootShell,
   component: RootComponent,
   notFoundComponent: NotFoundComponent,

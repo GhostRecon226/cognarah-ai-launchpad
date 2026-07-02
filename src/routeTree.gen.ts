@@ -28,6 +28,7 @@ import { Route as AuthenticatedAdminAuthorsRouteImport } from './routes/_authent
 import { Route as AuthenticatedAdminAgentRouteImport } from './routes/_authenticated/admin/agent'
 import { Route as AuthenticatedAdminArticlesIndexRouteImport } from './routes/_authenticated/admin/articles.index'
 import { Route as ApiPublicMediaSplatRouteImport } from './routes/api/public/media.$'
+import { Route as ApiPublicHooksResubmitSitemapRouteImport } from './routes/api/public/hooks/resubmit-sitemap'
 import { Route as ApiPublicHooksAgentRunRouteImport } from './routes/api/public/hooks/agent-run'
 import { Route as AuthenticatedAdminArticlesIdRouteImport } from './routes/_authenticated/admin/articles.$id'
 
@@ -129,6 +130,12 @@ const ApiPublicMediaSplatRoute = ApiPublicMediaSplatRouteImport.update({
   path: '/api/public/media/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPublicHooksResubmitSitemapRoute =
+  ApiPublicHooksResubmitSitemapRouteImport.update({
+    id: '/api/public/hooks/resubmit-sitemap',
+    path: '/api/public/hooks/resubmit-sitemap',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicHooksAgentRunRoute = ApiPublicHooksAgentRunRouteImport.update({
   id: '/api/public/hooks/agent-run',
   path: '/api/public/hooks/agent-run',
@@ -160,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
   '/api/public/hooks/agent-run': typeof ApiPublicHooksAgentRunRoute
+  '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/admin/articles/': typeof AuthenticatedAdminArticlesIndexRoute
 }
@@ -182,6 +190,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
   '/api/public/hooks/agent-run': typeof ApiPublicHooksAgentRunRoute
+  '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/admin/articles': typeof AuthenticatedAdminArticlesIndexRoute
 }
@@ -206,6 +215,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
   '/api/public/hooks/agent-run': typeof ApiPublicHooksAgentRunRoute
+  '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/_authenticated/admin/articles/': typeof AuthenticatedAdminArticlesIndexRoute
 }
@@ -230,6 +240,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/admin/articles/$id'
     | '/api/public/hooks/agent-run'
+    | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
     | '/admin/articles/'
   fileRoutesByTo: FileRoutesByTo
@@ -252,6 +263,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/admin/articles/$id'
     | '/api/public/hooks/agent-run'
+    | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
     | '/admin/articles'
   id:
@@ -275,6 +287,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/admin/articles/$id'
     | '/api/public/hooks/agent-run'
+    | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
     | '/_authenticated/admin/articles/'
   fileRoutesById: FileRoutesById
@@ -291,6 +304,7 @@ export interface RootRouteChildren {
   ArticleSlugRoute: typeof ArticleSlugRoute
   CategorySlugRoute: typeof CategorySlugRoute
   ApiPublicHooksAgentRunRoute: typeof ApiPublicHooksAgentRunRoute
+  ApiPublicHooksResubmitSitemapRoute: typeof ApiPublicHooksResubmitSitemapRoute
   ApiPublicMediaSplatRoute: typeof ApiPublicMediaSplatRoute
 }
 
@@ -429,6 +443,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicMediaSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/hooks/resubmit-sitemap': {
+      id: '/api/public/hooks/resubmit-sitemap'
+      path: '/api/public/hooks/resubmit-sitemap'
+      fullPath: '/api/public/hooks/resubmit-sitemap'
+      preLoaderRoute: typeof ApiPublicHooksResubmitSitemapRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/hooks/agent-run': {
       id: '/api/public/hooks/agent-run'
       path: '/api/public/hooks/agent-run'
@@ -485,6 +506,7 @@ const rootRouteChildren: RootRouteChildren = {
   ArticleSlugRoute: ArticleSlugRoute,
   CategorySlugRoute: CategorySlugRoute,
   ApiPublicHooksAgentRunRoute: ApiPublicHooksAgentRunRoute,
+  ApiPublicHooksResubmitSitemapRoute: ApiPublicHooksResubmitSitemapRoute,
   ApiPublicMediaSplatRoute: ApiPublicMediaSplatRoute,
 }
 export const routeTree = rootRouteImport
