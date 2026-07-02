@@ -29,8 +29,115 @@ const CATEGORY_HINTS = [
   "trends", "analysis", "opinions", "tools", "interviews", "events",
 ];
 
+// URL path segments that indicate a listing / index page, not an article.
+const LISTING_SEGMENTS = new Set([
+  "tag", "tags", "category", "categories", "topic", "topics", "topics",
+  "section", "sections", "author", "authors", "feed", "feeds", "rss",
+  "search", "archive", "archives", "page", "pages", "index",
+]);
+
+// og:image URL patterns that indicate a generic/default share image, not an article-specific hero.
+const GENERIC_IMAGE_HINTS = [
+  "logo", "default", "placeholder", "share", "social-card", "social_card",
+  "fallback", "og-image", "og_image", "og-default", "site-image",
+  "twitter-card", "twitter_card", "brand",
+];
+
 function hashUrl(url: string) {
   return createHash("sha256").update(url.trim().toLowerCase()).digest("hex");
+}
+
+function looksLikeArticleUrl(rawUrl: string): { ok: boolean; reason?: string } {
+  let u: URL;
+  try { u = new URL(rawUrl); } catch { return { ok: false, reason: "invalid URL" }; }
+  const segments = u.pathname.split("/").filter(Boolean);
+  if (segments.length === 0) return { ok: false, reason: "root path" };
+
+  // Reject if any segment is a known listing keyword AND it's the last segment
+  // (or followed only by a taxonomy value like "artificial-intelligence").
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i].toLowerCase();
+    if (LISTING_SEGMENTS.has(seg)) {
+      // If the listing keyword is followed only by 0-1 more slug segments AND
+      // the URL doesn't also contain a date fragment, it's a taxonomy page.
+      const tail = segments.slice(i + 1);
+      const hasDate = segments.some((s) => /^(19|20)\d{2}$/.test(s));
+      if (tail.length <= 1 && !hasDate) {
+        return { ok: false, reason: `listing segment: /${seg}/` };
+      }
+    }
+  }
+
+  // Prefer either a date fragment in URL or a slug-like final segment (>= 4 words).
+  const last = segments[segments.length - 1].toLowerCase().replace(/\.(html?|php|aspx?)$/, "");
+  const wordCount = last.split(/[-_]/).filter((w) => w.length > 1).length;
+  const hasDate = segments.some((s) => /^(19|20)\d{2}$/.test(s));
+  if (!hasDate && wordCount < 4) {
+    return { ok: false, reason: `slug too short (${wordCount} words) and no date` };
+  }
+  return { ok: true };
+}
+
+function isGenericOgImage(imgUrl: string, articleSlug: string): { ok: boolean; reason?: string } {
+  const lower = imgUrl.toLowerCase();
+  for (const hint of GENERIC_IMAGE_HINTS) {
+    if (lower.includes(hint)) return { ok: false, reason: `image URL contains "${hint}"` };
+  }
+  // Very short filename (< 6 chars before extension) often signals a default asset.
+  try {
+    const u = new URL(imgUrl);
+    const file = u.pathname.split("/").pop() ?? "";
+    const stem = file.replace(/\.[a-z0-9]+$/i, "");
+    if (stem.length > 0 && stem.length < 6) return { ok: false, reason: `image filename too short: ${file}` };
+  } catch { /* ignore */ }
+  void articleSlug; // reserved for future slug-similarity checks
+  return { ok: true };
+}
+
+// Rough PNG/JPEG dimension sniff without pulling in a native dep.
+function sniffImageDimensions(buf: Buffer): { width: number; height: number } | null {
+  if (buf.length < 24) return null;
+  // PNG: signature 89 50 4E 47 0D 0A 1A 0A, IHDR at offset 16.
+  if (buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) {
+    return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+  }
+  // JPEG: scan SOF markers.
+  if (buf[0] === 0xff && buf[1] === 0xd8) {
+    let i = 2;
+    while (i < buf.length - 9) {
+      if (buf[i] !== 0xff) { i++; continue; }
+      const marker = buf[i + 1];
+      const len = buf.readUInt16BE(i + 2);
+      // SOF0..SOF3, SOF5..SOF7, SOF9..SOF11, SOF13..SOF15
+      if ((marker >= 0xc0 && marker <= 0xc3) || (marker >= 0xc5 && marker <= 0xc7) || (marker >= 0xc9 && marker <= 0xcb) || (marker >= 0xcd && marker <= 0xcf)) {
+        const height = buf.readUInt16BE(i + 5);
+        const width = buf.readUInt16BE(i + 7);
+        return { width, height };
+      }
+      i += 2 + len;
+    }
+  }
+  // WebP: RIFF....WEBP VP8[ L X] chunk.
+  if (buf.slice(0, 4).toString("ascii") === "RIFF" && buf.slice(8, 12).toString("ascii") === "WEBP") {
+    const chunk = buf.slice(12, 16).toString("ascii");
+    if (chunk === "VP8 " && buf.length >= 30) {
+      const width = buf.readUInt16LE(26) & 0x3fff;
+      const height = buf.readUInt16LE(28) & 0x3fff;
+      return { width, height };
+    }
+    if (chunk === "VP8L" && buf.length >= 25) {
+      const b0 = buf[21], b1 = buf[22], b2 = buf[23], b3 = buf[24];
+      const width = 1 + (((b1 & 0x3f) << 8) | b0);
+      const height = 1 + (((b3 & 0x0f) << 10) | (b2 << 2) | ((b1 & 0xc0) >> 6));
+      return { width, height };
+    }
+    if (chunk === "VP8X" && buf.length >= 30) {
+      const width = 1 + buf.readUIntLE(24, 3);
+      const height = 1 + buf.readUIntLE(27, 3);
+      return { width, height };
+    }
+  }
+  return null;
 }
 
 async function callLovableAI<T>(body: unknown): Promise<T> {
@@ -48,16 +155,56 @@ async function callLovableAI<T>(body: unknown): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-async function generateAiImage(prompt: string): Promise<Buffer | null> {
+// Vision check: does this image plausibly illustrate the article?
+async function isImageRelevant(imageBuf: Buffer, contentType: string, title: string, dek: string): Promise<{ ok: boolean; reason: string }> {
+  try {
+    const b64 = imageBuf.toString("base64");
+    const dataUrl = `data:${contentType};base64,${b64}`;
+    const res: any = await callLovableAI({
+      model: "google/gemini-3-flash-preview",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a photo editor for a news publication. Decide if the given image is a plausible editorial hero for the given article. " +
+            "Reject generic stock photos, unrelated product shots, brand logos with no article context, and default social share cards. " +
+            'Respond with STRICT JSON only: {"relevant": true|false, "reason": "short reason"}',
+        },
+        {
+          role: "user",
+          content: [
+            { type: "text", text: `Article title: ${title}\nSubtitle: ${dek}\n\nIs this image a plausible editorial hero?` },
+            { type: "image_url", image_url: { url: dataUrl } },
+          ],
+        },
+      ],
+      response_format: { type: "json_object" },
+    });
+    const content: string = res?.choices?.[0]?.message?.content ?? "";
+    const parsed = JSON.parse(content);
+    return { ok: !!parsed.relevant, reason: String(parsed.reason ?? "") };
+  } catch (e: any) {
+    // If the vision check fails, err on the side of using the image (source
+    // images pass URL/dimension gates already).
+    return { ok: true, reason: `vision check failed: ${e?.message || e}` };
+  }
+}
+
+async function generateAiImage(title: string, dek: string): Promise<Buffer | null> {
   const key = process.env.LOVABLE_API_KEY;
   if (!key) return null;
+  const subject = `${title}. ${dek}`.slice(0, 400);
+  const prompt =
+    `Editorial magazine hero illustration for a news article. Subject: ${subject}. ` +
+    `Style: cinematic, symbolic, minimal, sophisticated. Dark navy #0A0F2C background with lavender purple #AFA9EC and coral #EF9F27 accents. ` +
+    `No text, no words, no logos, no watermarks. Wide 16:9 composition, high detail.`;
   try {
     const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-2.5-flash-image",
-        prompt: `Editorial magazine hero illustration for an AI news article. ${prompt}. Dark navy #0A0F2C background with lavender purple #AFA9EC and coral #EF9F27 accents. Bold, minimal, no text, no logos, cinematic lighting.`,
+        prompt,
       }),
     });
     if (!res.ok) return null;
@@ -99,6 +246,38 @@ async function uploadToMedia(buf: Buffer, contentType: string, slug: string): Pr
   return `/api/public/media/${path}`;
 }
 
+function wordCount(html: string): number {
+  return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().split(" ").filter(Boolean).length;
+}
+
+function validateDraft(d: DraftPayload): { ok: true } | { ok: false; reason: string } {
+  if (!d.title || d.title.trim().split(/\s+/).length < 6) return { ok: false, reason: "title too short (< 6 words)" };
+  if (!d.dek || d.dek.trim().split(/\s+/).length < 15) return { ok: false, reason: "dek too short (< 15 words)" };
+  const wc = wordCount(d.body_html || "");
+  if (wc < 500) return { ok: false, reason: `body too short (${wc} words)` };
+  return { ok: true };
+}
+
+const SYSTEM_PROMPT =
+  "You are Cognarah, an editorial AI news desk covering artificial intelligence with a special focus on Africa. " +
+  "Rewrite the source article into an original Cognarah news piece in your own words — no plagiarism, no verbatim paragraphs. " +
+  "Editorial voice: confident, specific, modern (TechCrunch / Axios / The Information). Never generic. Never corporate filler. " +
+  "\n\nHEADLINE RULES:\n" +
+  "- Name the actor AND the action. Example: 'Anthropic Pushes Back on White House AI Export Rules' — NOT 'Silicon Valley's Fragile Peace'.\n" +
+  "- No vague metaphors, no 'The Future Of', no 'A New Era'.\n" +
+  "- 6-14 words.\n" +
+  "\nDEK (subtitle) RULES:\n" +
+  "- 20-35 words, one or two sentences.\n" +
+  "- Must contain at least one concrete fact from the source: a company name, a person, a dollar figure, a date, a country, a model name, or a percentage.\n" +
+  "\nBODY RULES:\n" +
+  "- 550-850 words of clean HTML using only: p, h2, h3, ul, ol, li, strong, em, blockquote, a.\n" +
+  "- Structure: opening paragraph with the news; an <h2>Why it matters</h2> section 2-3 paragraphs in; the details; an <h2>The bigger picture</h2> section near the end.\n" +
+  "- Include at least two inline <a href=\"...\"> links to named companies, papers, or original sources.\n" +
+  "- End with: <p><em>Source:</em> <a href=\"SOURCE_URL\">Publication name</a></p>\n" +
+  "- BANNED phrases: 'in today's fast-paced world', 'revolutionary', 'game-changing', 'game changer', 'unleash', 'harness the power', 'paradigm shift', 'seamlessly', 'cutting-edge'.\n" +
+  "\nOUTPUT FORMAT: Return ONLY strict JSON matching this shape (no markdown, no code fences):\n" +
+  `{"title":"...","dek":"...","body_html":"<p>...</p><h2>Why it matters</h2>...","tags":["...","..."],"seo_title":"...","meta_description":"...","category_slug":"one of: ${CATEGORY_HINTS.join(", ")}"}`;
+
 export async function runAgentCore(args: RunAgentArgs) {
   const { supabase } = args;
   const log: string[] = [];
@@ -131,26 +310,24 @@ export async function runAgentCore(args: RunAgentArgs) {
 
     // 3. Build search queries
     const focusPart = args.focus?.trim() || "artificial intelligence";
-    const baseQueries = [
-      `${focusPart} news`,
-      `${focusPart} startup funding`,
-      `Africa AI ${focusPart}`,
+    const genericQueries = [
+      `latest ${focusPart} news`,
+      `${focusPart} announcement this week`,
+      `${focusPart} startup funding round`,
+      `African AI ${focusPart}`,
     ];
-    const domainFilter = domains.length
-      ? " (" + domains.slice(0, 8).map((d) => `site:${d}`).join(" OR ") + ")"
-      : "";
 
-    // 4. Search via Firecrawl
+    // 4. Search via Firecrawl — one query per domain when configured, plus generic recent queries.
     if (!process.env.FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY missing — link Firecrawl in Connectors.");
     const fc = new Firecrawl({ apiKey: process.env.FIRECRAWL_API_KEY });
 
     const seenUrls = new Set<string>();
     const candidates: Array<{ url: string; title?: string; description?: string }> = [];
 
-    for (const q of baseQueries) {
+    async function runSearch(q: string) {
       try {
-        logLine(`Searching: ${q}${domainFilter}`);
-        const searchRes: any = await fc.search(q + domainFilter, { limit: 8 });
+        logLine(`Searching (past week): ${q}`);
+        const searchRes: any = await fc.search(q, { limit: 10, tbs: "qdr:w" });
         const results: any[] = searchRes?.web ?? searchRes?.data ?? [];
         for (const r of results) {
           const url = r.url as string | undefined;
@@ -161,13 +338,30 @@ export async function runAgentCore(args: RunAgentArgs) {
       } catch (e: any) {
         logLine(`Search error: ${e?.message || e}`);
       }
-      if (candidates.length >= 20) break;
     }
-    logLine(`Found ${candidates.length} candidates`);
+
+    // Trusted domains first, then generic.
+    for (const d of domains.slice(0, 6)) {
+      await runSearch(`${focusPart} site:${d}`);
+      if (candidates.length >= 30) break;
+    }
+    for (const q of genericQueries) {
+      if (candidates.length >= 30) break;
+      await runSearch(q);
+    }
+    logLine(`Found ${candidates.length} raw candidates`);
+
+    // 4b. URL-shape filter (drop tag/category/section pages).
+    const shaped = candidates.filter((c) => {
+      const v = looksLikeArticleUrl(c.url);
+      if (!v.ok) logLine(`Skipped non-article URL: ${c.url} (${v.reason})`);
+      return v.ok;
+    });
+    logLine(`${shaped.length} after URL-shape filter`);
 
     // 5. De-dupe against seen table
-    const hashes = candidates.map((c) => ({ ...c, hash: hashUrl(c.url) }));
-    if (hashes.length === 0) throw new Error("No candidate articles found");
+    const hashes = shaped.map((c) => ({ ...c, hash: hashUrl(c.url) }));
+    if (hashes.length === 0) throw new Error("No article-shaped candidates found");
     const { data: seen } = await supabase
       .from("agent_seen_sources")
       .select("url_hash")
@@ -202,49 +396,82 @@ export async function runAgentCore(args: RunAgentArgs) {
         const meta: any = scraped?.metadata || scraped?.data?.metadata || {};
         const ogImg: string | undefined =
           meta.ogImage || meta["og:image"] || meta.twitterImage || meta["twitter:image"];
-        if (!md || md.length < 400) { logLine("Skipped: too short"); continue; }
 
-        // 8. Ask Lovable AI to rewrite
-        const sysPrompt =
-          "You are Cognarah, an editorial AI news desk covering artificial intelligence with a special focus on Africa. " +
-          "Rewrite the given source article into an original Cognarah news piece. Do not plagiarize; use your own words. " +
-          "Write in a confident, modern editorial voice similar to TechCrunch. " +
-          "Return ONLY strict JSON matching this shape: " +
-          `{"title":"...","dek":"1-2 sentence subtitle","body_html":"<p>...</p><h2>...</h2>...","tags":["..."],"seo_title":"...","meta_description":"...","category_slug":"one of: ${CATEGORY_HINTS.join(", ")}"}` +
-          " body_html must be 500-900 words, valid HTML using only p, h2, h3, ul, ol, li, strong, em, blockquote, a. " +
-          "Add a final <p><em>Source:</em> <a href=\"SOURCE_URL\">Publication name</a></p> paragraph citing the source. No markdown, no code fences.";
-        const userPrompt = `Focus: ${focusPart}\nSource URL: ${cand.url}\nSource title: ${cand.title ?? ""}\n\nSource content:\n${md.slice(0, 12000)}`;
-        const aiRes: any = await callLovableAI({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: sysPrompt },
-            { role: "user", content: userPrompt },
-          ],
-          response_format: { type: "json_object" },
-        });
-        const content: string = aiRes?.choices?.[0]?.message?.content ?? "";
-        let draft: DraftPayload;
-        try {
-          draft = JSON.parse(content);
-        } catch {
-          logLine("Skipped: LLM returned non-JSON");
+        // Article-shape check on the scraped page itself.
+        const bodyWords = md.split(/\s+/).filter(Boolean).length;
+        if (bodyWords < 600) { logLine(`Skipped: page has only ${bodyWords} words (not article)`); continue; }
+        const published: string | undefined =
+          meta.publishedTime || meta["article:published_time"] || meta.publishedDate;
+        const hasUrlDate = /\/(19|20)\d{2}\//.test(cand.url);
+        if (!published && !hasUrlDate) {
+          logLine(`Skipped: no publication date on page or in URL`);
           continue;
         }
-        if (!draft.title || !draft.body_html) { logLine("Skipped: incomplete draft"); continue; }
+
+        // 8. Ask Lovable AI to rewrite — with one retry on validation failure.
+        const buildUserPrompt = (nudge?: string) =>
+          `Focus: ${focusPart}\nSource URL: ${cand.url}\nSource title: ${cand.title ?? meta.title ?? ""}\n\nSource content:\n${md.slice(0, 12000)}` +
+          (nudge ? `\n\nEDITOR NOTE: ${nudge}` : "");
+
+        let draft: DraftPayload | null = null;
+        let attempts = 0;
+        for (const nudge of [undefined, "Your previous draft was too generic. Rewrite with a specific, actor+action headline; a dek containing at least one concrete fact (name, number, date); and the required Why it matters / bigger picture sections. Avoid all banned phrases."]) {
+          attempts++;
+          const aiRes: any = await callLovableAI({
+            model: "google/gemini-3-flash-preview",
+            messages: [
+              { role: "system", content: SYSTEM_PROMPT },
+              { role: "user", content: buildUserPrompt(nudge) },
+            ],
+            response_format: { type: "json_object" },
+          });
+          const content: string = aiRes?.choices?.[0]?.message?.content ?? "";
+          let parsed: DraftPayload;
+          try { parsed = JSON.parse(content); } catch { logLine(`Attempt ${attempts}: non-JSON response`); continue; }
+          const v = validateDraft(parsed);
+          if (v.ok) { draft = parsed; break; }
+          logLine(`Attempt ${attempts} failed validation: ${v.reason}`);
+        }
+        if (!draft) { logLine("Skipped: could not produce valid draft after 2 attempts"); continue; }
 
         const slug = slugify(draft.title, { lower: true, strict: true }).slice(0, 110) + "-" + Date.now().toString(36);
 
-        // 9. Hero image
+        // 9. Hero image — prefer source, but validate strictly.
         let heroPath: string | null = null;
+        let heroDecision = "";
         if (ogImg) {
-          logLine(`Trying source image: ${ogImg}`);
-          const dl = await downloadImage(ogImg);
-          if (dl) heroPath = await uploadToMedia(dl.buf, dl.contentType, slug);
+          const urlGate = isGenericOgImage(ogImg, slug);
+          if (!urlGate.ok) {
+            heroDecision = `source rejected (URL gate): ${urlGate.reason}`;
+          } else {
+            logLine(`Trying source image: ${ogImg}`);
+            const dl = await downloadImage(ogImg);
+            if (!dl) {
+              heroDecision = "source rejected: download failed or wrong size";
+            } else {
+              const dims = sniffImageDimensions(dl.buf);
+              if (dims && (dims.width < 600 || dims.height < 400)) {
+                heroDecision = `source rejected: dimensions ${dims.width}x${dims.height} too small`;
+              } else {
+                const rel = await isImageRelevant(dl.buf, dl.contentType, draft.title, draft.dek);
+                if (!rel.ok) {
+                  heroDecision = `source rejected (vision): ${rel.reason}`;
+                } else {
+                  heroPath = await uploadToMedia(dl.buf, dl.contentType, slug);
+                  heroDecision = heroPath ? `source image used (vision: ${rel.reason})` : "source upload failed";
+                }
+              }
+            }
+          }
+        } else {
+          heroDecision = "no source og:image";
         }
+        logLine(`Hero: ${heroDecision}`);
         if (!heroPath) {
-          logLine("Falling back to AI-generated image");
-          const aiImg = await generateAiImage(`${draft.title}. ${draft.dek}`);
+          logLine("Falling back to AI-generated hero");
+          const aiImg = await generateAiImage(draft.title, draft.dek);
           if (aiImg) heroPath = await uploadToMedia(aiImg, "image/png", slug);
+          logLine(heroPath ? "AI hero generated" : "AI hero generation failed");
         }
 
         // 10. Resolve category
@@ -285,7 +512,7 @@ export async function runAgentCore(args: RunAgentArgs) {
           run_id: runId,
         });
         created++;
-        logLine(`Created draft: ${draft.title}`);
+        logLine(`Created draft (attempts=${attempts}): ${draft.title}`);
       } catch (e: any) {
         logLine(`Candidate error: ${e?.message || e}`);
       }
