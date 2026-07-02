@@ -36,7 +36,10 @@ interface Settings {
   default_count: number;
   default_focus: string | null;
   system_prompt: string | null;
+  search_time_window: "qdr:h" | "qdr:d" | "qdr:w" | "qdr:m" | "qdr:y";
+  query_presets: string[];
 }
+
 interface Source { id: string; label: string; kind: string; value: string; enabled: boolean }
 interface Run {
   id: string; trigger: string; status: string; requested_count: number; drafts_created: number;
