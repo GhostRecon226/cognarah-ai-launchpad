@@ -182,8 +182,25 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
             <h3 className="text-sm font-semibold">Hero image</h3>
             {a.hero_image && <MediaImage src={a.hero_image} alt="" className="aspect-video w-full rounded object-cover" fallbackClassName="aspect-video w-full rounded" />}
             <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && uploadHero(e.target.files[0])} className="block w-full text-xs" />
-            <input placeholder="…or paste image URL" value={a.hero_image ?? ""} onChange={(e) => setA({ ...a, hero_image: e.target.value })} className="w-full rounded border border-border bg-background px-2 py-1.5 text-xs" />
+            <input placeholder="…or paste image URL" value={a.hero_image ?? ""} onChange={(e) => { setA({ ...a, hero_image: e.target.value }); setHeroValidation(null); }} className="w-full rounded border border-border bg-background px-2 py-1.5 text-xs" />
+            {!isNew && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button type="button" disabled={!!heroBusy || !a.hero_image} onClick={checkHero} className="inline-flex items-center gap-1 rounded border border-border bg-background px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50">
+                  {heroBusy === "check" ? <RefreshCw className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-3 w-3" />} Check relevance
+                </button>
+                <button type="button" disabled={!!heroBusy} onClick={regenerateHero} className="inline-flex items-center gap-1 rounded bg-navy px-2 py-1 text-xs font-medium text-white hover:bg-navy/90 disabled:opacity-50">
+                  {heroBusy === "regen" ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Regenerate hero
+                </button>
+              </div>
+            )}
+            {heroValidation && heroValidation.url === a.hero_image && (
+              <p className={`text-xs ${heroValidation.ok ? "text-emerald-700" : "text-rose-700"}`}>
+                {heroValidation.ok ? "✓" : "✗"} {heroValidation.reason}
+              </p>
+            )}
+            {!isNew && <p className="text-[11px] text-muted-foreground">A relevance check runs automatically before save when you change the hero.</p>}
           </div>
+
           <div className="rounded-lg border border-border bg-background p-4 space-y-3">
             <label className="block text-sm font-semibold">Category
               <select value={a.category_id ?? ""} onChange={(e) => setA({ ...a, category_id: e.target.value || undefined })} className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5 text-sm">
