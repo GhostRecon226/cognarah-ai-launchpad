@@ -1,0 +1,2 @@
+ALTER TABLE public.agent_settings ADD COLUMN IF NOT EXISTS search_time_window TEXT NOT NULL DEFAULT 'qdr:w';
+ALTER TABLE public.agent_settings ADD COLUMN IF NOT EXISTS query_presets TEXT[] NOT NULL DEFAULT '{}';

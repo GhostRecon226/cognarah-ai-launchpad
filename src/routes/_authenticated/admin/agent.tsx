@@ -36,7 +36,10 @@ interface Settings {
   default_count: number;
   default_focus: string | null;
   system_prompt: string | null;
+  search_time_window: "qdr:h" | "qdr:d" | "qdr:w" | "qdr:m" | "qdr:y";
+  query_presets: string[];
 }
+
 interface Source { id: string; label: string; kind: string; value: string; enabled: boolean }
 interface Run {
   id: string; trigger: string; status: string; requested_count: number; drafts_created: number;
@@ -61,11 +64,23 @@ function AgentInner() {
   const [focus, setFocus] = useState("");
   const [newSrc, setNewSrc] = useState({ label: "", kind: "domain" as "domain" | "rss" | "url", value: "" });
   const [expandedRun, setExpandedRun] = useState<string | null>(null);
+  const [presetsText, setPresetsText] = useState("");
 
   async function loadAll() {
     try {
       const [s, src, r] = await Promise.all([_getSettings(), _listSources(), _listRuns()]);
-      setSettings(s as Settings);
+      const raw = (s ?? {}) as Partial<Settings>;
+      const normalized: Settings = {
+        enabled: !!raw.enabled,
+        cron_expression: raw.cron_expression ?? "0 7 * * *",
+        default_count: raw.default_count ?? 2,
+        default_focus: raw.default_focus ?? null,
+        system_prompt: raw.system_prompt ?? null,
+        search_time_window: (raw.search_time_window as Settings["search_time_window"]) ?? "qdr:w",
+        query_presets: Array.isArray(raw.query_presets) ? raw.query_presets : [],
+      };
+      setSettings(normalized);
+      setPresetsText(normalized.query_presets.join("\n"));
       setSources(src as Source[]);
       setRuns(r as Run[]);
     } catch (e: any) {
@@ -77,10 +92,13 @@ function AgentInner() {
   async function saveSettings() {
     if (!settings) return;
     try {
-      await _updateSettings({ data: settings });
+      const query_presets = presetsText.split("\n").map((s) => s.trim()).filter(Boolean).slice(0, 20);
+      await _updateSettings({ data: { ...settings, query_presets } });
+      setSettings({ ...settings, query_presets });
       toast.success("Settings saved");
     } catch (e: any) { toast.error(e?.message); }
   }
+
 
   async function doRun() {
     setRunning(true);
@@ -153,7 +171,22 @@ function AgentInner() {
             <label className="block">Default topic focus
               <input value={settings.default_focus ?? ""} onChange={(e) => setSettings({ ...settings, default_focus: e.target.value })} className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5 text-sm" placeholder="artificial intelligence" />
             </label>
-            <button onClick={saveSettings} className="w-full rounded-md bg-navy px-3 py-2 text-sm font-medium text-white hover:bg-navy/90">Save schedule</button>
+            <label className="block">Search time window
+              <select value={settings.search_time_window} onChange={(e) => setSettings({ ...settings, search_time_window: e.target.value as Settings["search_time_window"] })} className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5 text-sm">
+                <option value="qdr:h">Past hour</option>
+                <option value="qdr:d">Past day</option>
+                <option value="qdr:w">Past week</option>
+                <option value="qdr:m">Past month</option>
+                <option value="qdr:y">Past year</option>
+              </select>
+              <span className="text-xs text-muted-foreground">How fresh search results must be.</span>
+            </label>
+            <label className="block">Query presets
+              <textarea rows={5} value={presetsText} onChange={(e) => setPresetsText(e.target.value)} className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5 font-mono text-xs" placeholder={"One query per line.\nUse {focus} to inject the topic focus.\nExample:\n{focus} enterprise deployment\nAfrican AI startup raise"} />
+              <span className="text-xs text-muted-foreground">Overrides the default query set. Leave empty to use built-in queries.</span>
+            </label>
+            <button onClick={saveSettings} className="w-full rounded-md bg-navy px-3 py-2 text-sm font-medium text-white hover:bg-navy/90">Save settings</button>
+
           </div>
         )}
       </section>

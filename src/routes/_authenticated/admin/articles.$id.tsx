@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { useRoles } from "@/lib/admin-roles";
@@ -8,6 +9,9 @@ import { toast } from "sonner";
 import slugify from "slugify";
 import type { Article, Category, Author } from "@/lib/types";
 import { MediaImage } from "@/components/site/media-image";
+import { regenerateArticleHero, validateArticleHero } from "@/lib/agent.functions";
+import { Sparkles, ShieldCheck, RefreshCw } from "lucide-react";
+
 
 export const Route = createFileRoute("/_authenticated/admin/articles/$id")({
   head: () => ({ meta: [{ title: "Edit article — Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
@@ -37,6 +41,12 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
   });
   const [tagsInput, setTagsInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [heroBusy, setHeroBusy] = useState<null | "regen" | "check">(null);
+  const [heroValidation, setHeroValidation] = useState<null | { ok: boolean; reason: string; url: string }>(null);
+  const initialHero = useRef<string | null>(null);
+  const _regen = useServerFn(regenerateArticleHero);
+  const _validate = useServerFn(validateArticleHero);
+
 
   useEffect(() => {
     (async () => {
@@ -52,6 +62,7 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
           const ar = data as unknown as Article;
           setA(ar);
           setTagsInput((ar.tags ?? []).join(", "));
+          initialHero.current = ar.hero_image ?? null;
         }
       }
     })();
@@ -62,12 +73,72 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
     const { error } = await supabase.storage.from("media").upload(path, file);
     if (error) { toast.error(error.message); return; }
     setA((s) => ({ ...s, hero_image: `/api/public/media/${path}` }));
+    setHeroValidation(null);
+  }
+
+  async function checkHero() {
+    if (isNew || !id || id === "new") { toast.info("Save the draft first, then check the hero."); return; }
+    if (!a.hero_image) { toast.error("No hero image to check."); return; }
+    setHeroBusy("check");
+    try {
+      const res: any = await _validate({ data: { article_id: id, image_url: a.hero_image } });
+      setHeroValidation({ ok: !!res.ok, reason: res.reason || (res.ok ? "Looks like a plausible hero." : "Rejected."), url: a.hero_image });
+      if (res.ok) toast.success("Hero looks relevant.");
+      else toast.error(`Hero rejected: ${res.reason}`);
+    } catch (e: any) {
+      toast.error(e?.message || "Validation failed");
+    } finally {
+      setHeroBusy(null);
+    }
+  }
+
+  async function regenerateHero() {
+    if (isNew || !id || id === "new") { toast.info("Save the draft first, then regenerate."); return; }
+    if (!a.title || a.title.trim().length < 6) { toast.error("Article needs a real title before regenerating."); return; }
+    setHeroBusy("regen");
+    toast.info("Regenerating hero image…");
+    try {
+      const res: any = await _regen({ data: { article_id: id } });
+      setA((s) => ({ ...s, hero_image: res.hero_image }));
+      initialHero.current = res.hero_image;
+      setHeroValidation({ ok: true, reason: res.reason ?? "Regenerated and validated.", url: res.hero_image });
+      toast.success("New hero saved.");
+    } catch (e: any) {
+      toast.error(e?.message || "Regeneration failed");
+    } finally {
+      setHeroBusy(null);
+    }
   }
 
   async function save(publish?: boolean) {
+    // Pre-save hero validation: only when hero changed since load and article exists.
+    if (!isNew && a.hero_image && a.hero_image !== initialHero.current) {
+      const cached = heroValidation && heroValidation.url === a.hero_image ? heroValidation : null;
+      if (!cached) {
+        setHeroBusy("check");
+        try {
+          const res: any = await _validate({ data: { article_id: id, image_url: a.hero_image } });
+          setHeroValidation({ ok: !!res.ok, reason: res.reason || "", url: a.hero_image });
+          if (!res.ok) {
+            toast.error(`Hero rejected: ${res.reason || "does not match article."} Pick another image or regenerate.`);
+            setHeroBusy(null);
+            return;
+          }
+        } catch (e: any) {
+          toast.error(e?.message || "Could not validate hero");
+          setHeroBusy(null);
+          return;
+        }
+        setHeroBusy(null);
+      } else if (!cached.ok) {
+        toast.error(`Hero rejected: ${cached.reason}. Pick another image or regenerate.`);
+        return;
+      }
+    }
     setLoading(true);
     const slug = (a.slug || slugify(a.title ?? "", { lower: true, strict: true })).slice(0, 120);
     const payload: any = {
+
       title: a.title, slug, excerpt: a.excerpt, body: a.body, hero_image: a.hero_image || null,
       author_id: a.author_id || null, category_id: a.category_id || null,
       tags: tagsInput.split(",").map((t) => t.trim()).filter(Boolean),
@@ -111,8 +182,25 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
             <h3 className="text-sm font-semibold">Hero image</h3>
             {a.hero_image && <MediaImage src={a.hero_image} alt="" className="aspect-video w-full rounded object-cover" fallbackClassName="aspect-video w-full rounded" />}
             <input type="file" accept="image/*" onChange={(e) => e.target.files?.[0] && uploadHero(e.target.files[0])} className="block w-full text-xs" />
-            <input placeholder="…or paste image URL" value={a.hero_image ?? ""} onChange={(e) => setA({ ...a, hero_image: e.target.value })} className="w-full rounded border border-border bg-background px-2 py-1.5 text-xs" />
+            <input placeholder="…or paste image URL" value={a.hero_image ?? ""} onChange={(e) => { setA({ ...a, hero_image: e.target.value }); setHeroValidation(null); }} className="w-full rounded border border-border bg-background px-2 py-1.5 text-xs" />
+            {!isNew && (
+              <div className="flex flex-wrap gap-2 pt-1">
+                <button type="button" disabled={!!heroBusy || !a.hero_image} onClick={checkHero} className="inline-flex items-center gap-1 rounded border border-border bg-background px-2 py-1 text-xs hover:bg-secondary disabled:opacity-50">
+                  {heroBusy === "check" ? <RefreshCw className="h-3 w-3 animate-spin" /> : <ShieldCheck className="h-3 w-3" />} Check relevance
+                </button>
+                <button type="button" disabled={!!heroBusy} onClick={regenerateHero} className="inline-flex items-center gap-1 rounded bg-navy px-2 py-1 text-xs font-medium text-white hover:bg-navy/90 disabled:opacity-50">
+                  {heroBusy === "regen" ? <RefreshCw className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />} Regenerate hero
+                </button>
+              </div>
+            )}
+            {heroValidation && heroValidation.url === a.hero_image && (
+              <p className={`text-xs ${heroValidation.ok ? "text-emerald-700" : "text-rose-700"}`}>
+                {heroValidation.ok ? "✓" : "✗"} {heroValidation.reason}
+              </p>
+            )}
+            {!isNew && <p className="text-[11px] text-muted-foreground">A relevance check runs automatically before save when you change the hero.</p>}
           </div>
+
           <div className="rounded-lg border border-border bg-background p-4 space-y-3">
             <label className="block text-sm font-semibold">Category
               <select value={a.category_id ?? ""} onChange={(e) => setA({ ...a, category_id: e.target.value || undefined })} className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5 text-sm">
