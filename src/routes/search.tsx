@@ -13,7 +13,13 @@ export const Route = createFileRoute("/search")({
     meta: [
       { title: "Search — Cognarah" },
       { name: "description", content: "Search Cognarah for AI news, startups, funding, tools, and analysis." },
+      { property: "og:title", content: "Search — Cognarah" },
+      { property: "og:description", content: "Search Cognarah for AI news, startups, funding, tools, and analysis across Africa and the world." },
+      { property: "og:type", content: "website" },
       { property: "og:url", content: `${SITE_URL}/search` },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "Search — Cognarah" },
+      { name: "twitter:description", content: "Search Cognarah for AI news, startups, funding, tools, and analysis." },
     ],
     links: [{ rel: "canonical", href: `${SITE_URL}/search` }],
   }),
