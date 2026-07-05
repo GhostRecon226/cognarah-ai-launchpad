@@ -506,8 +506,13 @@ export async function runAgentCore(args: RunAgentArgs) {
 
         let draft: DraftPayload | null = null;
         let attempts = 0;
-        for (const nudge of [undefined, "Your previous draft was too generic. Rewrite with a specific, actor+action headline; a dek containing at least one concrete fact (name, number, date); and the required Why it matters / bigger picture sections. Avoid all banned phrases."]) {
+        let lastWords = 0;
+        let lastReason = "";
+        for (let i = 0; i < 2; i++) {
           attempts++;
+          const nudge = i === 0
+            ? undefined
+            : `Your previous draft was ${lastWords} words and failed with: ${lastReason}. Rewrite to AT LEAST 500 words by expanding the Africa Angle paragraph and adding verifiable context drawn from the source. Do not invent facts. Ensure a specific actor+action headline and a dek containing at least one concrete fact (name, number, or date).`;
           const aiRes: any = await callLovableAI({
             model: "google/gemini-3-flash-preview",
             messages: [
@@ -518,9 +523,11 @@ export async function runAgentCore(args: RunAgentArgs) {
           });
           const content: string = aiRes?.choices?.[0]?.message?.content ?? "";
           let parsed: DraftPayload;
-          try { parsed = JSON.parse(content); } catch { logLine(`Attempt ${attempts}: non-JSON response`); continue; }
+          try { parsed = JSON.parse(content); } catch { logLine(`Attempt ${attempts}: non-JSON response`); lastReason = "non-JSON response"; continue; }
           const v = validateDraft(parsed);
-          if (v.ok) { draft = parsed; break; }
+          lastWords = v.words;
+          if (v.ok) { draft = parsed; logLine(`Draft accepted: ${v.words} words (attempt ${attempts})`); break; }
+          lastReason = v.reason;
           logLine(`Attempt ${attempts} failed validation: ${v.reason}`);
         }
         if (!draft) { logLine("Skipped: could not produce valid draft after 2 attempts"); continue; }
