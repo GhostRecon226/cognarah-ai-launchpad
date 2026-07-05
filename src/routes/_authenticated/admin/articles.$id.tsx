@@ -11,6 +11,7 @@ import type { Article, Category, Author } from "@/lib/types";
 import { MediaImage } from "@/components/site/media-image";
 import { regenerateArticleHero, validateArticleHero } from "@/lib/agent.functions";
 import { Sparkles, ShieldCheck, RefreshCw } from "lucide-react";
+import { stripEmDashes } from "@/lib/strip-em-dashes";
 
 
 export const Route = createFileRoute("/_authenticated/admin/articles/$id")({
