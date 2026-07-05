@@ -303,12 +303,12 @@ function wordCount(html: string): number {
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().split(" ").filter(Boolean).length;
 }
 
-function validateDraft(d: DraftPayload): { ok: true } | { ok: false; reason: string } {
-  if (!d.title || d.title.trim().split(/\s+/).length < 6) return { ok: false, reason: "title too short (< 6 words)" };
-  if (!d.dek || d.dek.trim().split(/\s+/).length < 15) return { ok: false, reason: "dek too short (< 15 words)" };
+function validateDraft(d: DraftPayload): { ok: true; words: number } | { ok: false; reason: string; words: number } {
   const wc = wordCount(d.body_html || "");
-  if (wc < 500) return { ok: false, reason: `body too short (${wc} words)` };
-  return { ok: true };
+  if (!d.title || d.title.trim().split(/\s+/).length < 6) return { ok: false, reason: "title too short (< 6 words)", words: wc };
+  if (!d.dek || d.dek.trim().split(/\s+/).length < 15) return { ok: false, reason: "dek too short (< 15 words)", words: wc };
+  if (wc < 350) return { ok: false, reason: `body too short (${wc} words)`, words: wc };
+  return { ok: true, words: wc };
 }
 
 const SYSTEM_PROMPT =
@@ -327,10 +327,10 @@ const SYSTEM_PROMPT =
   "3. Body: 3-5 short paragraphs expanding the story with context, numbers, and named sources where available.\n" +
   "4. Africa Angle: at least one paragraph connecting the story to Africa — what it means for African users, startups, policymakers, or the broader ecosystem. If the story is already Africa-specific, expand the local context.\n" +
   "5. Closing line: one punchy sentence that gives the reader something to think about. No summaries. No 'time will tell'.\n\n" +
-  "ARTICLE LENGTH\n" +
-  "- News articles: 500-700 words.\n" +
-  "- Analysis or opinion pieces: 800-1300 words.\n" +
-  "- Never pad content to hit a word count.\n\n" +
+  "ARTICLE LENGTH (HARD REQUIREMENT)\n" +
+  "- News articles: minimum 500 words, target 500-700.\n" +
+  "- Analysis or opinion pieces: minimum 800 words, target 800-1300.\n" +
+  "- If the source is thin, expand with verifiable context, background, and a full Africa Angle paragraph. Never invent facts. Never pad — but never under-deliver on length.\n\n" +
   "WHAT TO COVER (prioritize stories meeting at least one):\n" +
   "- Major AI model releases or research breakthroughs.\n" +
   "- AI startup funding rounds, especially African ones.\n" +
@@ -506,8 +506,13 @@ export async function runAgentCore(args: RunAgentArgs) {
 
         let draft: DraftPayload | null = null;
         let attempts = 0;
-        for (const nudge of [undefined, "Your previous draft was too generic. Rewrite with a specific, actor+action headline; a dek containing at least one concrete fact (name, number, date); and the required Why it matters / bigger picture sections. Avoid all banned phrases."]) {
+        let lastWords = 0;
+        let lastReason = "";
+        for (let i = 0; i < 2; i++) {
           attempts++;
+          const nudge = i === 0
+            ? undefined
+            : `Your previous draft was ${lastWords} words and failed with: ${lastReason}. Rewrite to AT LEAST 500 words by expanding the Africa Angle paragraph and adding verifiable context drawn from the source. Do not invent facts. Ensure a specific actor+action headline and a dek containing at least one concrete fact (name, number, or date).`;
           const aiRes: any = await callLovableAI({
             model: "google/gemini-3-flash-preview",
             messages: [
@@ -518,9 +523,11 @@ export async function runAgentCore(args: RunAgentArgs) {
           });
           const content: string = aiRes?.choices?.[0]?.message?.content ?? "";
           let parsed: DraftPayload;
-          try { parsed = JSON.parse(content); } catch { logLine(`Attempt ${attempts}: non-JSON response`); continue; }
+          try { parsed = JSON.parse(content); } catch { logLine(`Attempt ${attempts}: non-JSON response`); lastReason = "non-JSON response"; continue; }
           const v = validateDraft(parsed);
-          if (v.ok) { draft = parsed; break; }
+          lastWords = v.words;
+          if (v.ok) { draft = parsed; logLine(`Draft accepted: ${v.words} words (attempt ${attempts})`); break; }
+          lastReason = v.reason;
           logLine(`Attempt ${attempts} failed validation: ${v.reason}`);
         }
         if (!draft) { logLine("Skipped: could not produce valid draft after 2 attempts"); continue; }
