@@ -11,10 +11,11 @@ import type { Article, Category, Author } from "@/lib/types";
 import { MediaImage } from "@/components/site/media-image";
 import { regenerateArticleHero, validateArticleHero } from "@/lib/agent.functions";
 import { Sparkles, ShieldCheck, RefreshCw } from "lucide-react";
+import { stripEmDashes } from "@/lib/strip-em-dashes";
 
 
 export const Route = createFileRoute("/_authenticated/admin/articles/$id")({
-  head: () => ({ meta: [{ title: "Edit article — Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Edit article: Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
   component: EditArticle,
 });
 
@@ -139,10 +140,15 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
     const slug = (a.slug || slugify(a.title ?? "", { lower: true, strict: true })).slice(0, 120);
     const payload: any = {
 
-      title: a.title, slug, excerpt: a.excerpt, body: a.body, hero_image: a.hero_image || null,
+      title: stripEmDashes(a.title ?? ""),
+      slug,
+      excerpt: a.excerpt ? stripEmDashes(a.excerpt) : a.excerpt,
+      body: a.body ? stripEmDashes(a.body) : a.body,
+      hero_image: a.hero_image || null,
       author_id: a.author_id || null, category_id: a.category_id || null,
-      tags: tagsInput.split(",").map((t) => t.trim()).filter(Boolean),
-      seo_title: a.seo_title || null, meta_description: a.meta_description || null,
+      tags: tagsInput.split(",").map((t) => stripEmDashes(t.trim())).filter(Boolean),
+      seo_title: a.seo_title ? stripEmDashes(a.seo_title) : null,
+      meta_description: a.meta_description ? stripEmDashes(a.meta_description) : null,
       read_time: Number(a.read_time) || 3, is_featured: !!a.is_featured,
       status: publish && canPublish ? "published" : (publish ? a.status ?? "draft" : a.status ?? "draft"),
       published_at: publish && canPublish ? new Date().toISOString() : (a.published_at ?? null),
@@ -204,13 +210,13 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
           <div className="rounded-lg border border-border bg-background p-4 space-y-3">
             <label className="block text-sm font-semibold">Category
               <select value={a.category_id ?? ""} onChange={(e) => setA({ ...a, category_id: e.target.value || undefined })} className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5 text-sm">
-                <option value="">—</option>
+                <option value="">None</option>
                 {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </label>
             <label className="block text-sm font-semibold">Author
               <select value={a.author_id ?? ""} onChange={(e) => setA({ ...a, author_id: e.target.value || undefined })} className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5 text-sm">
-                <option value="">—</option>
+                <option value="">None</option>
                 {authors.map((au) => <option key={au.id} value={au.id}>{au.name}</option>)}
               </select>
             </label>

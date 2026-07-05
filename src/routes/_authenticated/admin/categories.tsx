@@ -8,7 +8,7 @@ import type { Category } from "@/lib/types";
 import { Trash2, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/categories")({
-  head: () => ({ meta: [{ title: "Categories — Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Categories: Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
   component: CategoriesAdmin,
 });
 

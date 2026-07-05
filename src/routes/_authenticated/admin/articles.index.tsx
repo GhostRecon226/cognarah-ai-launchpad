@@ -10,7 +10,7 @@ import { toast } from "sonner";
 interface Row { id: string; title: string; slug: string; status: string; updated_at: string; view_count: number; category?: { name: string } | null }
 
 export const Route = createFileRoute("/_authenticated/admin/articles/")({
-  head: () => ({ meta: [{ title: "Articles — Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Articles: Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
   component: ArticlesList,
 });
 
@@ -97,7 +97,7 @@ function ArticlesListInner() {
             {rows.map((r) => (
               <tr key={r.id} className="hover:bg-secondary/50">
                 <td className="px-4 py-3"><Link to="/admin/articles/$id" params={{ id: r.id }} className="font-medium hover:text-brand">{r.title}</Link></td>
-                <td className="px-4 py-3 text-muted-foreground">{r.category?.name ?? "—"}</td>
+                <td className="px-4 py-3 text-muted-foreground">{r.category?.name ?? "None"}</td>
                 <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-xs ${r.status === "published" ? "bg-brand/15 text-brand" : "bg-secondary"}`}>{r.status}</span></td>
                 <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{(r.view_count ?? 0).toLocaleString()}</td>
                 <td className="px-4 py-3 text-muted-foreground">{format(new Date(r.updated_at), "MMM d, yyyy")}</td>

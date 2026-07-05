@@ -11,7 +11,7 @@ interface Settings {
 }
 
 export const Route = createFileRoute("/_authenticated/admin/settings")({
-  head: () => ({ meta: [{ title: "Settings — Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Settings: Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
   component: SettingsPage,
 });
 

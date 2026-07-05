@@ -12,7 +12,7 @@ export const Route = createFileRoute("/auth")({
     const { data } = await supabase.auth.getUser();
     if (data.user) throw redirect({ to: "/admin" });
   },
-  head: () => ({ meta: [{ title: "Sign in — Cognarah" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Sign in: Cognarah" }, { name: "robots", content: "noindex" }] }),
   component: AuthPage,
 });
 
