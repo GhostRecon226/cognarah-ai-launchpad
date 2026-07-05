@@ -497,6 +497,15 @@ export async function runAgentCore(args: RunAgentArgs) {
         }
         if (!draft) { logLine("Skipped: could not produce valid draft after 2 attempts"); continue; }
 
+        // Stage 2: Claude editor pass. On any failure, keep Gemini's draft.
+        const refined = await refineWithClaude(draft, cand.url);
+        if (refined) {
+          draft = refined;
+          logLine("Claude editor pass applied");
+        } else {
+          logLine("Claude editor pass skipped/failed — using Gemini draft");
+        }
+
         const slug = slugify(draft.title, { lower: true, strict: true }).slice(0, 110) + "-" + Date.now().toString(36);
 
         // 9. Hero image — prefer source, but validate strictly.
