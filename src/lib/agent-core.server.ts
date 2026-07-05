@@ -320,7 +320,9 @@ const SYSTEM_PROMPT =
   "- Avoid hype, superlatives, and buzzword stacking.\n" +
   "- Never say 'groundbreaking', 'revolutionary', 'game-changing', or 'the future is here'.\n" +
   "- Use active voice. Short sentences. One idea per paragraph.\n" +
-  "- Write for someone intelligent but not necessarily deeply technical.\n\n" +
+  "- Write for someone intelligent but not necessarily deeply technical.\n" +
+  "- Never use em dashes (—) anywhere in articles. Use commas, periods, or semicolons instead.\n" +
+  "- AGENT RULE: If an em dash appears in any draft, replace it before saving. It is not permitted in any Cognarah content.\n\n" +
   "ARTICLE STRUCTURE (every draft must follow this):\n" +
   "1. Headline: clear, specific, direct. No clickbait. Tells the reader exactly what happened. Max 12 words.\n" +
   "2. Opening paragraph: the most important facts in 2-3 sentences. Answer who, what, and why it matters. No throat-clearing.\n" +
@@ -539,6 +541,22 @@ export async function runAgentCore(args: RunAgentArgs) {
           logLine("Claude editor pass applied");
         } else {
           logLine("Claude editor pass skipped/failed — using Gemini draft");
+        }
+
+        // Enforce em/en dash ban — replace with comma+space (period would over-fragment mid-clause).
+        const stripDashes = (s: string | undefined | null) =>
+          typeof s === "string" ? s.replace(/\s*[—–]\s*/g, ", ") : s;
+        const beforeDashCount = (JSON.stringify(draft).match(/[—–]/g) || []).length;
+        if (beforeDashCount > 0) {
+          draft = {
+            ...draft,
+            title: stripDashes(draft.title) as string,
+            dek: stripDashes(draft.dek) as string,
+            body_html: stripDashes(draft.body_html) as string,
+            seo_title: stripDashes(draft.seo_title) as string,
+            meta_description: stripDashes(draft.meta_description) as string,
+          };
+          logLine(`Stripped ${beforeDashCount} em/en dash(es) from draft`);
         }
 
         const slug = slugify(draft.title, { lower: true, strict: true }).slice(0, 110) + "-" + Date.now().toString(36);
