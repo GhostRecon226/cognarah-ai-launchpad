@@ -140,10 +140,15 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
     const slug = (a.slug || slugify(a.title ?? "", { lower: true, strict: true })).slice(0, 120);
     const payload: any = {
 
-      title: a.title, slug, excerpt: a.excerpt, body: a.body, hero_image: a.hero_image || null,
+      title: stripEmDashes(a.title ?? ""),
+      slug,
+      excerpt: a.excerpt ? stripEmDashes(a.excerpt) : a.excerpt,
+      body: a.body ? stripEmDashes(a.body) : a.body,
+      hero_image: a.hero_image || null,
       author_id: a.author_id || null, category_id: a.category_id || null,
-      tags: tagsInput.split(",").map((t) => t.trim()).filter(Boolean),
-      seo_title: a.seo_title || null, meta_description: a.meta_description || null,
+      tags: tagsInput.split(",").map((t) => stripEmDashes(t.trim())).filter(Boolean),
+      seo_title: a.seo_title ? stripEmDashes(a.seo_title) : null,
+      meta_description: a.meta_description ? stripEmDashes(a.meta_description) : null,
       read_time: Number(a.read_time) || 3, is_featured: !!a.is_featured,
       status: publish && canPublish ? "published" : (publish ? a.status ?? "draft" : a.status ?? "draft"),
       published_at: publish && canPublish ? new Date().toISOString() : (a.published_at ?? null),
