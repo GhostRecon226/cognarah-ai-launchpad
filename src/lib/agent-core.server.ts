@@ -327,10 +327,10 @@ const SYSTEM_PROMPT =
   "3. Body: 3-5 short paragraphs expanding the story with context, numbers, and named sources where available.\n" +
   "4. Africa Angle: at least one paragraph connecting the story to Africa — what it means for African users, startups, policymakers, or the broader ecosystem. If the story is already Africa-specific, expand the local context.\n" +
   "5. Closing line: one punchy sentence that gives the reader something to think about. No summaries. No 'time will tell'.\n\n" +
-  "ARTICLE LENGTH\n" +
-  "- News articles: 500-700 words.\n" +
-  "- Analysis or opinion pieces: 800-1300 words.\n" +
-  "- Never pad content to hit a word count.\n\n" +
+  "ARTICLE LENGTH (HARD REQUIREMENT)\n" +
+  "- News articles: minimum 500 words, target 500-700.\n" +
+  "- Analysis or opinion pieces: minimum 800 words, target 800-1300.\n" +
+  "- If the source is thin, expand with verifiable context, background, and a full Africa Angle paragraph. Never invent facts. Never pad — but never under-deliver on length.\n\n" +
   "WHAT TO COVER (prioritize stories meeting at least one):\n" +
   "- Major AI model releases or research breakthroughs.\n" +
   "- AI startup funding rounds, especially African ones.\n" +
