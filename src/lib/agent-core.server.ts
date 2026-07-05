@@ -543,6 +543,22 @@ export async function runAgentCore(args: RunAgentArgs) {
           logLine("Claude editor pass skipped/failed — using Gemini draft");
         }
 
+        // Enforce em/en dash ban — replace with comma+space (period would over-fragment mid-clause).
+        const stripDashes = (s: string | undefined | null) =>
+          typeof s === "string" ? s.replace(/\s*[—–]\s*/g, ", ") : s;
+        const beforeDashCount = (JSON.stringify(draft).match(/[—–]/g) || []).length;
+        if (beforeDashCount > 0) {
+          draft = {
+            ...draft,
+            title: stripDashes(draft.title) as string,
+            dek: stripDashes(draft.dek) as string,
+            body_html: stripDashes(draft.body_html) as string,
+            seo_title: stripDashes(draft.seo_title) as string,
+            meta_description: stripDashes(draft.meta_description) as string,
+          };
+          logLine(`Stripped ${beforeDashCount} em/en dash(es) from draft`);
+        }
+
         const slug = slugify(draft.title, { lower: true, strict: true }).slice(0, 110) + "-" + Date.now().toString(36);
 
         // 9. Hero image — prefer source, but validate strictly.
