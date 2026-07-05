@@ -155,6 +155,55 @@ async function callLovableAI<T>(body: unknown): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+// Stage 2 editor: Claude refines the Gemini draft for tone/structure/quality.
+// MUST NOT change facts, quotes, or links. Returns null on any failure so the
+// caller can fall back to the Gemini draft.
+async function refineWithClaude(draft: DraftPayload, sourceUrl: string): Promise<DraftPayload | null> {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (!key) return null;
+  const editorInstruction =
+    "You are the senior editor. Refine the following draft for tone, structure, flow, and editorial quality per the SYSTEM_PROMPT above. " +
+    "STRICT CONSTRAINTS: do NOT change any facts, figures, names, dates, quotes, or <a href=\"...\"> links. " +
+    "Preserve the Source URL and 'Source:' footer link exactly. Keep the same JSON schema. " +
+    "Improve writing only — sharpen headline/dek within their word limits, tighten prose, fix awkward phrasing, ensure required sections exist. " +
+    "Return ONLY strict JSON matching the original shape — no markdown, no code fences, no commentary.\n\n" +
+    `Source URL (must be preserved in the Source footer link): ${sourceUrl}\n\n` +
+    `DRAFT JSON:\n${JSON.stringify(draft)}`;
+  try {
+    const res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-6",
+        max_tokens: 4096,
+        system: SYSTEM_PROMPT,
+        messages: [{ role: "user", content: editorInstruction }],
+      }),
+    });
+    if (!res.ok) {
+      const t = await res.text();
+      throw new Error(`Claude ${res.status}: ${t.slice(0, 300)}`);
+    }
+    const json: any = await res.json();
+    const text: string = Array.isArray(json?.content)
+      ? json.content.filter((b: any) => b?.type === "text").map((b: any) => b.text).join("")
+      : "";
+    if (!text) return null;
+    // Strip accidental code fences.
+    const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    const parsed = JSON.parse(cleaned) as DraftPayload;
+    const v = validateDraft(parsed);
+    if (!v.ok) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
 // Vision check: does this image plausibly illustrate the article?
 async function isImageRelevant(imageBuf: Buffer, contentType: string, title: string, dek: string): Promise<{ ok: boolean; reason: string }> {
   try {
@@ -447,6 +496,15 @@ export async function runAgentCore(args: RunAgentArgs) {
           logLine(`Attempt ${attempts} failed validation: ${v.reason}`);
         }
         if (!draft) { logLine("Skipped: could not produce valid draft after 2 attempts"); continue; }
+
+        // Stage 2: Claude editor pass. On any failure, keep Gemini's draft.
+        const refined = await refineWithClaude(draft, cand.url);
+        if (refined) {
+          draft = refined;
+          logLine("Claude editor pass applied");
+        } else {
+          logLine("Claude editor pass skipped/failed — using Gemini draft");
+        }
 
         const slug = slugify(draft.title, { lower: true, strict: true }).slice(0, 110) + "-" + Date.now().toString(36);
 
