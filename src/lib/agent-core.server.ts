@@ -546,7 +546,7 @@ export async function runAgentCore(args: RunAgentArgs) {
 
         // Enforce em/en dash ban, replace with comma+space (period would over-fragment mid-clause).
         const stripDashes = (s: string | undefined | null) =>
-          typeof s === "string" ? s.replace(/\s*[—–]\s*/g, ", ") : s;
+          typeof s === "string" ? stripEmDashes(s) : s;
         const beforeDashCount = (JSON.stringify(draft).match(/[—–]/g) || []).length;
         if (beforeDashCount > 0) {
           draft = {
