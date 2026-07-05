@@ -303,12 +303,12 @@ function wordCount(html: string): number {
   return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().split(" ").filter(Boolean).length;
 }
 
-function validateDraft(d: DraftPayload): { ok: true } | { ok: false; reason: string } {
-  if (!d.title || d.title.trim().split(/\s+/).length < 6) return { ok: false, reason: "title too short (< 6 words)" };
-  if (!d.dek || d.dek.trim().split(/\s+/).length < 15) return { ok: false, reason: "dek too short (< 15 words)" };
+function validateDraft(d: DraftPayload): { ok: true; words: number } | { ok: false; reason: string; words: number } {
   const wc = wordCount(d.body_html || "");
-  if (wc < 500) return { ok: false, reason: `body too short (${wc} words)` };
-  return { ok: true };
+  if (!d.title || d.title.trim().split(/\s+/).length < 6) return { ok: false, reason: "title too short (< 6 words)", words: wc };
+  if (!d.dek || d.dek.trim().split(/\s+/).length < 15) return { ok: false, reason: "dek too short (< 15 words)", words: wc };
+  if (wc < 350) return { ok: false, reason: `body too short (${wc} words)`, words: wc };
+  return { ok: true, words: wc };
 }
 
 const SYSTEM_PROMPT =
