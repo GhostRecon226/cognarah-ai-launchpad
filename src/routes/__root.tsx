@@ -78,7 +78,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Cognarah — Everything AI. Nothing Else." },
+      { title: "Cognarah, Everything AI. Nothing Else." },
       { name: "description", content: "The definitive media platform for everything artificial intelligence. News, startups, funding, tools, policy, and the global builders shaping AI." },
       { name: "author", content: "Cognarah" },
       { property: "og:site_name", content: "Cognarah" },

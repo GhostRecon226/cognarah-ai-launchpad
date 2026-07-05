@@ -6,7 +6,7 @@ import logoAsset from "@/assets/cognarah-logo.png.asset.json";
 
 export const Route = createFileRoute("/reset-password")({
   ssr: false,
-  head: () => ({ meta: [{ title: "Reset password — Cognarah" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Reset password: Cognarah" }, { name: "robots", content: "noindex" }] }),
   component: ResetPasswordPage,
 });
 

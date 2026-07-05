@@ -222,7 +222,7 @@ export const regenerateArticleHero = createServerFn({ method: "POST" })
       if (heroPath) { lastReason = `attempt ${attempt}: ${rel.reason}`; break; }
       lastReason = "upload failed";
     }
-    if (!heroPath) throw new Error(`Could not regenerate hero — ${lastReason}`);
+    if (!heroPath) throw new Error(`Could not regenerate hero, ${lastReason}`);
     const { error } = await context.supabase
       .from("articles")
       .update({ hero_image: heroPath })

@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
-  head: () => ({ meta: [{ title: "Users — Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Users: Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
   component: UsersPage,
 });
 
@@ -82,7 +82,7 @@ function UsersPage() {
               {rows.map((u) => (
                 <tr key={u.id} className="align-top">
                   <td className="px-4 py-3">
-                    <div className="font-medium">{u.email || "—"}</div>
+                    <div className="font-medium">{u.email || "None"}</div>
                     <div className="text-xs text-muted-foreground">
                       Joined {formatDistanceToNow(new Date(u.created_at), { addSuffix: true })}
                     </div>

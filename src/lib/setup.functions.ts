@@ -19,7 +19,7 @@ export const claimInitialAdmin = createServerFn({ method: "POST" })
   .handler(async ({ data }) => {
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    // Refuse if an admin already exists — endpoint is single-use.
+    // Refuse if an admin already exists, endpoint is single-use.
     const { count, error: countErr } = await supabaseAdmin
       .from("user_roles")
       .select("user_id", { count: "exact", head: true })

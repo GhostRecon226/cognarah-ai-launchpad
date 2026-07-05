@@ -25,7 +25,7 @@ export function SiteFooter() {
               <img src={logoMark} alt="Cognarah" className="h-12 w-auto sm:h-14" />
             </Link>
             <p className="mt-5 max-w-sm text-sm text-white/70">
-              Cognarah is the definitive media platform for everything artificial intelligence — news, startups, funding, policy, and the global builders shaping it.
+              Cognarah is the definitive media platform for everything artificial intelligence, news, startups, funding, policy, and the global builders shaping it.
             </p>
           </div>
           <div>

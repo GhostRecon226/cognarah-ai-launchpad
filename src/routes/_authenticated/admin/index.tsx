@@ -6,7 +6,7 @@ import { FileText, Tags, Users, Pencil } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
-  head: () => ({ meta: [{ title: "Dashboard — Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Dashboard: Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
   component: Dashboard,
 });
 

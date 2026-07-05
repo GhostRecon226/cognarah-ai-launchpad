@@ -8,9 +8,9 @@ import { SITE_URL } from "@/lib/types";
 export const Route = createFileRoute("/about")({
   head: () => ({
     meta: [
-      { title: "About — Cognarah" },
+      { title: "About: Cognarah" },
       { name: "description", content: "Cognarah is the definitive media platform for everything artificial intelligence." },
-      { property: "og:title", content: "About — Cognarah" },
+      { property: "og:title", content: "About: Cognarah" },
       { property: "og:description", content: "Cognarah is the definitive media platform for everything AI." },
       { property: "og:url", content: `${SITE_URL}/about` },
     ],
@@ -36,7 +36,7 @@ function AboutPage() {
         <section className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-16">
           <h2 className="text-2xl font-bold">Our mission</h2>
           <p className="mt-4 text-base text-muted-foreground sm:text-lg">
-            To be the definitive media platform for everything artificial intelligence — with a global lens, an editorial backbone, and a deliberate focus on the regions and voices the rest of the AI press is missing, especially Africa.
+            To be the definitive media platform for everything artificial intelligence, with a global lens, an editorial backbone, and a deliberate focus on the regions and voices the rest of the AI press is missing, especially Africa.
           </p>
           <h2 className="mt-12 text-2xl font-bold">What we cover</h2>
           <ul className="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">

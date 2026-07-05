@@ -28,9 +28,9 @@ export const Route = createFileRoute("/")({
   loader: loadHome,
   head: () => ({
     meta: [
-      { title: "Cognarah — Everything AI. Nothing Else." },
+      { title: "Cognarah, Everything AI. Nothing Else." },
       { name: "description", content: "The definitive media platform for everything AI. News, startups, funding, tools, policy, and the global builders shaping AI." },
-      { property: "og:title", content: "Cognarah — Everything AI. Nothing Else." },
+      { property: "og:title", content: "Cognarah, Everything AI. Nothing Else." },
       { property: "og:description", content: "The definitive media platform for everything AI." },
       { property: "og:url", content: SITE_URL },
       { property: "og:type", content: "website" },
@@ -64,11 +64,11 @@ function HomePage() {
       </div>
 
       <main className="flex-1">
-        {/* Hero — newspaper-style split: 60% lead, 40% secondary stack */}
+        {/* Hero, newspaper-style split: 60% lead, 40% secondary stack */}
         {lead ? (
           <section className="bg-navy text-navy-foreground">
             <div className="mx-auto grid max-w-7xl gap-10 px-4 py-12 sm:px-6 lg:grid-cols-5 lg:gap-12 lg:py-16">
-              {/* Lead — 3/5 ≈ 60% */}
+              {/* Lead, 3/5 ≈ 60% */}
               <article className="lg:col-span-3">
                 <Link
                   to="/article/$slug"
@@ -116,7 +116,7 @@ function HomePage() {
                 </div>
               </article>
 
-              {/* Secondary stack — 2/5 ≈ 40% with vertical divider */}
+              {/* Secondary stack, 2/5 ≈ 40% with vertical divider */}
               <div className="lg:col-span-2 lg:border-l lg:border-white/15 lg:pl-10">
                 <div className="flex flex-col divide-y divide-white/10">
                   {[second, third].filter(Boolean).map((s) => (
@@ -191,7 +191,7 @@ function HomePage() {
           </ol>
         </section>
 
-        {/* Africa AI Spotlight band — deep plum, full-width, 60px breathing room above */}
+        {/* Africa AI Spotlight band, deep plum, full-width, 60px breathing room above */}
         {africa && (
           <section
             className="mt-8 border-y border-white/5 sm:mt-[60px]"
@@ -252,7 +252,7 @@ function HomePage() {
           </section>
         )}
 
-        {/* Latest — compact three-column dense list */}
+        {/* Latest, compact three-column dense list */}
         {latest.length > 0 && (
           <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6">
             <div className="mb-8 flex items-end justify-between border-b border-border pb-4">

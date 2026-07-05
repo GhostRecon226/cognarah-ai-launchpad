@@ -18,7 +18,7 @@ import {
 } from "@/lib/agent.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/agent")({
-  head: () => ({ meta: [{ title: "AI Agent — Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "AI Agent: Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
   component: AgentPage,
 });
 
@@ -102,7 +102,7 @@ function AgentInner() {
 
   async function doRun() {
     setRunning(true);
-    toast.info(`Agent running — generating up to ${count} draft(s)…`);
+    toast.info(`Agent running, generating up to ${count} draft(s)…`);
     try {
       const res: any = await _runAgent({ data: { count, focus: focus || null } });
       toast.success(`${res.drafts_created} draft(s) created. Review in Articles.`);
@@ -238,7 +238,7 @@ function AgentInner() {
                   <tr>
                     <td className="py-2">{format(new Date(r.started_at), "MMM d, HH:mm")}</td>
                     <td>{r.trigger}</td>
-                    <td className="text-muted-foreground">{r.focus ?? "—"}</td>
+                    <td className="text-muted-foreground">{r.focus ?? "None"}</td>
                     <td>
                       <span className={`inline-block rounded px-2 py-0.5 text-xs ${r.status === "success" ? "bg-emerald-100 text-emerald-700" : r.status === "error" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"}`}>{r.status}</span>
                     </td>

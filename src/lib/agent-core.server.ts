@@ -165,8 +165,8 @@ async function refineWithClaude(draft: DraftPayload, sourceUrl: string): Promise
     "You are the senior editor. Refine the following draft for tone, structure, flow, and editorial quality per the SYSTEM_PROMPT above. " +
     "STRICT CONSTRAINTS: do NOT change any facts, figures, names, dates, quotes, or <a href=\"...\"> links. " +
     "Preserve the Source URL and 'Source:' footer link exactly. Keep the same JSON schema. " +
-    "Improve writing only — sharpen headline/dek within their word limits, tighten prose, fix awkward phrasing, ensure required sections exist. " +
-    "Return ONLY strict JSON matching the original shape — no markdown, no code fences, no commentary.\n\n" +
+    "Improve writing only, sharpen headline/dek within their word limits, tighten prose, fix awkward phrasing, ensure required sections exist. " +
+    "Return ONLY strict JSON matching the original shape, no markdown, no code fences, no commentary.\n\n" +
     `Source URL (must be preserved in the Source footer link): ${sourceUrl}\n\n` +
     `DRAFT JSON:\n${JSON.stringify(draft)}`;
   try {
@@ -321,18 +321,18 @@ const SYSTEM_PROMPT =
   "- Never say 'groundbreaking', 'revolutionary', 'game-changing', or 'the future is here'.\n" +
   "- Use active voice. Short sentences. One idea per paragraph.\n" +
   "- Write for someone intelligent but not necessarily deeply technical.\n" +
-  "- Never use em dashes (—) anywhere in articles. Use commas, periods, or semicolons instead.\n" +
+  "- Never use em dashes (em dash) anywhere in articles. Use commas, periods, or semicolons instead.\n" +
   "- AGENT RULE: If an em dash appears in any draft, replace it before saving. It is not permitted in any Cognarah content.\n\n" +
   "ARTICLE STRUCTURE (every draft must follow this):\n" +
   "1. Headline: clear, specific, direct. No clickbait. Tells the reader exactly what happened. Max 12 words.\n" +
   "2. Opening paragraph: the most important facts in 2-3 sentences. Answer who, what, and why it matters. No throat-clearing.\n" +
   "3. Body: 3-5 short paragraphs expanding the story with context, numbers, and named sources where available.\n" +
-  "4. Africa Angle: at least one paragraph connecting the story to Africa — what it means for African users, startups, policymakers, or the broader ecosystem. If the story is already Africa-specific, expand the local context.\n" +
+  "4. Africa Angle: at least one paragraph connecting the story to Africa, what it means for African users, startups, policymakers, or the broader ecosystem. If the story is already Africa-specific, expand the local context.\n" +
   "5. Closing line: one punchy sentence that gives the reader something to think about. No summaries. No 'time will tell'.\n\n" +
   "ARTICLE LENGTH (HARD REQUIREMENT)\n" +
   "- News articles: minimum 500 words, target 500-700.\n" +
   "- Analysis or opinion pieces: minimum 800 words, target 800-1300.\n" +
-  "- If the source is thin, expand with verifiable context, background, and a full Africa Angle paragraph. Never invent facts. Never pad — but never under-deliver on length.\n\n" +
+  "- If the source is thin, expand with verifiable context, background, and a full Africa Angle paragraph. Never invent facts. Never pad, but never under-deliver on length.\n\n" +
   "WHAT TO COVER (prioritize stories meeting at least one):\n" +
   "- Major AI model releases or research breakthroughs.\n" +
   "- AI startup funding rounds, especially African ones.\n" +
@@ -357,7 +357,7 @@ const SYSTEM_PROMPT =
   "- OpenAI model story: what it means for African developers building on the API, cost implications given currency challenges, or African-language support.\n" +
   "- EU AI regulation story: connect to Nigeria's draft AI bill or Kenya's data protection framework.\n" +
   "- AI-and-jobs story: frame around Africa's young workforce and what displacement or opportunity looks like on the continent.\n\n" +
-  "DRAFT ONLY — never publish directly. Do not include an author name; it will be assigned manually.\n\n" +
+  "DRAFT ONLY, never publish directly. Do not include an author name; it will be assigned manually.\n\n" +
   "OUTPUT FORMAT: Return ONLY strict JSON (no markdown, no code fences) matching this shape. Map fields as follows: `title` = Headline, `dek` = the opening paragraph (20-40 words summarizing who/what/why), `body_html` = the full Body including the Africa Angle paragraph and closing line, `category_slug` = Category. The body must be clean HTML using only: p, h2, h3, ul, ol, li, strong, em, blockquote, a. End the body with: <p><em>Source:</em> <a href=\"SOURCE_URL\">Publication name</a></p>.\n" +
   `{"title":"...","dek":"...","body_html":"<p>...</p>...","tags":["...","..."],"seo_title":"...","meta_description":"...","category_slug":"one of: ${CATEGORY_HINTS.join(", ")}"}`;
 
@@ -409,8 +409,8 @@ export async function runAgentCore(args: RunAgentArgs) {
           `African AI ${focusPart}`,
         ];
 
-    // 4. Search via Firecrawl — one query per domain when configured, plus generic recent queries.
-    if (!process.env.FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY missing — link Firecrawl in Connectors.");
+    // 4. Search via Firecrawl, one query per domain when configured, plus generic recent queries.
+    if (!process.env.FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY missing, link Firecrawl in Connectors.");
     const fc = new Firecrawl({ apiKey: process.env.FIRECRAWL_API_KEY });
 
     const seenUrls = new Set<string>();
@@ -501,7 +501,7 @@ export async function runAgentCore(args: RunAgentArgs) {
           continue;
         }
 
-        // 8. Ask Lovable AI to rewrite — with one retry on validation failure.
+        // 8. Ask Lovable AI to rewrite, with one retry on validation failure.
         const buildUserPrompt = (nudge?: string) =>
           `Focus: ${focusPart}\nSource URL: ${cand.url}\nSource title: ${cand.title ?? meta.title ?? ""}\n\nSource content:\n${md.slice(0, 12000)}` +
           (nudge ? `\n\nEDITOR NOTE: ${nudge}` : "");
@@ -540,10 +540,10 @@ export async function runAgentCore(args: RunAgentArgs) {
           draft = refined;
           logLine("Claude editor pass applied");
         } else {
-          logLine("Claude editor pass skipped/failed — using Gemini draft");
+          logLine("Claude editor pass skipped/failed, using Gemini draft");
         }
 
-        // Enforce em/en dash ban — replace with comma+space (period would over-fragment mid-clause).
+        // Enforce em/en dash ban, replace with comma+space (period would over-fragment mid-clause).
         const stripDashes = (s: string | undefined | null) =>
           typeof s === "string" ? s.replace(/\s*[—–]\s*/g, ", ") : s;
         const beforeDashCount = (JSON.stringify(draft).match(/[—–]/g) || []).length;
@@ -561,7 +561,7 @@ export async function runAgentCore(args: RunAgentArgs) {
 
         const slug = slugify(draft.title, { lower: true, strict: true }).slice(0, 110) + "-" + Date.now().toString(36);
 
-        // 9. Hero image — prefer source, but validate strictly.
+        // 9. Hero image, prefer source, but validate strictly.
         let heroPath: string | null = null;
         let heroDecision = "";
         if (ogImg) {
@@ -650,7 +650,7 @@ export async function runAgentCore(args: RunAgentArgs) {
         drafts_created: created,
         log: log.join("\n"),
         finished_at: new Date().toISOString(),
-        error: created === 0 ? "No drafts created — see log" : null,
+        error: created === 0 ? "No drafts created, see log" : null,
       })
       .eq("id", runId);
 

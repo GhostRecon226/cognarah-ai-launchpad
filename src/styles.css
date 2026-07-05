@@ -72,7 +72,7 @@
   --border: oklch(0.9 0.01 270);
   --input: oklch(0.9 0.01 270);
   --ring: oklch(0.75 0.08 290);
-  /* Brand — pulled from logo */
+  /* Brand, pulled from logo */
   --navy: #0A0F2C;
   --navy-foreground: #ffffff;
   --brand: #AFA9EC;            /* lavender accent */

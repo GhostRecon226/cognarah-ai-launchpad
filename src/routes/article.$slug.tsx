@@ -46,7 +46,7 @@ export const Route = createFileRoute("/article/$slug")({
     const url = `${SITE_URL}/article/${params.slug}`;
     return {
       meta: [
-        { title: `${title} — Cognarah` },
+        { title: `${title}: Cognarah` },
         { name: "description", content: desc },
         { property: "og:title", content: title },
         { property: "og:description", content: desc },

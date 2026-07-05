@@ -28,7 +28,7 @@ export const Route = createFileRoute("/category/$slug")({
   loader: ({ params }) => loadCategory(params.slug),
   head: ({ params, loaderData }) => {
     const c = loaderData?.category;
-    const title = c ? `${c.name} — Cognarah` : "Category — Cognarah";
+    const title = c ? `${c.name}: Cognarah` : "Category: Cognarah";
     const desc = c?.description || `Latest ${c?.name ?? ""} coverage on Cognarah.`;
     const url = `${SITE_URL}/category/${params.slug}`;
     return {

@@ -8,7 +8,7 @@ import type { Author } from "@/lib/types";
 import { Trash2, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/authors")({
-  head: () => ({ meta: [{ title: "Authors — Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Authors: Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
   component: AuthorsAdmin,
 });
 

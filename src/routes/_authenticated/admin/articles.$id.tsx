@@ -14,7 +14,7 @@ import { Sparkles, ShieldCheck, RefreshCw } from "lucide-react";
 
 
 export const Route = createFileRoute("/_authenticated/admin/articles/$id")({
-  head: () => ({ meta: [{ title: "Edit article — Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Edit article: Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
   component: EditArticle,
 });
 
@@ -204,13 +204,13 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
           <div className="rounded-lg border border-border bg-background p-4 space-y-3">
             <label className="block text-sm font-semibold">Category
               <select value={a.category_id ?? ""} onChange={(e) => setA({ ...a, category_id: e.target.value || undefined })} className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5 text-sm">
-                <option value="">—</option>
+                <option value="">None</option>
                 {cats.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </label>
             <label className="block text-sm font-semibold">Author
               <select value={a.author_id ?? ""} onChange={(e) => setA({ ...a, author_id: e.target.value || undefined })} className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5 text-sm">
-                <option value="">—</option>
+                <option value="">None</option>
                 {authors.map((au) => <option key={au.id} value={au.id}>{au.name}</option>)}
               </select>
             </label>

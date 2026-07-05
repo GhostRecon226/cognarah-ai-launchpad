@@ -1,4 +1,4 @@
-// Cognarah content rule: no em dashes (—) or en dashes (–) anywhere.
+// Cognarah content rule: no em dashes (em dash) or en dashes (–) anywhere.
 // Replace with a comma+space so the sentence still reads naturally.
 // Callers should apply this to every user-visible text field before saving.
 

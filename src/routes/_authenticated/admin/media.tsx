@@ -9,7 +9,7 @@ import { Copy, Trash2, Upload } from "lucide-react";
 interface MediaItem { name: string; url: string; created_at?: string | null }
 
 export const Route = createFileRoute("/_authenticated/admin/media")({
-  head: () => ({ meta: [{ title: "Media — Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "Media: Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
   component: Media,
 });
 

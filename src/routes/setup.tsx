@@ -12,7 +12,7 @@ export const Route = createFileRoute("/setup")({
     if (hasAdmin) throw redirect({ to: "/auth" });
     return null;
   },
-  head: () => ({ meta: [{ title: "First-time setup — Cognarah" }, { name: "robots", content: "noindex" }] }),
+  head: () => ({ meta: [{ title: "First-time setup: Cognarah" }, { name: "robots", content: "noindex" }] }),
   component: SetupPage,
 });
 
