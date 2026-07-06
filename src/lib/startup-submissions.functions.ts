@@ -134,7 +134,21 @@ export const submitStartup = createServerFn({ method: "POST" })
       contact_method: data.contact_method,
       whatsapp_number: data.contact_method === "WhatsApp" ? data.whatsapp_number || null : null,
       consent: true,
-    });
+      },
+      [
+        "company_name",
+        "website_url",
+        "country",
+        "city",
+        "product_description",
+        "problem_solved",
+        "target_audience",
+        "founder_name",
+        "notable_investors",
+        "partnerships",
+        "press_links",
+      ],
+    );
 
     const { error: insErr } = await supabaseAdmin.from("startup_submissions").insert(row);
     if (insErr) throw new Error(insErr.message);
