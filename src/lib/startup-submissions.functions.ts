@@ -53,6 +53,23 @@ function req(v: unknown, name: string): string {
   return s;
 }
 
+function normalizeWebsiteUrl(raw: unknown): string {
+  const s = typeof raw === "string" ? raw.trim() : "";
+  if (!s) throw new Error("Website URL is required");
+  const withScheme = /^https?:\/\//i.test(s) ? s : `https://${s}`;
+  let url: URL;
+  try {
+    url = new URL(withScheme);
+  } catch {
+    throw new Error("Please enter a valid website URL");
+  }
+  if (!url.hostname.includes(".") || /\s/.test(url.hostname)) {
+    throw new Error("Please enter a valid website URL");
+  }
+  return url.toString().replace(/\/$/, "");
+}
+
+
 export const submitStartup = createServerFn({ method: "POST" })
   .inputValidator((data: StartupSubmissionInput) => {
     if (!data || typeof data !== "object") throw new Error("Invalid payload");
