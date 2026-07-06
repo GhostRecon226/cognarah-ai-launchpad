@@ -390,6 +390,116 @@ export type Database = {
         }
         Relationships: []
       }
+      startup_submissions: {
+        Row: {
+          admin_notes: string | null
+          ai_technologies: string[]
+          article_id: string | null
+          city: string
+          company_name: string
+          company_stage: string
+          consent: boolean
+          contact_method: string
+          country: string
+          founder_email: string
+          founder_linkedin: string | null
+          founder_name: string
+          funding_raised: string | null
+          id: string
+          logo_url: string
+          notable_investors: string | null
+          partnerships: string | null
+          press_links: string | null
+          problem_solved: string
+          product_demo: string | null
+          product_description: string
+          revenue_stage: string
+          status: Database["public"]["Enums"]["startup_submission_status"]
+          submitted_at: string
+          target_audience: string
+          team_size: string
+          updated_at: string
+          user_count: string | null
+          website_url: string
+          whatsapp_number: string | null
+          year_founded: number
+        }
+        Insert: {
+          admin_notes?: string | null
+          ai_technologies?: string[]
+          article_id?: string | null
+          city: string
+          company_name: string
+          company_stage: string
+          consent?: boolean
+          contact_method: string
+          country: string
+          founder_email: string
+          founder_linkedin?: string | null
+          founder_name: string
+          funding_raised?: string | null
+          id?: string
+          logo_url: string
+          notable_investors?: string | null
+          partnerships?: string | null
+          press_links?: string | null
+          problem_solved: string
+          product_demo?: string | null
+          product_description: string
+          revenue_stage: string
+          status?: Database["public"]["Enums"]["startup_submission_status"]
+          submitted_at?: string
+          target_audience: string
+          team_size: string
+          updated_at?: string
+          user_count?: string | null
+          website_url: string
+          whatsapp_number?: string | null
+          year_founded: number
+        }
+        Update: {
+          admin_notes?: string | null
+          ai_technologies?: string[]
+          article_id?: string | null
+          city?: string
+          company_name?: string
+          company_stage?: string
+          consent?: boolean
+          contact_method?: string
+          country?: string
+          founder_email?: string
+          founder_linkedin?: string | null
+          founder_name?: string
+          funding_raised?: string | null
+          id?: string
+          logo_url?: string
+          notable_investors?: string | null
+          partnerships?: string | null
+          press_links?: string | null
+          problem_solved?: string
+          product_demo?: string | null
+          product_description?: string
+          revenue_stage?: string
+          status?: Database["public"]["Enums"]["startup_submission_status"]
+          submitted_at?: string
+          target_audience?: string
+          team_size?: string
+          updated_at?: string
+          user_count?: string | null
+          website_url?: string
+          whatsapp_number?: string | null
+          year_founded?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "startup_submissions_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -435,6 +545,11 @@ export type Database = {
     Enums: {
       app_role: "admin" | "editor" | "author"
       article_status: "draft" | "published"
+      startup_submission_status:
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "published"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -564,6 +679,12 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "editor", "author"],
       article_status: ["draft", "published"],
+      startup_submission_status: [
+        "pending",
+        "approved",
+        "rejected",
+        "published",
+      ],
     },
   },
 } as const
