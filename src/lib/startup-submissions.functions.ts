@@ -1,5 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
-import { stripEmDashesInObject } from "./strip-em-dashes";
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { z } from "zod";
+import slugify from "slugify";
+import { stripEmDashes, stripEmDashesInObject } from "./strip-em-dashes";
 
 const ALLOWED_STAGES = ["Idea", "Pre-seed", "Seed", "Series A", "Series B+"];
 const ALLOWED_TEAM = ["1-5", "6-15", "16-50", "50+"];
