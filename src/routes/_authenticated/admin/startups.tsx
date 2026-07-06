@@ -1,11 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { MediaImage } from "@/components/site/media-image";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Check, X, ExternalLink } from "lucide-react";
+import { ChevronDown, ChevronRight, Check, X, ExternalLink, Sparkles, Eye, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { generateStartupDraft } from "@/lib/startup-submissions.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/startups")({
   head: () => ({ meta: [{ title: "Startup submissions: Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
