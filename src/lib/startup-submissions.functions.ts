@@ -107,7 +107,8 @@ export const submitStartup = createServerFn({ method: "POST" })
 
     const logo_url = `/api/public/media/${path}`;
 
-    const row = stripEmDashesInObject({
+    const row = stripEmDashesInObject(
+      {
       company_name: data.company_name,
       website_url: data.website_url,
       country: data.country,
