@@ -258,11 +258,11 @@ function SubmitPage() {
                 </Field>
                 <Field label="Revenue stage" required>
                   <select name="revenue_stage" required defaultValue="" className={inputCls}>
-                    <option value="" disabled>
+                    <option value="" disabled style={optionStyle}>
                       Select revenue stage
                     </option>
                     {REVENUE.map((s) => (
-                      <option key={s} value={s}>
+                      <option key={s} value={s} style={optionStyle}>
                         {s}
                       </option>
                     ))}
