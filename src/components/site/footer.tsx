@@ -29,7 +29,7 @@ export function SiteFooter() {
               Cognarah is the definitive media platform for everything artificial intelligence, news, startups, funding, policy, and the global builders shaping it.
             </p>
             <div className="mt-5 flex items-center gap-3">
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-[color:var(--brand)] transition hover:text-[color:var(--brand-soft)]">
+              <a href="https://www.instagram.com/cognarah" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-[color:var(--brand)] transition hover:text-[color:var(--brand-soft)]">
                 <Instagram className="h-5 w-5" />
               </a>
               <a href="https://x.com" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className="text-[color:var(--brand)] transition hover:text-[color:var(--brand-soft)]">
