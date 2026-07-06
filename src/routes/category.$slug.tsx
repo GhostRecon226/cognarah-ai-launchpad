@@ -36,6 +36,7 @@ export const Route = createFileRoute("/category/$slug")({
         { title }, { name: "description", content: desc },
         { property: "og:title", content: title },
         { property: "og:description", content: desc },
+        { property: "og:type", content: "website" },
         { property: "og:url", content: url },
       ],
       links: [{ rel: "canonical", href: url }],

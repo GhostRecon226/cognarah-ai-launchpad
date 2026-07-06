@@ -21,6 +21,7 @@ export const Route = createFileRoute("/startups/submit")({
         property: "og:description",
         content: "Tell us about your AI startup. We review every submission.",
       },
+      { property: "og:type", content: "website" },
       { property: "og:url", content: `${SITE_URL}/startups/submit` },
     ],
     links: [{ rel: "canonical", href: `${SITE_URL}/startups/submit` }],

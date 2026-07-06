@@ -22,7 +22,7 @@ export function SiteFooter() {
         <div className="grid gap-10 md:grid-cols-4">
           <div className="md:col-span-2">
             <Link to="/" className="inline-flex items-center">
-              <img src={logoMark} alt="Cognarah" className="h-12 w-auto sm:h-14" />
+              <img src={logoMark} alt="Cognarah" className="h-9 w-auto sm:h-10" />
             </Link>
             <p className="mt-5 max-w-sm text-sm text-white/70">
               Cognarah is the definitive media platform for everything artificial intelligence, news, startups, funding, policy, and the global builders shaping it.
