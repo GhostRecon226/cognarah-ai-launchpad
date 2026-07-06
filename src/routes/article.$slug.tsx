@@ -10,7 +10,7 @@ import { MediaImage } from "@/components/site/media-image";
 import type { Article } from "@/lib/types";
 import { SITE_URL } from "@/lib/types";
 import { format } from "date-fns";
-import { Twitter, Linkedin, Facebook, MessageCircle } from "lucide-react";
+import { ArticleShare } from "@/components/site/article-share";
 
 async function loadArticle(slug: string): Promise<{ article: Article; related: Article[] }> {
   const { data: article } = await supabase
