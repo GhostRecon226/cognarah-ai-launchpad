@@ -113,6 +113,22 @@ function StartupsPage() {
     updateStatus(id, "rejected", reason.trim());
   }
 
+  async function generate(id: string) {
+    if (generating.has(id)) return;
+    setGenerating((prev) => new Set(prev).add(id));
+    const t = toast.loading("Generating startup profile draft...");
+    try {
+      const res = await generateDraft({ data: { submission_id: id } });
+      toast.success(`Draft created${res.refined ? " (refined by Claude)" : ""}`, { id: t });
+      setSubs((prev) => prev.map((s) => s.id === id ? { ...s, status: "published", article_id: res.article_id } : s));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Draft generation failed", { id: t });
+    } finally {
+      setGenerating((prev) => { const n = new Set(prev); n.delete(id); return n; });
+    }
+  }
+
+
   return (
     <AdminShell title="Startup submissions" requiredRoles={["admin", "editor"]}>
       <div className="mb-4 flex flex-wrap items-center gap-2">
