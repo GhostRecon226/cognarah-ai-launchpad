@@ -28,6 +28,20 @@ export function SiteFooter() {
             <p className="mt-5 max-w-sm text-sm text-white/70">
               Cognarah is the definitive media platform for everything artificial intelligence, news, startups, funding, policy, and the global builders shaping it.
             </p>
+            <div className="mt-5 flex items-center gap-3">
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-[color:var(--brand)] transition hover:text-[color:var(--brand-soft)]">
+                <Instagram className="h-5 w-5" />
+              </a>
+              <a href="https://x.com" target="_blank" rel="noopener noreferrer" aria-label="X (Twitter)" className="text-[color:var(--brand)] transition hover:text-[color:var(--brand-soft)]">
+                <Twitter className="h-5 w-5" />
+              </a>
+              <a href="https://linkedin.com/company/cognarah" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn" className="text-[color:var(--brand)] transition hover:text-[color:var(--brand-soft)]">
+                <Linkedin className="h-5 w-5" />
+              </a>
+              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-[color:var(--brand)] transition hover:text-[color:var(--brand-soft)]">
+                <Facebook className="h-5 w-5" />
+              </a>
+            </div>
           </div>
           <div>
             <h3 className="font-display text-sm uppercase tracking-wider text-white">Categories</h3>
