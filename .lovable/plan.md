@@ -1,11 +1,19 @@
-## Fixes for /startups/submit
+## Goal
+Make the "Website URL" field on `/startups/submit` accept any reasonable format (e.g. `example.com`, `www.example.com`, `https://example.com`). Auto-prepend `https://` before saving so stored URLs stay clickable.
 
-### 1. Dropdown options showing as blank/white
-On Windows the native `<option>` elements inherit the dark form styling, rendering white-on-white text. Fix by giving each `<option>` in the four selects (Company stage, Team size, Revenue stage, Preferred contact method) explicit dark text on a white background via inline styles: `style={{ color: "#0f172a", backgroundColor: "#ffffff" }}`. Applies to both the placeholder "Select…" options and the value options.
+## Changes
 
-### 2. Raise max characters 300 → 500
-Update both client and server:
-- `src/routes/startups.submit.tsx`: change `maxLength={300}` → `500` and hint text "Max 300 characters" → "Max 500 characters" for `product_description` and `problem_solved`.
-- `src/lib/startup-submissions.functions.ts` (lines 74-75): change the two `> 300` length guards to `> 500`.
+1. **`src/routes/startups.submit.tsx`**
+   - Change the website input from `type="url"` to `type="text"` (the browser's `url` validator rejects bare domains).
+   - Update placeholder to `example.com` and add a small hint: "We'll add https:// automatically."
+   - Keep the field `required`.
 
-No schema/DB changes needed (columns are unconstrained text).
+2. **`src/lib/startup-submissions.functions.ts`**
+   - In the handler, normalize `website_url` before insert:
+     - Trim whitespace.
+     - If it doesn't start with `http://` or `https://`, prepend `https://`.
+     - Validate the normalized value with `new URL(...)` and reject with a clear error if it's still not a valid URL (e.g. contains spaces, no dot).
+   - Store the normalized value.
+
+## Out of scope
+No DB schema changes. No changes to other URL fields (LinkedIn, demo, press links) unless requested later.
