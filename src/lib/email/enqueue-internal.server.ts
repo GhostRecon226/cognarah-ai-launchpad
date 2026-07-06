@@ -27,7 +27,9 @@ export interface EnqueueEmailArgs {
 export async function enqueueTransactionalEmail(args: EnqueueEmailArgs): Promise<
   { ok: true; queued: true } | { ok: false; reason: string }
 > {
-  const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+  const { supabaseAdmin: sa } = await import("@/integrations/supabase/client.server");
+  // Types file has not been regenerated with the email tables/rpc yet.
+  const supabaseAdmin = sa as any;
 
   const template = TEMPLATES[args.templateName];
   if (!template) return { ok: false, reason: `template_not_found:${args.templateName}` };
