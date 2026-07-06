@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 type NavChild = {
   name: string;
-  to: "/category/$slug" | "/";
+  to: "/category/$slug" | "/" | "/startups/submit";
   slug?: string;
   highlight?: boolean;
 };
