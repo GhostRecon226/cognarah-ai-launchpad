@@ -18,9 +18,11 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as StartupsSubmitRouteImport } from './routes/startups.submit'
+import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as ArticleSlugRouteImport } from './routes/article.$slug'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 import { Route as AuthenticatedAdminStartupsRouteImport } from './routes/_authenticated/admin/startups'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
@@ -29,6 +31,8 @@ import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminAuthorsRouteImport } from './routes/_authenticated/admin/authors'
 import { Route as AuthenticatedAdminAgentRouteImport } from './routes/_authenticated/admin/agent'
 import { Route as AuthenticatedAdminArticlesIndexRouteImport } from './routes/_authenticated/admin/articles.index'
+import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
+import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as ApiPublicMediaSplatRouteImport } from './routes/api/public/media.$'
 import { Route as ApiPublicHooksResubmitSitemapRouteImport } from './routes/api/public/hooks/resubmit-sitemap'
@@ -79,6 +83,11 @@ const StartupsSubmitRoute = StartupsSubmitRouteImport.update({
   path: '/startups/submit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
+  id: '/email/unsubscribe',
+  path: '/email/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CategorySlugRoute = CategorySlugRouteImport.update({
   id: '/category/$slug',
   path: '/category/$slug',
@@ -93,6 +102,11 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
+  id: '/lovable/email/suppression',
+  path: '/lovable/email/suppression',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
   id: '/admin/users',
@@ -139,6 +153,18 @@ const AuthenticatedAdminArticlesIndexRoute =
     path: '/admin/articles/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const LovableEmailTransactionalSendRoute =
+  LovableEmailTransactionalSendRouteImport.update({
+    id: '/lovable/email/transactional/send',
+    path: '/lovable/email/transactional/send',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const LovableEmailTransactionalPreviewRoute =
+  LovableEmailTransactionalPreviewRouteImport.update({
+    id: '/lovable/email/transactional/preview',
+    path: '/lovable/email/transactional/preview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const LovableEmailQueueProcessRoute =
   LovableEmailQueueProcessRouteImport.update({
     id: '/lovable/email/queue/process',
@@ -178,6 +204,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/startups/submit': typeof StartupsSubmitRoute
   '/admin/agent': typeof AuthenticatedAdminAgentRoute
   '/admin/authors': typeof AuthenticatedAdminAuthorsRoute
@@ -186,12 +213,15 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/startups': typeof AuthenticatedAdminStartupsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
   '/api/public/hooks/agent-run': typeof ApiPublicHooksAgentRunRoute
   '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
+  '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/admin/articles/': typeof AuthenticatedAdminArticlesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -204,6 +234,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/startups/submit': typeof StartupsSubmitRoute
   '/admin/agent': typeof AuthenticatedAdminAgentRoute
   '/admin/authors': typeof AuthenticatedAdminAuthorsRoute
@@ -212,12 +243,15 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/admin/startups': typeof AuthenticatedAdminStartupsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
   '/api/public/hooks/agent-run': typeof ApiPublicHooksAgentRunRoute
   '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
+  '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/admin/articles': typeof AuthenticatedAdminArticlesIndexRoute
 }
 export interface FileRoutesById {
@@ -232,6 +266,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/startups/submit': typeof StartupsSubmitRoute
   '/_authenticated/admin/agent': typeof AuthenticatedAdminAgentRoute
   '/_authenticated/admin/authors': typeof AuthenticatedAdminAuthorsRoute
@@ -240,12 +275,15 @@ export interface FileRoutesById {
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
   '/_authenticated/admin/startups': typeof AuthenticatedAdminStartupsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
+  '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
   '/api/public/hooks/agent-run': typeof ApiPublicHooksAgentRunRoute
   '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
+  '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
+  '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/_authenticated/admin/articles/': typeof AuthenticatedAdminArticlesIndexRoute
 }
 export interface FileRouteTypes {
@@ -260,6 +298,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/article/$slug'
     | '/category/$slug'
+    | '/email/unsubscribe'
     | '/startups/submit'
     | '/admin/agent'
     | '/admin/authors'
@@ -268,12 +307,15 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/startups'
     | '/admin/users'
+    | '/lovable/email/suppression'
     | '/admin/'
     | '/admin/articles/$id'
     | '/api/public/hooks/agent-run'
     | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
     | '/lovable/email/queue/process'
+    | '/lovable/email/transactional/preview'
+    | '/lovable/email/transactional/send'
     | '/admin/articles/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -286,6 +328,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/article/$slug'
     | '/category/$slug'
+    | '/email/unsubscribe'
     | '/startups/submit'
     | '/admin/agent'
     | '/admin/authors'
@@ -294,12 +337,15 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/startups'
     | '/admin/users'
+    | '/lovable/email/suppression'
     | '/admin'
     | '/admin/articles/$id'
     | '/api/public/hooks/agent-run'
     | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
     | '/lovable/email/queue/process'
+    | '/lovable/email/transactional/preview'
+    | '/lovable/email/transactional/send'
     | '/admin/articles'
   id:
     | '__root__'
@@ -313,6 +359,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/article/$slug'
     | '/category/$slug'
+    | '/email/unsubscribe'
     | '/startups/submit'
     | '/_authenticated/admin/agent'
     | '/_authenticated/admin/authors'
@@ -321,12 +368,15 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/settings'
     | '/_authenticated/admin/startups'
     | '/_authenticated/admin/users'
+    | '/lovable/email/suppression'
     | '/_authenticated/admin/'
     | '/_authenticated/admin/articles/$id'
     | '/api/public/hooks/agent-run'
     | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
     | '/lovable/email/queue/process'
+    | '/lovable/email/transactional/preview'
+    | '/lovable/email/transactional/send'
     | '/_authenticated/admin/articles/'
   fileRoutesById: FileRoutesById
 }
@@ -341,11 +391,15 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ArticleSlugRoute: typeof ArticleSlugRoute
   CategorySlugRoute: typeof CategorySlugRoute
+  EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   StartupsSubmitRoute: typeof StartupsSubmitRoute
+  LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
   ApiPublicHooksAgentRunRoute: typeof ApiPublicHooksAgentRunRoute
   ApiPublicHooksResubmitSitemapRoute: typeof ApiPublicHooksResubmitSitemapRoute
   ApiPublicMediaSplatRoute: typeof ApiPublicMediaSplatRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
+  LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
+  LovableEmailTransactionalSendRoute: typeof LovableEmailTransactionalSendRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -413,6 +467,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StartupsSubmitRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/email/unsubscribe': {
+      id: '/email/unsubscribe'
+      path: '/email/unsubscribe'
+      fullPath: '/email/unsubscribe'
+      preLoaderRoute: typeof EmailUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/category/$slug': {
       id: '/category/$slug'
       path: '/category/$slug'
@@ -433,6 +494,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/lovable/email/suppression': {
+      id: '/lovable/email/suppression'
+      path: '/lovable/email/suppression'
+      fullPath: '/lovable/email/suppression'
+      preLoaderRoute: typeof LovableEmailSuppressionRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/users': {
       id: '/_authenticated/admin/users'
@@ -489,6 +557,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/articles/'
       preLoaderRoute: typeof AuthenticatedAdminArticlesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/lovable/email/transactional/send': {
+      id: '/lovable/email/transactional/send'
+      path: '/lovable/email/transactional/send'
+      fullPath: '/lovable/email/transactional/send'
+      preLoaderRoute: typeof LovableEmailTransactionalSendRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/transactional/preview': {
+      id: '/lovable/email/transactional/preview'
+      path: '/lovable/email/transactional/preview'
+      fullPath: '/lovable/email/transactional/preview'
+      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/lovable/email/queue/process': {
       id: '/lovable/email/queue/process'
@@ -568,11 +650,15 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ArticleSlugRoute: ArticleSlugRoute,
   CategorySlugRoute: CategorySlugRoute,
+  EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   StartupsSubmitRoute: StartupsSubmitRoute,
+  LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
   ApiPublicHooksAgentRunRoute: ApiPublicHooksAgentRunRoute,
   ApiPublicHooksResubmitSitemapRoute: ApiPublicHooksResubmitSitemapRoute,
   ApiPublicMediaSplatRoute: ApiPublicMediaSplatRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
+  LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
+  LovableEmailTransactionalSendRoute: LovableEmailTransactionalSendRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
