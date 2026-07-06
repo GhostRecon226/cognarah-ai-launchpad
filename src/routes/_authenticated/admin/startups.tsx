@@ -45,6 +45,7 @@ interface Submission {
   founder_email: string;
   contact_method: string;
   whatsapp_number: string | null;
+  article_id: string | null;
 }
 
 const STATUS_STYLES: Record<Status, string> = {
