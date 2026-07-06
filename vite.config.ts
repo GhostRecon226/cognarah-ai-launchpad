@@ -25,10 +25,19 @@ export default defineConfig({
   vite: {
     resolve: {
       alias: {
-        "entities/lib/decode.js": path.resolve(__dirname, "node_modules/entities/lib/decode.js"),
-        "entities/lib/encode.js": path.resolve(__dirname, "node_modules/entities/lib/encode.js"),
-        "entities": path.resolve(__dirname, "node_modules/entities"),
+        // html-to-text's nested htmlparser2 imports `entities/lib/decode.js`, a v4-only subpath.
+        // Root `entities` is v7 and doesn't ship that file, so point these subpaths at the
+        // nested v4 copy that html-to-text/htmlparser2 actually needs.
+        "entities/lib/decode.js": path.resolve(
+          __dirname,
+          "node_modules/html-to-text/node_modules/htmlparser2/node_modules/entities/lib/esm/decode.js",
+        ),
+        "entities/lib/escape.js": path.resolve(
+          __dirname,
+          "node_modules/html-to-text/node_modules/htmlparser2/node_modules/entities/lib/esm/escape.js",
+        ),
       },
     },
   },
 });
+
