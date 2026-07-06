@@ -88,8 +88,6 @@ export const Route = createFileRoute("/article/$slug")({
 function ArticlePage() {
   const { article, related } = Route.useLoaderData();
   const url = `${SITE_URL}/article/${article.slug}`;
-  const enc = encodeURIComponent;
-  const shareTitle = enc(article.title);
   return (
     <div className="flex min-h-screen flex-col">
       <SiteNav />
