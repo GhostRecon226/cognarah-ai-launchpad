@@ -131,14 +131,7 @@ function ArticlePage() {
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.body) }}
           />
 
-          {/* Share */}
-          <div className="mt-12 flex items-center gap-3 border-t pt-6">
-            <span className="text-sm font-semibold">Share:</span>
-            <a aria-label="Share on X" href={`https://twitter.com/intent/tweet?url=${enc(url)}&text=${shareTitle}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-secondary p-2 hover:bg-navy hover:text-white"><Twitter className="h-4 w-4" /></a>
-            <a aria-label="Share on LinkedIn" href={`https://www.linkedin.com/sharing/share-offsite/?url=${enc(url)}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-secondary p-2 hover:bg-navy hover:text-white"><Linkedin className="h-4 w-4" /></a>
-            <a aria-label="Share on Facebook" href={`https://www.facebook.com/sharer/sharer.php?u=${enc(url)}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-secondary p-2 hover:bg-navy hover:text-white"><Facebook className="h-4 w-4" /></a>
-            <a aria-label="Share on WhatsApp" href={`https://wa.me/?text=${shareTitle}%20${enc(url)}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-secondary p-2 hover:bg-navy hover:text-white"><MessageCircle className="h-4 w-4" /></a>
-          </div>
+          <ArticleShare url={url} title={article.title} />
         </article>
 
         {related.length > 0 && (
