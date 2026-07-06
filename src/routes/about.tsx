@@ -12,6 +12,7 @@ export const Route = createFileRoute("/about")({
       { name: "description", content: "Cognarah is the definitive media platform for everything artificial intelligence." },
       { property: "og:title", content: "About: Cognarah" },
       { property: "og:description", content: "Cognarah is the definitive media platform for everything AI." },
+      { property: "og:type", content: "website" },
       { property: "og:url", content: `${SITE_URL}/about` },
     ],
     links: [{ rel: "canonical", href: `${SITE_URL}/about` }],
