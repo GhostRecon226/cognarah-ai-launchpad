@@ -70,6 +70,9 @@ function StartupsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Status | "all">("all");
   const [expanded, setExpanded] = useState<string | null>(null);
+  const [generating, setGenerating] = useState<Set<string>>(new Set());
+  const generateDraft = useServerFn(generateStartupDraft);
+
 
   async function load() {
     setLoading(true);
