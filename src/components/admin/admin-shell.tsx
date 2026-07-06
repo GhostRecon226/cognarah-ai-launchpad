@@ -74,6 +74,20 @@ export function AdminShell({ children, title, requiredRoles = ["admin", "editor"
     setMobileOpen(false);
   }, [loc.pathname]);
 
+  useEffect(() => {
+    if (!roles || !roles.some((r) => r === "admin" || r === "editor")) return;
+    let cancelled = false;
+    async function loadPending() {
+      const { count } = await supabase
+        .from("startup_submissions")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending");
+      if (!cancelled) setPendingStartups(count ?? 0);
+    }
+    loadPending();
+    return () => { cancelled = true; };
+  }, [roles, loc.pathname]);
+
   async function signOut() {
     await supabase.auth.signOut();
     router.navigate({ to: "/auth" });
