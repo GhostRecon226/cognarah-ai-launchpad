@@ -176,11 +176,11 @@ function SubmitPage() {
                   </Field>
                   <Field label="Company stage" required>
                     <select name="company_stage" required defaultValue="" className={inputCls}>
-                      <option value="" disabled>
+                      <option value="" disabled style={optionStyle}>
                         Select stage
                       </option>
                       {STAGES.map((s) => (
-                        <option key={s} value={s}>
+                        <option key={s} value={s} style={optionStyle}>
                           {s}
                         </option>
                       ))}
@@ -190,20 +190,20 @@ function SubmitPage() {
               </Section>
 
               <Section title="Product and mission">
-                <Field label="What your product does" required hint="Max 300 characters">
+                <Field label="What your product does" required hint="Max 500 characters">
                   <textarea
                     name="product_description"
                     required
-                    maxLength={300}
+                    maxLength={500}
                     rows={3}
                     className={inputCls}
                   />
                 </Field>
-                <Field label="Problem it solves" required hint="Max 300 characters">
+                <Field label="Problem it solves" required hint="Max 500 characters">
                   <textarea
                     name="problem_solved"
                     required
-                    maxLength={300}
+                    maxLength={500}
                     rows={3}
                     className={inputCls}
                   />
@@ -240,11 +240,11 @@ function SubmitPage() {
                 </Field>
                 <Field label="Team size" required>
                   <select name="team_size" required defaultValue="" className={inputCls}>
-                    <option value="" disabled>
+                    <option value="" disabled style={optionStyle}>
                       Select team size
                     </option>
                     {TEAM_SIZES.map((s) => (
-                      <option key={s} value={s}>
+                      <option key={s} value={s} style={optionStyle}>
                         {s}
                       </option>
                     ))}
@@ -258,11 +258,11 @@ function SubmitPage() {
                 </Field>
                 <Field label="Revenue stage" required>
                   <select name="revenue_stage" required defaultValue="" className={inputCls}>
-                    <option value="" disabled>
+                    <option value="" disabled style={optionStyle}>
                       Select revenue stage
                     </option>
                     {REVENUE.map((s) => (
-                      <option key={s} value={s}>
+                      <option key={s} value={s} style={optionStyle}>
                         {s}
                       </option>
                     ))}
@@ -310,7 +310,7 @@ function SubmitPage() {
                     className={inputCls}
                   >
                     {CONTACT.map((c) => (
-                      <option key={c} value={c}>
+                      <option key={c} value={c} style={optionStyle}>
                         {c}
                       </option>
                     ))}
@@ -354,6 +354,8 @@ function SubmitPage() {
 
 const inputCls =
   "block w-full rounded-md border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
+
+const optionStyle: React.CSSProperties = { color: "#0f172a", backgroundColor: "#ffffff" };
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (

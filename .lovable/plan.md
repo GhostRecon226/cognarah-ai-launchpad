@@ -1,31 +1,11 @@
-## Newsletter subscribers admin page
+## Fixes for /startups/submit
 
-Add an admin-only page to view and export newsletter subscriber emails.
+### 1. Dropdown options showing as blank/white
+On Windows the native `<option>` elements inherit the dark form styling, rendering white-on-white text. Fix by giving each `<option>` in the four selects (Company stage, Team size, Revenue stage, Preferred contact method) explicit dark text on a white background via inline styles: `style={{ color: "#0f172a", backgroundColor: "#ffffff" }}`. Applies to both the placeholder "Select…" options and the value options.
 
-### 1. New admin route: `/admin/subscribers`
-File: `src/routes/_authenticated/admin/subscribers.tsx`
-- Uses `AdminShell` with `requiredRoles={["admin"]}`.
-- Fetches all rows from `newsletter_subscribers` (email, created_at), ordered newest first.
-- Shows:
-  - Total subscriber count
-  - Table: Email | Subscribed on (formatted date)
-  - Search input to filter by email
-  - "Export CSV" button that downloads `subscribers-YYYY-MM-DD.csv` with headers `email,subscribed_at` (client-side Blob download, no backend work needed)
-- Empty state when there are no subscribers.
+### 2. Raise max characters 300 → 500
+Update both client and server:
+- `src/routes/startups.submit.tsx`: change `maxLength={300}` → `500` and hint text "Max 300 characters" → "Max 500 characters" for `product_description` and `problem_solved`.
+- `src/lib/startup-submissions.functions.ts` (lines 74-75): change the two `> 300` length guards to `> 500`.
 
-### 2. Add nav entry
-File: `src/components/admin/admin-shell.tsx`
-- Add `{ to: "/admin/subscribers", label: "Subscribers", icon: Mail, roles: ["admin"] }` to the `NAV` array (placed near Users). Import `Mail` from lucide-react.
-
-### 3. RLS check
-The `newsletter_subscribers` table already has policies. If admins cannot currently SELECT it, add a migration:
-```sql
-CREATE POLICY "Admins can view subscribers" ON public.newsletter_subscribers
-FOR SELECT TO authenticated USING (public.has_role(auth.uid(), 'admin'));
-```
-Only added if the existing policies don't already permit admin reads.
-
-### Out of scope
-- No email-service integration (Mailchimp, etc.)
-- No delete/unsubscribe UI (existing unsubscribe tokens flow untouched)
-- No server-side export endpoint — CSV is generated in the browser from the fetched rows
+No schema/DB changes needed (columns are unconstrained text).
