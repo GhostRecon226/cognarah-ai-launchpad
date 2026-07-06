@@ -29,6 +29,7 @@ import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_auth
 import { Route as AuthenticatedAdminAuthorsRouteImport } from './routes/_authenticated/admin/authors'
 import { Route as AuthenticatedAdminAgentRouteImport } from './routes/_authenticated/admin/agent'
 import { Route as AuthenticatedAdminArticlesIndexRouteImport } from './routes/_authenticated/admin/articles.index'
+import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as ApiPublicMediaSplatRouteImport } from './routes/api/public/media.$'
 import { Route as ApiPublicHooksResubmitSitemapRouteImport } from './routes/api/public/hooks/resubmit-sitemap'
 import { Route as ApiPublicHooksAgentRunRouteImport } from './routes/api/public/hooks/agent-run'
@@ -138,6 +139,12 @@ const AuthenticatedAdminArticlesIndexRoute =
     path: '/admin/articles/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const LovableEmailQueueProcessRoute =
+  LovableEmailQueueProcessRouteImport.update({
+    id: '/lovable/email/queue/process',
+    path: '/lovable/email/queue/process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicMediaSplatRoute = ApiPublicMediaSplatRouteImport.update({
   id: '/api/public/media/$',
   path: '/api/public/media/$',
@@ -184,6 +191,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/agent-run': typeof ApiPublicHooksAgentRunRoute
   '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/admin/articles/': typeof AuthenticatedAdminArticlesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -209,6 +217,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/agent-run': typeof ApiPublicHooksAgentRunRoute
   '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/admin/articles': typeof AuthenticatedAdminArticlesIndexRoute
 }
 export interface FileRoutesById {
@@ -236,6 +245,7 @@ export interface FileRoutesById {
   '/api/public/hooks/agent-run': typeof ApiPublicHooksAgentRunRoute
   '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
+  '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/_authenticated/admin/articles/': typeof AuthenticatedAdminArticlesIndexRoute
 }
 export interface FileRouteTypes {
@@ -263,6 +273,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/agent-run'
     | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
+    | '/lovable/email/queue/process'
     | '/admin/articles/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -288,6 +299,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/agent-run'
     | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
+    | '/lovable/email/queue/process'
     | '/admin/articles'
   id:
     | '__root__'
@@ -314,6 +326,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/agent-run'
     | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
+    | '/lovable/email/queue/process'
     | '/_authenticated/admin/articles/'
   fileRoutesById: FileRoutesById
 }
@@ -332,6 +345,7 @@ export interface RootRouteChildren {
   ApiPublicHooksAgentRunRoute: typeof ApiPublicHooksAgentRunRoute
   ApiPublicHooksResubmitSitemapRoute: typeof ApiPublicHooksResubmitSitemapRoute
   ApiPublicMediaSplatRoute: typeof ApiPublicMediaSplatRoute
+  LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -476,6 +490,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminArticlesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/lovable/email/queue/process': {
+      id: '/lovable/email/queue/process'
+      path: '/lovable/email/queue/process'
+      fullPath: '/lovable/email/queue/process'
+      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/media/$': {
       id: '/api/public/media/$'
       path: '/api/public/media/$'
@@ -551,17 +572,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksAgentRunRoute: ApiPublicHooksAgentRunRoute,
   ApiPublicHooksResubmitSitemapRoute: ApiPublicHooksResubmitSitemapRoute,
   ApiPublicMediaSplatRoute: ApiPublicMediaSplatRoute,
+  LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
