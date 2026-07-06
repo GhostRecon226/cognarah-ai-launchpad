@@ -190,20 +190,20 @@ function SubmitPage() {
               </Section>
 
               <Section title="Product and mission">
-                <Field label="What your product does" required hint="Max 300 characters">
+                <Field label="What your product does" required hint="Max 500 characters">
                   <textarea
                     name="product_description"
                     required
-                    maxLength={300}
+                    maxLength={500}
                     rows={3}
                     className={inputCls}
                   />
                 </Field>
-                <Field label="Problem it solves" required hint="Max 300 characters">
+                <Field label="Problem it solves" required hint="Max 500 characters">
                   <textarea
                     name="problem_solved"
                     required
-                    maxLength={300}
+                    maxLength={500}
                     rows={3}
                     className={inputCls}
                   />
