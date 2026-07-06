@@ -35,6 +35,7 @@ export function AdminShell({ children, title, requiredRoles = ["admin", "editor"
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [pendingStartups, setPendingStartups] = useState<number>(0);
 
   const fetchRoles = useCallback(async (): Promise<boolean> => {
     const { data: u } = await supabase.auth.getUser();
