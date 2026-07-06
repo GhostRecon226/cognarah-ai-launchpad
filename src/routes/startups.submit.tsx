@@ -152,9 +152,10 @@ function SubmitPage() {
                 <Field label="Company name" required>
                   <input name="company_name" required className={inputCls} />
                 </Field>
-                <Field label="Website URL" required>
-                  <input name="website_url" type="url" required placeholder="https://" className={inputCls} />
+                <Field label="Website URL" required hint="We'll add https:// automatically">
+                  <input name="website_url" type="text" required placeholder="example.com" className={inputCls} />
                 </Field>
+
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   <Field label="Country" required>
                     <input name="country" required className={inputCls} />
