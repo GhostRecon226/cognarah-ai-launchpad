@@ -310,7 +310,7 @@ function SubmitPage() {
                     className={inputCls}
                   >
                     {CONTACT.map((c) => (
-                      <option key={c} value={c}>
+                      <option key={c} value={c} style={optionStyle}>
                         {c}
                       </option>
                     ))}
