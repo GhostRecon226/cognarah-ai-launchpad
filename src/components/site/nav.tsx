@@ -30,6 +30,7 @@ export const NAV_GROUPS: NavGroup[] = [
     children: [
       { name: "Startups", to: "/category/$slug", slug: "startups" },
       { name: "Funding Rounds", to: "/category/$slug", slug: "funding" },
+      { name: "Submit Your Startup", to: "/startups/submit", highlight: true },
     ],
   },
   {
