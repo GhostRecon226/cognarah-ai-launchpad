@@ -2,15 +2,16 @@ import { Link, useRouter, useLocation } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import logoAsset from "@/assets/cognarah-logo.png.asset.json";
-import { LayoutDashboard, FileText, Tags, Users, Image, Settings, LogOut, ExternalLink, Menu, X, Shield, RefreshCw, Sparkles } from "lucide-react";
+import { LayoutDashboard, FileText, Tags, Users, Image, Settings, LogOut, ExternalLink, Menu, X, Shield, RefreshCw, Sparkles, Rocket } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RolesContext, type AppRole, ROLE_LABELS } from "@/lib/admin-roles";
 
-type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean; roles: AppRole[] };
+type NavItem = { to: string; label: string; icon: typeof LayoutDashboard; exact?: boolean; roles: AppRole[]; badgeKey?: "pendingStartups" };
 
 const NAV: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, roles: ["admin", "editor", "author"] },
   { to: "/admin/articles", label: "Articles", icon: FileText, roles: ["admin", "editor", "author"] },
+  { to: "/admin/startups", label: "Startups", icon: Rocket, roles: ["admin", "editor"], badgeKey: "pendingStartups" },
   { to: "/admin/agent", label: "AI Agent", icon: Sparkles, roles: ["admin", "editor"] },
   { to: "/admin/categories", label: "Categories", icon: Tags, roles: ["admin", "editor"] },
   { to: "/admin/authors", label: "Authors", icon: Users, roles: ["admin", "editor"] },
@@ -34,6 +35,7 @@ export function AdminShell({ children, title, requiredRoles = ["admin", "editor"
   const [fetchError, setFetchError] = useState<string | null>(null);
   const [retrying, setRetrying] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [pendingStartups, setPendingStartups] = useState<number>(0);
 
   const fetchRoles = useCallback(async (): Promise<boolean> => {
     const { data: u } = await supabase.auth.getUser();
@@ -71,6 +73,20 @@ export function AdminShell({ children, title, requiredRoles = ["admin", "editor"
   useEffect(() => {
     setMobileOpen(false);
   }, [loc.pathname]);
+
+  useEffect(() => {
+    if (!roles || !roles.some((r) => r === "admin" || r === "editor")) return;
+    let cancelled = false;
+    async function loadPending() {
+      const { count } = await supabase
+        .from("startup_submissions")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "pending");
+      if (!cancelled) setPendingStartups(count ?? 0);
+    }
+    loadPending();
+    return () => { cancelled = true; };
+  }, [roles, loc.pathname]);
 
   async function signOut() {
     await supabase.auth.signOut();
@@ -129,6 +145,7 @@ export function AdminShell({ children, title, requiredRoles = ["admin", "editor"
       <nav className="flex-1 space-y-1 p-3">
         {visibleNav.map((n) => {
           const active = n.exact ? loc.pathname === n.to : loc.pathname.startsWith(n.to);
+          const badge = n.badgeKey === "pendingStartups" ? pendingStartups : 0;
           return (
             <Link
               key={n.to}
@@ -140,7 +157,10 @@ export function AdminShell({ children, title, requiredRoles = ["admin", "editor"
               )}
             >
               <n.icon className="h-4 w-4" />
-              {n.label}
+              <span className="flex-1">{n.label}</span>
+              {badge > 0 && (
+                <span className="rounded-full bg-brand px-2 py-0.5 text-[10px] font-bold text-navy">{badge}</span>
+              )}
             </Link>
           );
         })}
