@@ -17,6 +17,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as StartupsSubmitRouteImport } from './routes/startups.submit'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as ArticleSlugRouteImport } from './routes/article.$slug'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
@@ -69,6 +70,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StartupsSubmitRoute = StartupsSubmitRouteImport.update({
+  id: '/startups/submit',
+  path: '/startups/submit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CategorySlugRoute = CategorySlugRouteImport.update({
@@ -158,6 +164,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/startups/submit': typeof StartupsSubmitRoute
   '/admin/agent': typeof AuthenticatedAdminAgentRoute
   '/admin/authors': typeof AuthenticatedAdminAuthorsRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
@@ -181,6 +188,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/startups/submit': typeof StartupsSubmitRoute
   '/admin/agent': typeof AuthenticatedAdminAgentRoute
   '/admin/authors': typeof AuthenticatedAdminAuthorsRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
@@ -206,6 +214,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/category/$slug': typeof CategorySlugRoute
+  '/startups/submit': typeof StartupsSubmitRoute
   '/_authenticated/admin/agent': typeof AuthenticatedAdminAgentRoute
   '/_authenticated/admin/authors': typeof AuthenticatedAdminAuthorsRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
@@ -231,6 +240,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/article/$slug'
     | '/category/$slug'
+    | '/startups/submit'
     | '/admin/agent'
     | '/admin/authors'
     | '/admin/categories'
@@ -254,6 +264,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/article/$slug'
     | '/category/$slug'
+    | '/startups/submit'
     | '/admin/agent'
     | '/admin/authors'
     | '/admin/categories'
@@ -278,6 +289,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/article/$slug'
     | '/category/$slug'
+    | '/startups/submit'
     | '/_authenticated/admin/agent'
     | '/_authenticated/admin/authors'
     | '/_authenticated/admin/categories'
@@ -303,6 +315,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   ArticleSlugRoute: typeof ArticleSlugRoute
   CategorySlugRoute: typeof CategorySlugRoute
+  StartupsSubmitRoute: typeof StartupsSubmitRoute
   ApiPublicHooksAgentRunRoute: typeof ApiPublicHooksAgentRunRoute
   ApiPublicHooksResubmitSitemapRoute: typeof ApiPublicHooksResubmitSitemapRoute
   ApiPublicMediaSplatRoute: typeof ApiPublicMediaSplatRoute
@@ -364,6 +377,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/startups/submit': {
+      id: '/startups/submit'
+      path: '/startups/submit'
+      fullPath: '/startups/submit'
+      preLoaderRoute: typeof StartupsSubmitRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/category/$slug': {
@@ -505,6 +525,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   ArticleSlugRoute: ArticleSlugRoute,
   CategorySlugRoute: CategorySlugRoute,
+  StartupsSubmitRoute: StartupsSubmitRoute,
   ApiPublicHooksAgentRunRoute: ApiPublicHooksAgentRunRoute,
   ApiPublicHooksResubmitSitemapRoute: ApiPublicHooksResubmitSitemapRoute,
   ApiPublicMediaSplatRoute: ApiPublicMediaSplatRoute,
