@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { MediaImage } from "@/components/site/media-image";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Check, X, ExternalLink, Sparkles, Eye, Loader2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Check, X, ExternalLink, Sparkles, Eye, Loader2, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateStartupDraft } from "@/lib/startup-submissions.functions";
 
@@ -183,6 +183,14 @@ function StartupsPage() {
                 <div className="truncate text-sm text-muted-foreground">{new Date(s.submitted_at).toLocaleDateString()}</div>
                 <div><StatusBadge status={s.status} /></div>
                 <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                  <Link
+                    to="/admin/email-preview/startup-submission/$id"
+                    params={{ id: s.id }}
+                    title="Preview notification email"
+                    className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
+                  >
+                    <Mail className="h-3.5 w-3.5" /> Preview email
+                  </Link>
                   {s.article_id ? (
                     <Link
                       to="/admin/articles/$id"
