@@ -71,8 +71,8 @@ export const submitStartup = createServerFn({ method: "POST" })
     }
     const techs = Array.isArray(data.ai_technologies) ? data.ai_technologies.filter((t) => ALLOWED_TECH.includes(t)) : [];
     if (techs.length === 0) throw new Error("Select at least one AI technology");
-    if ((data.product_description || "").length > 300) throw new Error("Product description too long");
-    if ((data.problem_solved || "").length > 300) throw new Error("Problem description too long");
+    if ((data.product_description || "").length > 500) throw new Error("Product description too long");
+    if ((data.problem_solved || "").length > 500) throw new Error("Problem description too long");
     if (!data.logo_file_base64 || !data.logo_file_name) throw new Error("Logo is required");
     if (!/^image\//.test(data.logo_file_type || "")) throw new Error("Logo must be an image");
 
