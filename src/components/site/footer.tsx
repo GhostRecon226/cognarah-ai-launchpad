@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { Instagram, Twitter, Linkedin, Facebook } from "lucide-react";
 import logoMark from "@/assets/cognarah-logo-mark.png";
 
 const FOOTER_CATEGORIES: { slug: string; name: string }[] = [
