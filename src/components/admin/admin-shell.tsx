@@ -2,7 +2,7 @@ import { Link, useRouter, useLocation } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import logoAsset from "@/assets/cognarah-logo.png.asset.json";
-import { LayoutDashboard, FileText, Tags, Users, Image, Settings, LogOut, ExternalLink, Menu, X, Shield, RefreshCw, Sparkles, Rocket } from "lucide-react";
+import { LayoutDashboard, FileText, Tags, Users, Image, Settings, LogOut, ExternalLink, Menu, X, Shield, RefreshCw, Sparkles, Rocket, Mail } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RolesContext, type AppRole, ROLE_LABELS } from "@/lib/admin-roles";
 
@@ -16,6 +16,7 @@ const NAV: NavItem[] = [
   { to: "/admin/categories", label: "Categories", icon: Tags, roles: ["admin", "editor"] },
   { to: "/admin/authors", label: "Authors", icon: Users, roles: ["admin", "editor"] },
   { to: "/admin/media", label: "Media", icon: Image, roles: ["admin", "editor", "author"] },
+  { to: "/admin/subscribers", label: "Subscribers", icon: Mail, roles: ["admin"] },
   { to: "/admin/users", label: "Users", icon: Shield, roles: ["admin"] },
   { to: "/admin/settings", label: "Settings", icon: Settings, roles: ["admin"] },
 ];
