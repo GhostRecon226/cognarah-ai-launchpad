@@ -66,6 +66,11 @@ export function ArticleCard({
           <span aria-hidden>·</span>
           <span>{article.read_time} min</span>
         </div>
+        <ArticleShare
+          compact
+          url={`${SITE_URL}/article/${article.slug}`}
+          title={article.title}
+        />
       </div>
     </article>
   );
