@@ -355,6 +355,8 @@ function SubmitPage() {
 const inputCls =
   "block w-full rounded-md border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand";
 
+const optionStyle: React.CSSProperties = { color: "#0f172a", backgroundColor: "#ffffff" };
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="space-y-4">
