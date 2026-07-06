@@ -183,9 +183,27 @@ function StartupsPage() {
                 <div className="truncate text-sm text-muted-foreground">{new Date(s.submitted_at).toLocaleDateString()}</div>
                 <div><StatusBadge status={s.status} /></div>
                 <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                  {s.article_id ? (
+                    <Link
+                      to="/admin/articles/$id"
+                      params={{ id: s.article_id }}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-purple-300 bg-purple-50 px-2.5 py-1.5 text-xs font-semibold text-purple-800 hover:bg-purple-100"
+                    >
+                      <Eye className="h-3.5 w-3.5" /> View Article
+                    </Link>
+                  ) : s.status === "approved" ? (
+                    <button
+                      onClick={() => generate(s.id)}
+                      disabled={generating.has(s.id)}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-navy bg-navy px-2.5 py-1.5 text-xs font-semibold text-white hover:bg-navy/90 disabled:opacity-60"
+                    >
+                      {generating.has(s.id) ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                      {generating.has(s.id) ? "Generating..." : "Generate Draft"}
+                    </button>
+                  ) : null}
                   <button
                     onClick={() => approve(s.id)}
-                    disabled={s.status === "approved"}
+                    disabled={s.status === "approved" || s.status === "published"}
                     title="Approve"
                     className="rounded-md border border-green-300 bg-green-50 p-1.5 text-green-700 hover:bg-green-100 disabled:opacity-40"
                   >
