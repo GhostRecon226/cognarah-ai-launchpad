@@ -153,8 +153,37 @@ export const submitStartup = createServerFn({ method: "POST" })
       ],
     );
 
-    const { error: insErr } = await supabaseAdmin.from("startup_submissions").insert(row);
+    const { data: inserted, error: insErr } = await supabaseAdmin
+      .from("startup_submissions")
+      .insert(row)
+      .select("id, submitted_at")
+      .single();
     if (insErr) throw new Error(insErr.message);
+
+    // Notify admins (fire-and-forget; never block submission on email failure).
+    try {
+      const { enqueueTransactionalEmail } = await import("@/lib/email/enqueue-internal.server");
+      await enqueueTransactionalEmail({
+        templateName: "startup-submission-notification",
+        idempotencyKey: `startup-submission-${inserted.id}`,
+        templateData: {
+          companyName: row.company_name,
+          founderName: row.founder_name,
+          country: row.country,
+          city: row.city,
+          companyStage: row.company_stage,
+          productDescription: row.product_description,
+          problemSolved: row.problem_solved,
+          founderEmail: row.founder_email,
+          contactMethod: row.contact_method,
+          whatsappNumber: row.whatsapp_number,
+          submittedAt: inserted.submitted_at,
+          reviewUrl: "https://cognarah.com/admin/startups",
+        },
+      });
+    } catch (err) {
+      console.error("Failed to enqueue startup submission notification", err);
+    }
 
     return { ok: true };
   });
