@@ -240,11 +240,11 @@ function SubmitPage() {
                 </Field>
                 <Field label="Team size" required>
                   <select name="team_size" required defaultValue="" className={inputCls}>
-                    <option value="" disabled>
+                    <option value="" disabled style={optionStyle}>
                       Select team size
                     </option>
                     {TEAM_SIZES.map((s) => (
-                      <option key={s} value={s}>
+                      <option key={s} value={s} style={optionStyle}>
                         {s}
                       </option>
                     ))}
