@@ -176,11 +176,11 @@ function SubmitPage() {
                   </Field>
                   <Field label="Company stage" required>
                     <select name="company_stage" required defaultValue="" className={inputCls}>
-                      <option value="" disabled>
+                      <option value="" disabled style={optionStyle}>
                         Select stage
                       </option>
                       {STAGES.map((s) => (
-                        <option key={s} value={s}>
+                        <option key={s} value={s} style={optionStyle}>
                           {s}
                         </option>
                       ))}
