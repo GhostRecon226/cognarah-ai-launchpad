@@ -10,7 +10,7 @@ import { MediaImage } from "@/components/site/media-image";
 import type { Article } from "@/lib/types";
 import { SITE_URL } from "@/lib/types";
 import { format } from "date-fns";
-import { Twitter, Linkedin, Facebook, MessageCircle } from "lucide-react";
+import { ArticleShare } from "@/components/site/article-share";
 
 async function loadArticle(slug: string): Promise<{ article: Article; related: Article[] }> {
   const { data: article } = await supabase
@@ -88,8 +88,6 @@ export const Route = createFileRoute("/article/$slug")({
 function ArticlePage() {
   const { article, related } = Route.useLoaderData();
   const url = `${SITE_URL}/article/${article.slug}`;
-  const enc = encodeURIComponent;
-  const shareTitle = enc(article.title);
   return (
     <div className="flex min-h-screen flex-col">
       <SiteNav />
@@ -131,14 +129,7 @@ function ArticlePage() {
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.body) }}
           />
 
-          {/* Share */}
-          <div className="mt-12 flex items-center gap-3 border-t pt-6">
-            <span className="text-sm font-semibold">Share:</span>
-            <a aria-label="Share on X" href={`https://twitter.com/intent/tweet?url=${enc(url)}&text=${shareTitle}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-secondary p-2 hover:bg-navy hover:text-white"><Twitter className="h-4 w-4" /></a>
-            <a aria-label="Share on LinkedIn" href={`https://www.linkedin.com/sharing/share-offsite/?url=${enc(url)}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-secondary p-2 hover:bg-navy hover:text-white"><Linkedin className="h-4 w-4" /></a>
-            <a aria-label="Share on Facebook" href={`https://www.facebook.com/sharer/sharer.php?u=${enc(url)}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-secondary p-2 hover:bg-navy hover:text-white"><Facebook className="h-4 w-4" /></a>
-            <a aria-label="Share on WhatsApp" href={`https://wa.me/?text=${shareTitle}%20${enc(url)}`} target="_blank" rel="noopener noreferrer" className="rounded-full bg-secondary p-2 hover:bg-navy hover:text-white"><MessageCircle className="h-4 w-4" /></a>
-          </div>
+          <ArticleShare url={url} title={article.title} />
         </article>
 
         {related.length > 0 && (

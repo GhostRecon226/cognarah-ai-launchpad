@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import type { Article } from "@/lib/types";
+import { SITE_URL } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
 import { MediaImage } from "@/components/site/media-image";
+import { ArticleShare } from "@/components/site/article-share";
 
 export function ArticleCard({
   article,
@@ -64,6 +66,11 @@ export function ArticleCard({
           <span aria-hidden>·</span>
           <span>{article.read_time} min</span>
         </div>
+        <ArticleShare
+          compact
+          url={`${SITE_URL}/article/${article.slug}`}
+          title={article.title}
+        />
       </div>
     </article>
   );
