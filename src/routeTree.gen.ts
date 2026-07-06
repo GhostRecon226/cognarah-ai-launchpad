@@ -39,6 +39,7 @@ import { Route as ApiPublicMediaSplatRouteImport } from './routes/api/public/med
 import { Route as ApiPublicHooksResubmitSitemapRouteImport } from './routes/api/public/hooks/resubmit-sitemap'
 import { Route as ApiPublicHooksAgentRunRouteImport } from './routes/api/public/hooks/agent-run'
 import { Route as AuthenticatedAdminArticlesIdRouteImport } from './routes/_authenticated/admin/articles.$id'
+import { Route as AuthenticatedAdminEmailPreviewStartupSubmissionIdRouteImport } from './routes/_authenticated/admin/email-preview.startup-submission.$id'
 
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
   id: '/unsubscribe',
@@ -199,6 +200,12 @@ const AuthenticatedAdminArticlesIdRoute =
     path: '/admin/articles/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminEmailPreviewStartupSubmissionIdRoute =
+  AuthenticatedAdminEmailPreviewStartupSubmissionIdRouteImport.update({
+    id: '/admin/email-preview/startup-submission/$id',
+    path: '/admin/email-preview/startup-submission/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -230,6 +237,7 @@ export interface FileRoutesByFullPath {
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/admin/articles/': typeof AuthenticatedAdminArticlesIndexRoute
+  '/admin/email-preview/startup-submission/$id': typeof AuthenticatedAdminEmailPreviewStartupSubmissionIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -261,6 +269,7 @@ export interface FileRoutesByTo {
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/admin/articles': typeof AuthenticatedAdminArticlesIndexRoute
+  '/admin/email-preview/startup-submission/$id': typeof AuthenticatedAdminEmailPreviewStartupSubmissionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -294,6 +303,7 @@ export interface FileRoutesById {
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
   '/_authenticated/admin/articles/': typeof AuthenticatedAdminArticlesIndexRoute
+  '/_authenticated/admin/email-preview/startup-submission/$id': typeof AuthenticatedAdminEmailPreviewStartupSubmissionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -327,6 +337,7 @@ export interface FileRouteTypes {
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
     | '/admin/articles/'
+    | '/admin/email-preview/startup-submission/$id'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -358,6 +369,7 @@ export interface FileRouteTypes {
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
     | '/admin/articles'
+    | '/admin/email-preview/startup-submission/$id'
   id:
     | '__root__'
     | '/'
@@ -390,6 +402,7 @@ export interface FileRouteTypes {
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
     | '/_authenticated/admin/articles/'
+    | '/_authenticated/admin/email-preview/startup-submission/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -627,6 +640,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminArticlesIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/email-preview/startup-submission/$id': {
+      id: '/_authenticated/admin/email-preview/startup-submission/$id'
+      path: '/admin/email-preview/startup-submission/$id'
+      fullPath: '/admin/email-preview/startup-submission/$id'
+      preLoaderRoute: typeof AuthenticatedAdminEmailPreviewStartupSubmissionIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
@@ -641,6 +661,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
   AuthenticatedAdminArticlesIdRoute: typeof AuthenticatedAdminArticlesIdRoute
   AuthenticatedAdminArticlesIndexRoute: typeof AuthenticatedAdminArticlesIndexRoute
+  AuthenticatedAdminEmailPreviewStartupSubmissionIdRoute: typeof AuthenticatedAdminEmailPreviewStartupSubmissionIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
@@ -654,6 +675,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
   AuthenticatedAdminArticlesIdRoute: AuthenticatedAdminArticlesIdRoute,
   AuthenticatedAdminArticlesIndexRoute: AuthenticatedAdminArticlesIndexRoute,
+  AuthenticatedAdminEmailPreviewStartupSubmissionIdRoute:
+    AuthenticatedAdminEmailPreviewStartupSubmissionIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
