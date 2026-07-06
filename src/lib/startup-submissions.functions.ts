@@ -98,7 +98,7 @@ export const submitStartup = createServerFn({ method: "POST" })
       year_founded: year,
       ai_technologies: techs,
       company_name: req(data.company_name, "Company name"),
-      website_url: req(data.website_url, "Website URL"),
+      website_url: normalizeWebsiteUrl(data.website_url),
       country: req(data.country, "Country"),
       city: req(data.city, "City"),
       product_description: req(data.product_description, "Product description"),
