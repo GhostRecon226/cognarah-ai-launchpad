@@ -1,29 +1,40 @@
-## Problem
+## Plan: Notify admins on new startup submissions (Lovable Emails)
 
-Last run (`1e437447…`) scraped 10+ fresh candidates and produced a JSON draft for every one, but all were dropped by `validateDraft` with `body too short (281–388 words)`. The new Cognarah style guide asks for 500–700-word news pieces, but Gemini is mirroring the source article length (~280–350 words) instead of expanding with context + Africa Angle, so nothing ever passes the 500-word floor.
+Use Lovable's built-in email system to send an internal notification to `cognarah.ai@gmail.com` whenever a new row is inserted into `startup_submissions`.
 
-## Fix (only `src/lib/agent-core.server.ts`)
+### 1. Prerequisites (Lovable Emails)
+- Prompt setup of an email sender domain (required — the project has none yet).
+- Run email infrastructure setup (queues, send log, cron, suppression, unsubscribe tables).
+- Scaffold app (transactional) email routes and template registry.
 
-1. **Lower the hard floor, keep a soft target.**
-   - Change `validateDraft` body minimum from **500** → **350** words. This still rejects thin/broken outputs but stops discarding otherwise-good drafts.
-   - Keep title (≥6 words) and dek (≥15 words) checks unchanged.
+### 2. Template
+- New template `src/lib/email-templates/startup-submission-notification.tsx`
+- Registered in `src/lib/email-templates/registry.ts` as `startup-submission-notification`
+- Subject: `New Startup Submission: {companyName}`
+- Body (React Email, brand-styled, no em/en dashes) includes:
+  - Company name, founder name, country + city, company stage
+  - Product description, problem solved
+  - Founder email, preferred contact method (+ WhatsApp if provided)
+  - Submitted-at timestamp
+  - CTA button linking to `https://cognarah.com/admin/startups`
+- All string props run through `stripEmDashes` before rendering.
 
-2. **Push Gemini to actually hit the target length.**
-   - Add an explicit length rule to `SYSTEM_PROMPT`: "Minimum 500 words for news, 800 for analysis. If the source is thin, expand with verifiable context, background, and the required Africa Angle paragraph — never pad, but never under-deliver."
-   - Strengthen the retry nudge (2nd attempt) to specifically call out length: "Your previous draft was only N words. Rewrite to at least 500 words by expanding the Africa Angle paragraph and adding verifiable context from the source — do not invent facts."
-   - Pass the actual measured word count into the nudge so the model sees the gap.
+### 3. Trigger
+- In the existing public submission server function (`src/lib/startup-submissions.functions.ts`), after the successful insert:
+  - Enqueue the email internally via the scaffolded send route, using the service role (public submitters have no JWT), with:
+    - `templateName: "startup-submission-notification"`
+    - `recipientEmail: "cognarah.ai@gmail.com"`
+    - `idempotencyKey: submission-notify-{submission.id}`
+    - `templateData`: the fields listed above
+  - Wrapped in try/catch so email failures never block submission success.
 
-3. **Log why a draft was accepted at what length**, so future runs are easier to diagnose:
-   - When a draft passes, log `Draft accepted: <N> words (attempt <k>)`.
+### 4. Content sanitation
+- Every text field passed to the template is run through the existing `stripEmDashes` helper.
 
-No changes to Firecrawl search, URL/date filters, Claude editor stage, hero image pipeline, dedupe, or DB insert.
+### Notes
+- No Resend, no external API keys, no DB triggers.
+- Uses the built-in queue: retries, DLQ, and delivery visibility come for free (`email_send_log`).
+- The unsubscribe footer Lovable appends is fine for an internal admin recipient.
 
-## Why not just lower the floor to 300?
-
-350 keeps a real quality bar (a 280-word wire rewrite with no Africa Angle is not what Cognarah wants) while unblocking the ~340–390-word drafts we're currently discarding. Combined with the tighter length instruction, most drafts should land at 450–600 words.
-
-## Out of scope
-
-- Changing the Claude editor pass (it only refines; length is Gemini's job).
-- Widening `search_time_window`, adding sources, or touching the schedule.
-- Any UI change on `/admin/agent`.
+### What you'll need to do
+Complete the email domain setup dialog when it appears; everything else is automated.
