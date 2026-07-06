@@ -145,6 +145,7 @@ export function AdminShell({ children, title, requiredRoles = ["admin", "editor"
       <nav className="flex-1 space-y-1 p-3">
         {visibleNav.map((n) => {
           const active = n.exact ? loc.pathname === n.to : loc.pathname.startsWith(n.to);
+          const badge = n.badgeKey === "pendingStartups" ? pendingStartups : 0;
           return (
             <Link
               key={n.to}
@@ -156,7 +157,10 @@ export function AdminShell({ children, title, requiredRoles = ["admin", "editor"
               )}
             >
               <n.icon className="h-4 w-4" />
-              {n.label}
+              <span className="flex-1">{n.label}</span>
+              {badge > 0 && (
+                <span className="rounded-full bg-brand px-2 py-0.5 text-[10px] font-bold text-navy">{badge}</span>
+              )}
             </Link>
           );
         })}
