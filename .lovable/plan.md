@@ -1,13 +1,10 @@
-## Make "Cognarah at a Glance" data-driven
+## Redirect to articles list after publish
 
-The section at `src/routes/index.tsx:162-192` currently renders a hardcoded array of 6 fake headlines. That's why it still shows content after the articles table was cleared.
+In `src/routes/_authenticated/admin/articles.$id.tsx`, the `save()` function currently only navigates when creating a new article (to the edit page for the new id). On publish of an existing article it just shows a toast and stays on the editor.
 
-### Fix
-Replace the hardcoded list with real published articles from the database:
+### Change
+- After a successful `save(true)` (publish), navigate to `/admin/articles` (the articles list) for both new and existing articles.
+- After a successful `save(false)` (draft), keep current behavior: stay on the editor; for new drafts still redirect to the newly created edit page so the user can continue editing.
+- Keep the existing success toast.
 
-- Extend the homepage loader to fetch the 6 most recent published articles (title + slug), ordered by `published_at desc`.
-- Render each row as a numbered link to `/article/$slug` using the article title (keep the numbered style, brand color, and the Africa-orange accent for any article in the Africa category instead of always item #4).
-- If there are fewer than 6 published articles, only render the ones that exist.
-- If there are zero published articles, hide the entire section (so a freshly launched blog doesn't show an empty "At a Glance" band).
-
-No schema changes. Only `src/routes/index.tsx` (and its loader/query) is touched.
+Only `src/routes/_authenticated/admin/articles.$id.tsx` is touched.
