@@ -160,7 +160,7 @@ function ArticlePage() {
                 Key takeaways
               </h2>
               <ul className="mt-3 space-y-2 text-base leading-relaxed">
-                {article.key_takeaways.map((k, i) => (
+                {article.key_takeaways.map((k: string, i: number) => (
                   <li key={i} className="flex gap-2">
                     <span aria-hidden className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-brand" />
                     <span>{k}</span>
