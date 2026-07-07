@@ -64,19 +64,25 @@ export const Route = createFileRoute("/article/$slug")({
           type: "application/ld+json",
           children: JSON.stringify({
             "@context": "https://schema.org",
-            "@type": "Article",
+            "@type": a.is_news === false ? "Article" : "NewsArticle",
             headline: a.title,
             description: a.meta_description || a.excerpt || undefined,
             image: a.hero_image ? [mediaUrl(a.hero_image, SITE_URL)] : undefined,
             datePublished: a.published_at,
             dateModified: a.updated_at,
-            author: a.author ? { "@type": "Person", name: a.author.name } : undefined,
+            author: a.author ? {
+              "@type": "Person",
+              name: a.author.name,
+              url: `${SITE_URL}/authors/${a.author.slug}`,
+            } : undefined,
             publisher: {
               "@type": "Organization",
               name: "Cognarah",
               logo: { "@type": "ImageObject", url: `${SITE_URL}/favicon.png` },
             },
             mainEntityOfPage: { "@type": "WebPage", "@id": url },
+            articleSection: a.category?.name,
+            keywords: (a.tags ?? []).join(", ") || undefined,
           }),
         },
         {
@@ -145,10 +151,56 @@ function ArticlePage() {
               fallbackClassName="mt-8 aspect-[16/9] w-full rounded-xl"
             />
           )}
+          {article.key_takeaways && article.key_takeaways.length > 0 && (
+            <aside
+              aria-label="Key takeaways"
+              className="mt-8 rounded-xl border border-border bg-secondary/50 p-5 sm:p-6"
+            >
+              <h2 className="text-xs font-semibold uppercase tracking-widest text-brand">
+                Key takeaways
+              </h2>
+              <ul className="mt-3 space-y-2 text-base leading-relaxed">
+                {article.key_takeaways.map((k, i) => (
+                  <li key={i} className="flex gap-2">
+                    <span aria-hidden className="mt-2 h-1.5 w-1.5 flex-none rounded-full bg-brand" />
+                    <span>{k}</span>
+                  </li>
+                ))}
+              </ul>
+            </aside>
+          )}
           <div
             className="prose-article mt-10"
             dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.body) }}
           />
+          {article.author && (
+            <section className="mt-12 rounded-xl border border-border bg-background p-5 sm:p-6">
+              <div className="flex flex-wrap items-start gap-4">
+                {article.author.photo_url && (
+                  <img
+                    src={article.author.photo_url}
+                    alt=""
+                    className="h-14 w-14 rounded-full object-cover"
+                  />
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    Written by
+                  </p>
+                  <Link
+                    to="/authors/$slug"
+                    params={{ slug: article.author.slug }}
+                    className="mt-1 block text-lg font-semibold hover:text-brand"
+                  >
+                    {article.author.name}
+                  </Link>
+                  {article.author.bio && (
+                    <p className="mt-2 text-sm text-muted-foreground">{article.author.bio}</p>
+                  )}
+                </div>
+              </div>
+            </section>
+          )}
 
           <ArticleShare url={url} title={article.title} />
         </article>
