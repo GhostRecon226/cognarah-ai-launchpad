@@ -38,9 +38,10 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
   const [a, setA] = useState<Partial<Article>>({
     title: "", slug: "", excerpt: "", body: "", hero_image: "",
     tags: [], status: "draft", read_time: 3, is_featured: false,
-    seo_title: "", meta_description: "",
+    seo_title: "", meta_description: "", key_takeaways: [], is_news: true,
   });
   const [tagsInput, setTagsInput] = useState("");
+  const [takeawaysInput, setTakeawaysInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [heroBusy, setHeroBusy] = useState<null | "regen" | "check">(null);
   const [heroValidation, setHeroValidation] = useState<null | { ok: boolean; reason: string; url: string }>(null);
@@ -63,6 +64,7 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
           const ar = data as unknown as Article;
           setA(ar);
           setTagsInput((ar.tags ?? []).join(", "));
+          setTakeawaysInput((ar.key_takeaways ?? []).join("\n"));
           initialHero.current = ar.hero_image ?? null;
         }
       }
@@ -147,6 +149,8 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
       hero_image: a.hero_image || null,
       author_id: a.author_id || null, category_id: a.category_id || null,
       tags: tagsInput.split(",").map((t) => stripEmDashes(t.trim())).filter(Boolean),
+      key_takeaways: takeawaysInput.split("\n").map((t) => stripEmDashes(t.trim())).filter(Boolean),
+      is_news: a.is_news !== false,
       seo_title: a.seo_title ? stripEmDashes(a.seo_title) : null,
       meta_description: a.meta_description ? stripEmDashes(a.meta_description) : null,
       read_time: Number(a.read_time) || 3, is_featured: !!a.is_featured,
@@ -230,6 +234,21 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
               <input type="checkbox" checked={!!a.is_featured} onChange={(e) => setA({ ...a, is_featured: e.target.checked })} />
               Featured on homepage
             </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={a.is_news !== false} onChange={(e) => setA({ ...a, is_news: e.target.checked })} />
+              Newsworthy (uses NewsArticle schema for Google News)
+            </label>
+          </div>
+          <div className="rounded-lg border border-border bg-background p-4 space-y-2">
+            <h3 className="text-sm font-semibold">Key takeaways (TL;DR)</h3>
+            <p className="text-xs text-muted-foreground">One bullet per line. Shown above the article and boosts citations in AI search (ChatGPT, Perplexity, Google AIO).</p>
+            <textarea
+              value={takeawaysInput}
+              onChange={(e) => setTakeawaysInput(e.target.value)}
+              rows={5}
+              placeholder={"Key point one\nKey point two\nKey point three"}
+              className="w-full rounded border border-border bg-background px-2 py-1.5 text-sm"
+            />
           </div>
           <div className="rounded-lg border border-border bg-background p-4 space-y-3">
             <h3 className="text-sm font-semibold">SEO</h3>
