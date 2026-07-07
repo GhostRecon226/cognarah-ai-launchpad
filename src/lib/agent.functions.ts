@@ -214,11 +214,11 @@ export const regenerateArticleHero = createServerFn({ method: "POST" })
     let heroPath: string | null = null;
     let lastReason = "";
     for (let attempt = 1; attempt <= 2; attempt++) {
-      const buf = await generateAiImage(title, dek);
-      if (!buf) { lastReason = "image generation failed"; continue; }
-      const rel = await isImageRelevant(buf, "image/png", article.title, dek);
+      const gen = await generateAiImage(title, dek);
+      if (!("buf" in gen)) { lastReason = `attempt ${attempt}: ${gen.error}`; continue; }
+      const rel = await isImageRelevant(gen.buf, "image/png", article.title, dek);
       if (!rel.ok) { lastReason = `attempt ${attempt}: ${rel.reason}`; continue; }
-      heroPath = await uploadToMedia(buf, "image/png", article.slug);
+      heroPath = await uploadToMedia(gen.buf, "image/png", article.slug);
       if (heroPath) { lastReason = `attempt ${attempt}: ${rel.reason}`; break; }
       lastReason = "upload failed";
     }
