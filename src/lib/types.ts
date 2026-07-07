@@ -3,6 +3,7 @@ export interface Category {
   slug: string;
   name: string;
   description: string | null;
+  long_intro: string | null;
   color: string | null;
   sort_order: number;
 }
@@ -30,6 +31,8 @@ export interface Article {
   tags: string[];
   seo_title: string | null;
   meta_description: string | null;
+  key_takeaways: string[];
+  is_news: boolean;
   read_time: number;
   status: "draft" | "published";
   view_count: number;

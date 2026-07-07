@@ -179,6 +179,8 @@ export type Database = {
           hero_image: string | null
           id: string
           is_featured: boolean
+          is_news: boolean
+          key_takeaways: string[]
           meta_description: string | null
           published_at: string | null
           read_time: number
@@ -202,6 +204,8 @@ export type Database = {
           hero_image?: string | null
           id?: string
           is_featured?: boolean
+          is_news?: boolean
+          key_takeaways?: string[]
           meta_description?: string | null
           published_at?: string | null
           read_time?: number
@@ -225,6 +229,8 @@ export type Database = {
           hero_image?: string | null
           id?: string
           is_featured?: boolean
+          is_news?: boolean
+          key_takeaways?: string[]
           meta_description?: string | null
           published_at?: string | null
           read_time?: number
@@ -306,6 +312,7 @@ export type Database = {
           created_at: string
           description: string | null
           id: string
+          long_intro: string | null
           name: string
           slug: string
           sort_order: number
@@ -316,6 +323,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          long_intro?: string | null
           name: string
           slug: string
           sort_order?: number
@@ -326,6 +334,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           id?: string
+          long_intro?: string | null
           name?: string
           slug?: string
           sort_order?: number

@@ -19,10 +19,10 @@ export const Route = createFileRoute("/sitemap.xml")({
           process.env.SUPABASE_PUBLISHABLE_KEY!,
           { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
         );
-        const { data: articles } = await supabase
-          .from("articles")
-          .select("slug, updated_at")
-          .eq("status", "published");
+        const [{ data: articles }, { data: authors }] = await Promise.all([
+          supabase.from("articles").select("slug, updated_at").eq("status", "published"),
+          supabase.from("authors").select("slug, updated_at"),
+        ]);
 
         const entries = [
           ...STATIC_PATHS.map((p) => ({ loc: `${BASE_URL}${p}`, changefreq: "weekly", priority: p === "/" ? "1.0" : "0.7" })),
@@ -32,6 +32,12 @@ export const Route = createFileRoute("/sitemap.xml")({
             lastmod: a.updated_at,
             changefreq: "monthly",
             priority: "0.9",
+          })),
+          ...((authors ?? []) as { slug: string; updated_at: string }[]).map((au) => ({
+            loc: `${BASE_URL}/authors/${au.slug}`,
+            lastmod: au.updated_at,
+            changefreq: "monthly",
+            priority: "0.5",
           })),
         ];
 

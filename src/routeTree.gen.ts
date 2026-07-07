@@ -21,6 +21,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as StartupsSubmitRouteImport } from './routes/startups.submit'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
+import { Route as AuthorsSlugRouteImport } from './routes/authors.$slug'
 import { Route as ArticleSlugRouteImport } from './routes/article.$slug'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
@@ -99,6 +100,11 @@ const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
 const CategorySlugRoute = CategorySlugRouteImport.update({
   id: '/category/$slug',
   path: '/category/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthorsSlugRoute = AuthorsSlugRouteImport.update({
+  id: '/authors/$slug',
+  path: '/authors/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ArticleSlugRoute = ArticleSlugRouteImport.update({
@@ -224,6 +230,7 @@ export interface FileRoutesByFullPath {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/article/$slug': typeof ArticleSlugRoute
+  '/authors/$slug': typeof AuthorsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/startups/submit': typeof StartupsSubmitRoute
@@ -257,6 +264,7 @@ export interface FileRoutesByTo {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/article/$slug': typeof ArticleSlugRoute
+  '/authors/$slug': typeof AuthorsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/startups/submit': typeof StartupsSubmitRoute
@@ -292,6 +300,7 @@ export interface FileRoutesById {
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/article/$slug': typeof ArticleSlugRoute
+  '/authors/$slug': typeof AuthorsSlugRoute
   '/category/$slug': typeof CategorySlugRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/startups/submit': typeof StartupsSubmitRoute
@@ -327,6 +336,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/unsubscribe'
     | '/article/$slug'
+    | '/authors/$slug'
     | '/category/$slug'
     | '/email/unsubscribe'
     | '/startups/submit'
@@ -360,6 +370,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/unsubscribe'
     | '/article/$slug'
+    | '/authors/$slug'
     | '/category/$slug'
     | '/email/unsubscribe'
     | '/startups/submit'
@@ -394,6 +405,7 @@ export interface FileRouteTypes {
     | '/sitemap.xml'
     | '/unsubscribe'
     | '/article/$slug'
+    | '/authors/$slug'
     | '/category/$slug'
     | '/email/unsubscribe'
     | '/startups/submit'
@@ -429,6 +441,7 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   ArticleSlugRoute: typeof ArticleSlugRoute
+  AuthorsSlugRoute: typeof AuthorsSlugRoute
   CategorySlugRoute: typeof CategorySlugRoute
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   StartupsSubmitRoute: typeof StartupsSubmitRoute
@@ -525,6 +538,13 @@ declare module '@tanstack/react-router' {
       path: '/category/$slug'
       fullPath: '/category/$slug'
       preLoaderRoute: typeof CategorySlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/authors/$slug': {
+      id: '/authors/$slug'
+      path: '/authors/$slug'
+      fullPath: '/authors/$slug'
+      preLoaderRoute: typeof AuthorsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/article/$slug': {
@@ -715,6 +735,7 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   ArticleSlugRoute: ArticleSlugRoute,
+  AuthorsSlugRoute: AuthorsSlugRoute,
   CategorySlugRoute: CategorySlugRoute,
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   StartupsSubmitRoute: StartupsSubmitRoute,
