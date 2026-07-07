@@ -59,18 +59,39 @@ export const Route = createFileRoute("/article/$slug")({
         ] : []),
       ],
       links: [{ rel: "canonical", href: url }],
-      scripts: a ? [{
-        type: "application/ld+json",
-        children: JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "Article",
-          headline: a.title,
-          image: a.hero_image ? [mediaUrl(a.hero_image, SITE_URL)] : undefined,
-          datePublished: a.published_at,
-          author: a.author ? { "@type": "Person", name: a.author.name } : undefined,
-          publisher: { "@type": "Organization", name: "Cognarah" },
-        }),
-      }] : undefined,
+      scripts: a ? [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "Article",
+            headline: a.title,
+            description: a.meta_description || a.excerpt || undefined,
+            image: a.hero_image ? [mediaUrl(a.hero_image, SITE_URL)] : undefined,
+            datePublished: a.published_at,
+            dateModified: a.updated_at,
+            author: a.author ? { "@type": "Person", name: a.author.name } : undefined,
+            publisher: {
+              "@type": "Organization",
+              name: "Cognarah",
+              logo: { "@type": "ImageObject", url: `${SITE_URL}/favicon.png` },
+            },
+            mainEntityOfPage: { "@type": "WebPage", "@id": url },
+          }),
+        },
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+              ...(a.category ? [{ "@type": "ListItem", position: 2, name: a.category.name, item: `${SITE_URL}/category/${a.category.slug}` }] : []),
+              { "@type": "ListItem", position: a.category ? 3 : 2, name: a.title, item: url },
+            ],
+          }),
+        },
+      ] : undefined,
     };
   },
   component: ArticlePage,

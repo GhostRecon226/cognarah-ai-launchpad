@@ -63,8 +63,11 @@ function SearchPage() {
             <div className="mt-6 space-y-3">
               <div className="relative">
                 <SearchIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-white/50" />
+                <label htmlFor="search-q" className="sr-only">Search articles</label>
                 <input
+                  id="search-q"
                   autoFocus
+                  aria-label="Search articles"
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
                   placeholder="Search articles…"
@@ -72,11 +75,13 @@ function SearchPage() {
                 />
               </div>
               <div className="flex flex-col gap-3 sm:flex-row">
-                <select value={cat} onChange={(e) => setCat(e.target.value)} className="w-full min-w-0 rounded-md border border-white/20 bg-white/5 px-3 py-3 text-white sm:flex-1">
+                <label htmlFor="search-cat" className="sr-only">Filter by category</label>
+                <select id="search-cat" aria-label="Filter by category" value={cat} onChange={(e) => setCat(e.target.value)} className="w-full min-w-0 rounded-md border border-white/20 bg-white/5 px-3 py-3 text-white sm:flex-1">
                   <option value="">All categories</option>
                   {NAV_CATEGORIES.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
                 </select>
-                <select value={sort} onChange={(e) => setSort(e.target.value as "newest" | "oldest")} className="w-full min-w-0 rounded-md border border-white/20 bg-white/5 px-3 py-3 text-white sm:w-auto">
+                <label htmlFor="search-sort" className="sr-only">Sort order</label>
+                <select id="search-sort" aria-label="Sort order" value={sort} onChange={(e) => setSort(e.target.value as "newest" | "oldest")} className="w-full min-w-0 rounded-md border border-white/20 bg-white/5 px-3 py-3 text-white sm:w-auto">
                   <option value="newest">Newest first</option>
                   <option value="oldest">Oldest first</option>
                 </select>

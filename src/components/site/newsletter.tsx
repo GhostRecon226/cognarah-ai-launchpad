@@ -35,9 +35,12 @@ export function NewsletterSignup({ variant = "light" }: { variant?: "light" | "d
           One curated email. Everything that matters in AI. Nothing else.
         </p>
         <form onSubmit={submit} className="mx-auto mt-8 flex max-w-md flex-col gap-3 sm:flex-row">
+          <label htmlFor="newsletter-email" className="sr-only">Email address</label>
           <input
+            id="newsletter-email"
             type="email"
             required
+            aria-label="Email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@domain.com"

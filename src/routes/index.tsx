@@ -28,10 +28,10 @@ export const Route = createFileRoute("/")({
   loader: loadHome,
   head: () => ({
     meta: [
-      { title: "Cognarah, Everything AI. Nothing Else." },
-      { name: "description", content: "The definitive media platform for everything AI. News, startups, funding, tools, policy, and the global builders shaping AI." },
-      { property: "og:title", content: "Cognarah, Everything AI. Nothing Else." },
-      { property: "og:description", content: "The definitive media platform for everything AI." },
+      { title: "Cognarah: AI News, Startups, Funding, Tools & Analysis" },
+      { name: "description", content: "Cognarah covers the AI industry end to end: breaking news, startup launches, funding rounds, tool reviews, policy, and Africa AI dispatches you won't find elsewhere." },
+      { property: "og:title", content: "Cognarah: AI News, Startups, Funding, Tools & Analysis" },
+      { property: "og:description", content: "Breaking AI news, startup launches, funding rounds, tool reviews, and Africa AI coverage in one place." },
       { property: "og:url", content: SITE_URL },
       { property: "og:type", content: "website" },
     ],
