@@ -609,8 +609,12 @@ export async function runAgentCore(args: RunAgentArgs) {
         if (!heroPath) {
           logLine("Falling back to AI-generated hero");
           const aiImg = await generateAiImage(draft.title, draft.dek);
-          if (aiImg) heroPath = await uploadToMedia(aiImg, "image/png", slug);
-          logLine(heroPath ? "AI hero generated" : "AI hero generation failed");
+          if ("buf" in aiImg) {
+            heroPath = await uploadToMedia(aiImg.buf, "image/png", slug);
+            logLine(heroPath ? "AI hero generated" : "AI hero upload failed");
+          } else {
+            logLine(`AI hero generation failed: ${aiImg.error}`);
+          }
         }
 
         // 10. Resolve category
