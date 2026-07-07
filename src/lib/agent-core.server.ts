@@ -240,9 +240,12 @@ async function isImageRelevant(imageBuf: Buffer, contentType: string, title: str
   }
 }
 
-async function generateAiImage(title: string, dek: string): Promise<Buffer | null> {
+async function generateAiImage(
+  title: string,
+  dek: string,
+): Promise<{ buf: Buffer } | { error: string }> {
   const key = process.env.LOVABLE_API_KEY;
-  if (!key) return null;
+  if (!key) return { error: "LOVABLE_API_KEY missing" };
   const subject = `${title}. ${dek}`.slice(0, 400);
   const prompt =
     `Editorial magazine hero illustration for a news article. Subject: ${subject}. ` +
@@ -253,17 +256,27 @@ async function generateAiImage(title: string, dek: string): Promise<Buffer | nul
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
-        model: "google/gemini-2.5-flash-image",
-        prompt,
+        // Gemini image models require the chat shape (messages + modalities) on
+        // /v1/images/generations. Sending `prompt` returns a legacy-completions
+        // body with no data[] / b64_json.
+        model: "google/gemini-3.1-flash-image",
+        messages: [{ role: "user", content: prompt }],
+        modalities: ["image", "text"],
       }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      const t = await res.text().catch(() => "");
+      return { error: `image gateway ${res.status}: ${t.slice(0, 200)}` };
+    }
     const json: any = await res.json();
     const b64 = json?.data?.[0]?.b64_json;
-    if (!b64) return null;
-    return Buffer.from(b64, "base64");
-  } catch {
-    return null;
+    if (!b64) {
+      const keys = json && typeof json === "object" ? Object.keys(json).join(",") : typeof json;
+      return { error: `no b64_json in response (top-level keys: ${keys})` };
+    }
+    return { buf: Buffer.from(b64, "base64") };
+  } catch (e: any) {
+    return { error: `image fetch threw: ${e?.message || e}` };
   }
 }
 
