@@ -166,6 +166,10 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
     setLoading(false);
     if (res.error) { toast.error(res.error.message); return; }
     toast.success(publish ? "Published" : "Saved");
+    if (publish && canPublish && payload.status === "published") {
+      navigate({ to: "/admin/articles" });
+      return;
+    }
     if (isNew && res.data) navigate({ to: "/admin/articles/$id", params: { id: (res.data as any).id } });
   }
 
