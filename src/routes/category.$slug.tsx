@@ -67,6 +67,12 @@ function CategoryPage() {
           </div>
         </section>
         <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16">
+          {category.long_intro && (
+            <div
+              className="prose-article mx-auto mb-12 max-w-3xl"
+              dangerouslySetInnerHTML={{ __html: category.long_intro }}
+            />
+          )}
           {articles.length === 0 ? (
             <p className="text-muted-foreground">No articles yet in this category.</p>
           ) : (
