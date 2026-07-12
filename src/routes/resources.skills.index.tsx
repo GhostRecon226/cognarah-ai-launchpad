@@ -55,15 +55,20 @@ function SkillsPage() {
   const { data: skills } = useSuspenseQuery(skillsQuery);
   const [category, setCategory] = useState("All");
   const [difficulty, setDifficulty] = useState("All");
+  const [query, setQuery] = useState("");
 
+  const normalizedQuery = query.trim().toLowerCase();
   const filtered = useMemo(
     () =>
       skills.filter(
         (s) =>
           (category === "All" || s.category === category) &&
-          (difficulty === "All" || s.difficulty === difficulty),
+          (difficulty === "All" || s.difficulty === difficulty) &&
+          (normalizedQuery === "" ||
+            s.title.toLowerCase().includes(normalizedQuery) ||
+            s.description.toLowerCase().includes(normalizedQuery)),
       ),
-    [skills, category, difficulty],
+    [skills, category, difficulty, normalizedQuery],
   );
 
   return (
