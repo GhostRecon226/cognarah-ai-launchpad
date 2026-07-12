@@ -110,18 +110,29 @@ function SkillDetail() {
             <p className="mt-2 text-xs text-white/50">By {skill.author}</p>
             {skill.file_url && (
               <a
-                href={skill.file_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-6 inline-flex items-center gap-2 rounded-md bg-brand px-5 py-2.5 text-sm font-semibold text-navy transition hover:bg-brand/90"
+                href={`${skill.file_url}${skill.file_url.includes("?") ? "&" : "?"}download=1`}
+                download
+                className="mt-6 inline-flex items-center gap-2 rounded-md bg-brand px-6 py-3 text-base font-semibold text-navy shadow-lg shadow-brand/20 transition hover:bg-brand/90 sm:text-lg"
               >
-                <Download className="h-4 w-4" /> Download Skill File
+                <Download className="h-5 w-5" /> Download Skill File
               </a>
             )}
           </div>
         </section>
         <article className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
           <div className="prose-article" dangerouslySetInnerHTML={{ __html: html }} />
+          {skill.file_url && (
+            <div className="mt-10 rounded-lg border border-brand/30 bg-brand/5 p-6 text-center">
+              <p className="text-sm font-medium text-foreground">Ready to use this skill?</p>
+              <a
+                href={`${skill.file_url}${skill.file_url.includes("?") ? "&" : "?"}download=1`}
+                download
+                className="mt-3 inline-flex items-center gap-2 rounded-md bg-brand px-5 py-2.5 text-sm font-semibold text-navy transition hover:bg-brand/90"
+              >
+                <Download className="h-4 w-4" /> Download Skill File
+              </a>
+            </div>
+          )}
         </article>
       </main>
       <SiteFooter />
