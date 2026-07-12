@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
+import { Download } from "lucide-react";
 import { SiteNav } from "@/components/site/nav";
 import { SiteFooter } from "@/components/site/footer";
 import { NewsletterSignup } from "@/components/site/newsletter";
@@ -15,6 +16,7 @@ type Skill = {
   description: string;
   category: string;
   difficulty: string;
+  file_url: string | null;
 };
 
 const skillsQuery = queryOptions({
@@ -22,7 +24,7 @@ const skillsQuery = queryOptions({
   queryFn: async (): Promise<Skill[]> => {
     const { data, error } = await supabase
       .from("skills")
-      .select("id, slug, title, description, category, difficulty")
+      .select("id, slug, title, description, category, difficulty, file_url")
       .eq("published", true)
       .order("created_at", { ascending: false });
     if (error) throw error;
@@ -123,18 +125,39 @@ function SkillsPage() {
                     <span className="rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
                       {s.difficulty}
                     </span>
+                    {s.file_url && (
+                      <span
+                        title="Includes downloadable file"
+                        className="inline-flex items-center gap-1 rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-semibold text-brand"
+                      >
+                        <Download className="h-3 w-3" /> File
+                      </span>
+                    )}
                   </div>
                   <h2 className="mt-3 text-lg font-bold leading-tight text-foreground group-hover:text-brand">
                     {s.title}
                   </h2>
                   <p className="mt-2 flex-1 text-sm text-muted-foreground">{s.description}</p>
-                  <Link
-                    to="/resources/skills/$slug"
-                    params={{ slug: s.slug }}
-                    className="mt-4 inline-flex items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-semibold text-navy transition hover:bg-brand/90"
-                  >
-                    Get Skill
-                  </Link>
+                  <div className="mt-4 flex items-center gap-2">
+                    <Link
+                      to="/resources/skills/$slug"
+                      params={{ slug: s.slug }}
+                      className="inline-flex flex-1 items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-semibold text-navy transition hover:bg-brand/90"
+                    >
+                      Get Skill
+                    </Link>
+                    {s.file_url && (
+                      <a
+                        href={`${s.file_url}${s.file_url.includes("?") ? "&" : "?"}download=1`}
+                        download
+                        aria-label={`Download ${s.title} file`}
+                        title="Download file"
+                        className="inline-flex items-center justify-center rounded-md border border-brand/40 bg-brand/10 px-3 py-2 text-brand transition hover:bg-brand hover:text-navy"
+                      >
+                        <Download className="h-4 w-4" />
+                      </a>
+                    )}
+                  </div>
                 </article>
               ))}
             </div>

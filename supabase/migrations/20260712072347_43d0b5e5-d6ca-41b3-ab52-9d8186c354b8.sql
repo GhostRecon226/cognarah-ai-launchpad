@@ -1,0 +1,1 @@
+ALTER TABLE public.skills ADD CONSTRAINT skills_claude_code_requires_file CHECK (category <> 'Claude Code' OR (file_url IS NOT NULL AND length(trim(file_url)) > 0));
