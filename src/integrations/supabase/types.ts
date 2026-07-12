@@ -486,6 +486,51 @@ export type Database = {
         }
         Relationships: []
       }
+      skills: {
+        Row: {
+          author: string
+          category: Database["public"]["Enums"]["skill_category"]
+          content: string
+          created_at: string
+          description: string
+          difficulty: Database["public"]["Enums"]["skill_difficulty"]
+          file_url: string | null
+          id: string
+          published: boolean
+          slug: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          author?: string
+          category: Database["public"]["Enums"]["skill_category"]
+          content: string
+          created_at?: string
+          description: string
+          difficulty: Database["public"]["Enums"]["skill_difficulty"]
+          file_url?: string | null
+          id?: string
+          published?: boolean
+          slug: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          author?: string
+          category?: Database["public"]["Enums"]["skill_category"]
+          content?: string
+          created_at?: string
+          description?: string
+          difficulty?: Database["public"]["Enums"]["skill_difficulty"]
+          file_url?: string | null
+          id?: string
+          published?: boolean
+          slug?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       startup_submissions: {
         Row: {
           admin_notes: string | null
@@ -691,6 +736,13 @@ export type Database = {
     Enums: {
       app_role: "admin" | "editor" | "author"
       article_status: "draft" | "published"
+      skill_category:
+        | "Claude Code"
+        | "Prompt Engineering"
+        | "Automation"
+        | "Workflow"
+        | "Other"
+      skill_difficulty: "Beginner" | "Intermediate" | "Advanced"
       startup_submission_status:
         | "pending"
         | "approved"
@@ -825,6 +877,14 @@ export const Constants = {
     Enums: {
       app_role: ["admin", "editor", "author"],
       article_status: ["draft", "published"],
+      skill_category: [
+        "Claude Code",
+        "Prompt Engineering",
+        "Automation",
+        "Workflow",
+        "Other",
+      ],
+      skill_difficulty: ["Beginner", "Intermediate", "Advanced"],
       startup_submission_status: [
         "pending",
         "approved",
