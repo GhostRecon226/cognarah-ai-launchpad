@@ -77,11 +77,16 @@ function SkillsAdmin() {
     const description = stripEmDashes(editing.description ?? "").trim();
     const content = stripEmDashes(editing.content ?? "");
     if (!title || !description || !content) { toast.error("Title, description, and content are required"); return; }
+    const category = editing.category ?? "Claude Code";
+    if (category === "Claude Code" && !editing.file_url) {
+      toast.error("Claude Code skills require a downloadable file");
+      return;
+    }
     const slug = (editing.slug || slugify(title, { lower: true, strict: true })).trim();
 
     const payload = {
       title, description, content, slug,
-      category: editing.category ?? "Claude Code",
+      category,
       difficulty: editing.difficulty ?? "Beginner",
       file_url: editing.file_url ?? null,
       author: stripEmDashes(editing.author ?? "Cognarah Team"),
