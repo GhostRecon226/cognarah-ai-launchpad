@@ -30,6 +30,7 @@ import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/em
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 import { Route as AuthenticatedAdminSubscribersRouteImport } from './routes/_authenticated/admin/subscribers'
 import { Route as AuthenticatedAdminStartupsRouteImport } from './routes/_authenticated/admin/startups'
+import { Route as AuthenticatedAdminSkillsRouteImport } from './routes/_authenticated/admin/skills'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
 import { Route as AuthenticatedAdminMediaRouteImport } from './routes/_authenticated/admin/media'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
@@ -152,6 +153,12 @@ const AuthenticatedAdminStartupsRoute =
     path: '/admin/startups',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminSkillsRoute =
+  AuthenticatedAdminSkillsRouteImport.update({
+    id: '/admin/skills',
+    path: '/admin/skills',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAdminSettingsRoute =
   AuthenticatedAdminSettingsRouteImport.update({
     id: '/admin/settings',
@@ -258,6 +265,7 @@ export interface FileRoutesByFullPath {
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/media': typeof AuthenticatedAdminMediaRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/admin/skills': typeof AuthenticatedAdminSkillsRoute
   '/admin/startups': typeof AuthenticatedAdminStartupsRoute
   '/admin/subscribers': typeof AuthenticatedAdminSubscribersRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -295,6 +303,7 @@ export interface FileRoutesByTo {
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/media': typeof AuthenticatedAdminMediaRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/admin/skills': typeof AuthenticatedAdminSkillsRoute
   '/admin/startups': typeof AuthenticatedAdminStartupsRoute
   '/admin/subscribers': typeof AuthenticatedAdminSubscribersRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -334,6 +343,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/media': typeof AuthenticatedAdminMediaRoute
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/_authenticated/admin/skills': typeof AuthenticatedAdminSkillsRoute
   '/_authenticated/admin/startups': typeof AuthenticatedAdminStartupsRoute
   '/_authenticated/admin/subscribers': typeof AuthenticatedAdminSubscribersRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -373,6 +383,7 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/media'
     | '/admin/settings'
+    | '/admin/skills'
     | '/admin/startups'
     | '/admin/subscribers'
     | '/admin/users'
@@ -410,6 +421,7 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/media'
     | '/admin/settings'
+    | '/admin/skills'
     | '/admin/startups'
     | '/admin/subscribers'
     | '/admin/users'
@@ -448,6 +460,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/media'
     | '/_authenticated/admin/settings'
+    | '/_authenticated/admin/skills'
     | '/_authenticated/admin/startups'
     | '/_authenticated/admin/subscribers'
     | '/_authenticated/admin/users'
@@ -643,6 +656,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminStartupsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/skills': {
+      id: '/_authenticated/admin/skills'
+      path: '/admin/skills'
+      fullPath: '/admin/skills'
+      preLoaderRoute: typeof AuthenticatedAdminSkillsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/admin/settings': {
       id: '/_authenticated/admin/settings'
       path: '/admin/settings'
@@ -757,6 +777,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminMediaRoute: typeof AuthenticatedAdminMediaRoute
   AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
+  AuthenticatedAdminSkillsRoute: typeof AuthenticatedAdminSkillsRoute
   AuthenticatedAdminStartupsRoute: typeof AuthenticatedAdminStartupsRoute
   AuthenticatedAdminSubscribersRoute: typeof AuthenticatedAdminSubscribersRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
@@ -772,6 +793,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedAdminMediaRoute: AuthenticatedAdminMediaRoute,
   AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
+  AuthenticatedAdminSkillsRoute: AuthenticatedAdminSkillsRoute,
   AuthenticatedAdminStartupsRoute: AuthenticatedAdminStartupsRoute,
   AuthenticatedAdminSubscribersRoute: AuthenticatedAdminSubscribersRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
