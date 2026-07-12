@@ -40,6 +40,12 @@ export const Route = createFileRoute("/sitemap.xml")({
             changefreq: "monthly",
             priority: "0.5",
           })),
+          ...((skills ?? []) as { slug: string; updated_at: string }[]).map((s) => ({
+            loc: `${BASE_URL}/resources/skills/${s.slug}`,
+            lastmod: s.updated_at,
+            changefreq: "monthly",
+            priority: "0.6",
+          })),
         ];
 
         const xml =
