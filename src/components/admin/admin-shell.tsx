@@ -14,6 +14,7 @@ const NAV: NavItem[] = [
   { to: "/admin/startups", label: "Startups", icon: Rocket, roles: ["admin", "editor"], badgeKey: "pendingStartups" },
   { to: "/admin/agent", label: "AI Agent", icon: Sparkles, roles: ["admin", "editor"] },
   { to: "/admin/categories", label: "Categories", icon: Tags, roles: ["admin", "editor"] },
+  { to: "/admin/skills", label: "Skills", icon: GraduationCap, roles: ["admin", "editor"] },
   { to: "/admin/authors", label: "Authors", icon: Users, roles: ["admin", "editor"] },
   { to: "/admin/media", label: "Media", icon: Image, roles: ["admin", "editor", "author"] },
   { to: "/admin/subscribers", label: "Subscribers", icon: Mail, roles: ["admin"] },
