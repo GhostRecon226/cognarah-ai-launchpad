@@ -158,13 +158,6 @@ function SkillsPage() {
                       </a>
                     )}
                   </div>
-                  <Link
-                    to="/resources/skills/$slug"
-                    params={{ slug: s.slug }}
-                    className="mt-4 inline-flex items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-semibold text-navy transition hover:bg-brand/90"
-                  >
-                    Get Skill
-                  </Link>
                 </article>
               ))}
             </div>
