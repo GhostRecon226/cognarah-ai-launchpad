@@ -218,9 +218,9 @@ function SkillsAdmin() {
               <Field label="Content (Markdown supported)">
                 <textarea value={editing.content ?? ""} rows={12} onChange={(e) => setEditing({ ...editing, content: e.target.value })} className="w-full rounded border border-border bg-background px-3 py-2 font-mono text-xs" placeholder="## Overview&#10;&#10;What this skill does..." />
               </Field>
-              <Field label="Downloadable file (optional)">
+              <Field label={editing.category === "Claude Code" ? "Downloadable file (required)" : "Downloadable file (optional)"}>
                 <div className="flex flex-wrap items-center gap-3">
-                  <input type="file" onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0])} disabled={uploading} className="text-sm" />
+                  <input type="file" accept=".md,.txt,.json,.zip" onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0])} disabled={uploading} className="text-sm" />
                   {editing.file_url && (
                     <div className="flex items-center gap-2 text-xs">
                       <a href={editing.file_url} target="_blank" rel="noopener noreferrer" className="text-brand underline">Current file</a>
@@ -228,6 +228,10 @@ function SkillsAdmin() {
                     </div>
                   )}
                 </div>
+                {editing.category === "Claude Code" && !editing.file_url && (
+                  <p className="mt-2 text-xs font-medium text-destructive">A downloadable file is required for Claude Code skills.</p>
+                )}
+                <p className="mt-1 text-xs text-muted-foreground">Accepted: .md, .txt, .json, .zip</p>
               </Field>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={!!editing.published} onChange={(e) => setEditing({ ...editing, published: e.target.checked })} />
