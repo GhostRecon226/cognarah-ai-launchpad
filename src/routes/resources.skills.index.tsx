@@ -91,6 +91,20 @@ function SkillsPage() {
             <FilterGroup label="Level" value={difficulty} options={DIFFICULTIES} onChange={setDifficulty} />
           </div>
 
+          <div className="mb-8">
+            <label htmlFor="skill-search" className="sr-only">
+              Search skills
+            </label>
+            <input
+              id="skill-search"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search skills by title or description"
+              className="w-full rounded-md border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+            />
+          </div>
+
           {filtered.length === 0 ? (
             <p className="rounded-lg border border-border bg-secondary p-8 text-center text-muted-foreground">
               No skills yet. Check back soon.
