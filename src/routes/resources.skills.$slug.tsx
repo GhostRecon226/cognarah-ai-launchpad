@@ -1,0 +1,130 @@
+import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
+import { marked } from "marked";
+import { SiteNav } from "@/components/site/nav";
+import { SiteFooter } from "@/components/site/footer";
+import { supabase } from "@/integrations/supabase/client";
+import { sanitizeHtml } from "@/lib/sanitize";
+import { SITE_URL } from "@/lib/types";
+import { Download, ArrowLeft } from "lucide-react";
+
+type Skill = {
+  id: string;
+  slug: string;
+  title: string;
+  description: string;
+  category: string;
+  difficulty: string;
+  content: string;
+  file_url: string | null;
+  author: string;
+  published: boolean;
+};
+
+const skillQuery = (slug: string) =>
+  queryOptions({
+    queryKey: ["skills", "detail", slug],
+    queryFn: async (): Promise<Skill> => {
+      const { data, error } = await supabase
+        .from("skills")
+        .select("*")
+        .eq("slug", slug)
+        .eq("published", true)
+        .maybeSingle();
+      if (error) throw error;
+      if (!data) throw notFound();
+      return data as Skill;
+    },
+  });
+
+export const Route = createFileRoute("/resources/skills/$slug")({
+  loader: ({ context, params }) => {
+    context.queryClient.ensureQueryData(skillQuery(params.slug));
+  },
+  head: ({ loaderData, params }) => {
+    if (!loaderData) {
+      return { meta: [{ title: "Skill: Cognarah" }, { name: "robots", content: "noindex" }] };
+    }
+    const url = `${SITE_URL}/resources/skills/${params.slug}`;
+    return {
+      meta: [
+        { title: `${(loaderData as any).title}: Cognarah` },
+        { name: "description", content: (loaderData as any).description },
+        { property: "og:title", content: (loaderData as any).title },
+        { property: "og:description", content: (loaderData as any).description },
+        { property: "og:type", content: "article" },
+        { property: "og:url", content: url },
+      ],
+      links: [{ rel: "canonical", href: url }],
+    };
+  },
+  component: SkillDetail,
+  notFoundComponent: () => (
+    <div className="flex min-h-screen flex-col">
+      <SiteNav />
+      <main className="mx-auto max-w-3xl flex-1 px-4 py-16 text-center">
+        <h1 className="text-2xl font-bold">Skill not found</h1>
+        <Link to="/resources/skills" className="mt-4 inline-block text-brand underline">Back to Skills</Link>
+      </main>
+      <SiteFooter />
+    </div>
+  ),
+  errorComponent: () => (
+    <div className="flex min-h-screen flex-col">
+      <SiteNav />
+      <main className="mx-auto max-w-3xl flex-1 px-4 py-16 text-center">
+        <h1 className="text-2xl font-bold">Something went wrong</h1>
+      </main>
+      <SiteFooter />
+    </div>
+  ),
+});
+
+function SkillDetail() {
+  const { slug } = Route.useParams();
+  const { data: skill } = useSuspenseQuery(skillQuery(slug));
+  const html = sanitizeHtml(marked.parse(skill.content, { async: false }) as string);
+
+  return (
+    <div className="flex min-h-screen flex-col">
+      <SiteNav />
+      <main className="flex-1">
+        <section className="bg-navy py-10 text-navy-foreground sm:py-14">
+          <div className="mx-auto max-w-3xl px-4 sm:px-6">
+            <Link
+              to="/resources/skills"
+              className="inline-flex items-center gap-1 text-xs font-semibold uppercase tracking-widest text-brand hover:text-white"
+            >
+              <ArrowLeft className="h-3 w-3" /> All Skills
+            </Link>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <span className="rounded-full bg-brand/20 px-2.5 py-0.5 text-[11px] font-semibold text-brand">
+                {skill.category}
+              </span>
+              <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-semibold text-white/80">
+                {skill.difficulty}
+              </span>
+            </div>
+            <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{skill.title}</h1>
+            <p className="mt-3 text-base text-white/75 sm:text-lg">{skill.description}</p>
+            <p className="mt-2 text-xs text-white/50">By {skill.author}</p>
+            {skill.file_url && (
+              <a
+                href={skill.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-6 inline-flex items-center gap-2 rounded-md bg-brand px-5 py-2.5 text-sm font-semibold text-navy transition hover:bg-brand/90"
+              >
+                <Download className="h-4 w-4" /> Download Skill File
+              </a>
+            )}
+          </div>
+        </section>
+        <article className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
+          <div className="prose-article" dangerouslySetInnerHTML={{ __html: html }} />
+        </article>
+      </main>
+      <SiteFooter />
+    </div>
+  );
+}

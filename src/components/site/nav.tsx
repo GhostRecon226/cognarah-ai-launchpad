@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 type NavChild = {
   name: string;
-  to: "/category/$slug" | "/" | "/startups/submit";
+  to: "/category/$slug" | "/" | "/startups/submit" | "/resources/skills";
   slug?: string;
   highlight?: boolean;
 };
@@ -45,6 +45,7 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Resources",
     children: [
       { name: "Tools", to: "/category/$slug", slug: "tools" },
+      { name: "Skills", to: "/resources/skills" },
       { name: "Interviews", to: "/category/$slug", slug: "interviews" },
     ],
   },

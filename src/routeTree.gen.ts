@@ -23,11 +23,14 @@ import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe
 import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as AuthorsSlugRouteImport } from './routes/authors.$slug'
 import { Route as ArticleSlugRouteImport } from './routes/article.$slug'
+import { Route as ResourcesSkillsIndexRouteImport } from './routes/resources.skills.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as ResourcesSkillsSlugRouteImport } from './routes/resources.skills.$slug'
 import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
 import { Route as AuthenticatedAdminSubscribersRouteImport } from './routes/_authenticated/admin/subscribers'
 import { Route as AuthenticatedAdminStartupsRouteImport } from './routes/_authenticated/admin/startups'
+import { Route as AuthenticatedAdminSkillsRouteImport } from './routes/_authenticated/admin/skills'
 import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
 import { Route as AuthenticatedAdminMediaRouteImport } from './routes/_authenticated/admin/media'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
@@ -37,6 +40,7 @@ import { Route as AuthenticatedAdminArticlesIndexRouteImport } from './routes/_a
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
+import { Route as ApiPublicSkillsFilesSplatRouteImport } from './routes/api/public/skills-files.$'
 import { Route as ApiPublicMediaSplatRouteImport } from './routes/api/public/media.$'
 import { Route as ApiPublicHooksResubmitSitemapRouteImport } from './routes/api/public/hooks/resubmit-sitemap'
 import { Route as ApiPublicHooksAgentRunRouteImport } from './routes/api/public/hooks/agent-run'
@@ -112,10 +116,20 @@ const ArticleSlugRoute = ArticleSlugRouteImport.update({
   path: '/article/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResourcesSkillsIndexRoute = ResourcesSkillsIndexRouteImport.update({
+  id: '/resources/skills/',
+  path: '/resources/skills/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const ResourcesSkillsSlugRoute = ResourcesSkillsSlugRouteImport.update({
+  id: '/resources/skills/$slug',
+  path: '/resources/skills/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
   id: '/lovable/email/suppression',
@@ -137,6 +151,12 @@ const AuthenticatedAdminStartupsRoute =
   AuthenticatedAdminStartupsRouteImport.update({
     id: '/admin/startups',
     path: '/admin/startups',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminSkillsRoute =
+  AuthenticatedAdminSkillsRouteImport.update({
+    id: '/admin/skills',
+    path: '/admin/skills',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAdminSettingsRoute =
@@ -191,6 +211,12 @@ const LovableEmailQueueProcessRoute =
     path: '/lovable/email/queue/process',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicSkillsFilesSplatRoute =
+  ApiPublicSkillsFilesSplatRouteImport.update({
+    id: '/api/public/skills-files/$',
+    path: '/api/public/skills-files/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicMediaSplatRoute = ApiPublicMediaSplatRouteImport.update({
   id: '/api/public/media/$',
   path: '/api/public/media/$',
@@ -239,15 +265,19 @@ export interface FileRoutesByFullPath {
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/media': typeof AuthenticatedAdminMediaRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/admin/skills': typeof AuthenticatedAdminSkillsRoute
   '/admin/startups': typeof AuthenticatedAdminStartupsRoute
   '/admin/subscribers': typeof AuthenticatedAdminSubscribersRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/resources/skills/$slug': typeof ResourcesSkillsSlugRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
+  '/resources/skills/': typeof ResourcesSkillsIndexRoute
   '/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
   '/api/public/hooks/agent-run': typeof ApiPublicHooksAgentRunRoute
   '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
+  '/api/public/skills-files/$': typeof ApiPublicSkillsFilesSplatRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -273,15 +303,19 @@ export interface FileRoutesByTo {
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/admin/media': typeof AuthenticatedAdminMediaRoute
   '/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/admin/skills': typeof AuthenticatedAdminSkillsRoute
   '/admin/startups': typeof AuthenticatedAdminStartupsRoute
   '/admin/subscribers': typeof AuthenticatedAdminSubscribersRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/resources/skills/$slug': typeof ResourcesSkillsSlugRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
+  '/resources/skills': typeof ResourcesSkillsIndexRoute
   '/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
   '/api/public/hooks/agent-run': typeof ApiPublicHooksAgentRunRoute
   '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
+  '/api/public/skills-files/$': typeof ApiPublicSkillsFilesSplatRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -309,15 +343,19 @@ export interface FileRoutesById {
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
   '/_authenticated/admin/media': typeof AuthenticatedAdminMediaRoute
   '/_authenticated/admin/settings': typeof AuthenticatedAdminSettingsRoute
+  '/_authenticated/admin/skills': typeof AuthenticatedAdminSkillsRoute
   '/_authenticated/admin/startups': typeof AuthenticatedAdminStartupsRoute
   '/_authenticated/admin/subscribers': typeof AuthenticatedAdminSubscribersRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/lovable/email/suppression': typeof LovableEmailSuppressionRoute
+  '/resources/skills/$slug': typeof ResourcesSkillsSlugRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
+  '/resources/skills/': typeof ResourcesSkillsIndexRoute
   '/_authenticated/admin/articles/$id': typeof AuthenticatedAdminArticlesIdRoute
   '/api/public/hooks/agent-run': typeof ApiPublicHooksAgentRunRoute
   '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
+  '/api/public/skills-files/$': typeof ApiPublicSkillsFilesSplatRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -345,15 +383,19 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/media'
     | '/admin/settings'
+    | '/admin/skills'
     | '/admin/startups'
     | '/admin/subscribers'
     | '/admin/users'
     | '/lovable/email/suppression'
+    | '/resources/skills/$slug'
     | '/admin/'
+    | '/resources/skills/'
     | '/admin/articles/$id'
     | '/api/public/hooks/agent-run'
     | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
+    | '/api/public/skills-files/$'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -379,15 +421,19 @@ export interface FileRouteTypes {
     | '/admin/categories'
     | '/admin/media'
     | '/admin/settings'
+    | '/admin/skills'
     | '/admin/startups'
     | '/admin/subscribers'
     | '/admin/users'
     | '/lovable/email/suppression'
+    | '/resources/skills/$slug'
     | '/admin'
+    | '/resources/skills'
     | '/admin/articles/$id'
     | '/api/public/hooks/agent-run'
     | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
+    | '/api/public/skills-files/$'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -414,15 +460,19 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/categories'
     | '/_authenticated/admin/media'
     | '/_authenticated/admin/settings'
+    | '/_authenticated/admin/skills'
     | '/_authenticated/admin/startups'
     | '/_authenticated/admin/subscribers'
     | '/_authenticated/admin/users'
     | '/lovable/email/suppression'
+    | '/resources/skills/$slug'
     | '/_authenticated/admin/'
+    | '/resources/skills/'
     | '/_authenticated/admin/articles/$id'
     | '/api/public/hooks/agent-run'
     | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
+    | '/api/public/skills-files/$'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -446,9 +496,12 @@ export interface RootRouteChildren {
   EmailUnsubscribeRoute: typeof EmailUnsubscribeRoute
   StartupsSubmitRoute: typeof StartupsSubmitRoute
   LovableEmailSuppressionRoute: typeof LovableEmailSuppressionRoute
+  ResourcesSkillsSlugRoute: typeof ResourcesSkillsSlugRoute
+  ResourcesSkillsIndexRoute: typeof ResourcesSkillsIndexRoute
   ApiPublicHooksAgentRunRoute: typeof ApiPublicHooksAgentRunRoute
   ApiPublicHooksResubmitSitemapRoute: typeof ApiPublicHooksResubmitSitemapRoute
   ApiPublicMediaSplatRoute: typeof ApiPublicMediaSplatRoute
+  ApiPublicSkillsFilesSplatRoute: typeof ApiPublicSkillsFilesSplatRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
   LovableEmailTransactionalSendRoute: typeof LovableEmailTransactionalSendRoute
@@ -554,12 +607,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArticleSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/resources/skills/': {
+      id: '/resources/skills/'
+      path: '/resources/skills'
+      fullPath: '/resources/skills/'
+      preLoaderRoute: typeof ResourcesSkillsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/admin/': {
       id: '/_authenticated/admin/'
       path: '/admin'
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/resources/skills/$slug': {
+      id: '/resources/skills/$slug'
+      path: '/resources/skills/$slug'
+      fullPath: '/resources/skills/$slug'
+      preLoaderRoute: typeof ResourcesSkillsSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/lovable/email/suppression': {
       id: '/lovable/email/suppression'
@@ -587,6 +654,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/startups'
       fullPath: '/admin/startups'
       preLoaderRoute: typeof AuthenticatedAdminStartupsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/skills': {
+      id: '/_authenticated/admin/skills'
+      path: '/admin/skills'
+      fullPath: '/admin/skills'
+      preLoaderRoute: typeof AuthenticatedAdminSkillsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/settings': {
@@ -652,6 +726,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/skills-files/$': {
+      id: '/api/public/skills-files/$'
+      path: '/api/public/skills-files/$'
+      fullPath: '/api/public/skills-files/$'
+      preLoaderRoute: typeof ApiPublicSkillsFilesSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/media/$': {
       id: '/api/public/media/$'
       path: '/api/public/media/$'
@@ -696,6 +777,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
   AuthenticatedAdminMediaRoute: typeof AuthenticatedAdminMediaRoute
   AuthenticatedAdminSettingsRoute: typeof AuthenticatedAdminSettingsRoute
+  AuthenticatedAdminSkillsRoute: typeof AuthenticatedAdminSkillsRoute
   AuthenticatedAdminStartupsRoute: typeof AuthenticatedAdminStartupsRoute
   AuthenticatedAdminSubscribersRoute: typeof AuthenticatedAdminSubscribersRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
@@ -711,6 +793,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
   AuthenticatedAdminMediaRoute: AuthenticatedAdminMediaRoute,
   AuthenticatedAdminSettingsRoute: AuthenticatedAdminSettingsRoute,
+  AuthenticatedAdminSkillsRoute: AuthenticatedAdminSkillsRoute,
   AuthenticatedAdminStartupsRoute: AuthenticatedAdminStartupsRoute,
   AuthenticatedAdminSubscribersRoute: AuthenticatedAdminSubscribersRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
@@ -740,9 +823,12 @@ const rootRouteChildren: RootRouteChildren = {
   EmailUnsubscribeRoute: EmailUnsubscribeRoute,
   StartupsSubmitRoute: StartupsSubmitRoute,
   LovableEmailSuppressionRoute: LovableEmailSuppressionRoute,
+  ResourcesSkillsSlugRoute: ResourcesSkillsSlugRoute,
+  ResourcesSkillsIndexRoute: ResourcesSkillsIndexRoute,
   ApiPublicHooksAgentRunRoute: ApiPublicHooksAgentRunRoute,
   ApiPublicHooksResubmitSitemapRoute: ApiPublicHooksResubmitSitemapRoute,
   ApiPublicMediaSplatRoute: ApiPublicMediaSplatRoute,
+  ApiPublicSkillsFilesSplatRoute: ApiPublicSkillsFilesSplatRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
   LovableEmailTransactionalSendRoute: LovableEmailTransactionalSendRoute,

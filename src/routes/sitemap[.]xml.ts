@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const BASE_URL = "https://cognarah.com";
 
-const STATIC_PATHS = ["/", "/about", "/search", "/startups/submit"];
+const STATIC_PATHS = ["/", "/about", "/search", "/startups/submit", "/resources/skills"];
 const CATEGORIES = [
   "news", "startups", "funding", "tools", "trends", "opinions",
   "analysis", "interviews", "africa-ai", "policy-ethics", "events",
@@ -19,9 +19,10 @@ export const Route = createFileRoute("/sitemap.xml")({
           process.env.SUPABASE_PUBLISHABLE_KEY!,
           { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
         );
-        const [{ data: articles }, { data: authors }] = await Promise.all([
+        const [{ data: articles }, { data: authors }, { data: skills }] = await Promise.all([
           supabase.from("articles").select("slug, updated_at").eq("status", "published"),
           supabase.from("authors").select("slug, updated_at"),
+          supabase.from("skills").select("slug, updated_at").eq("published", true),
         ]);
 
         const entries = [
@@ -38,6 +39,12 @@ export const Route = createFileRoute("/sitemap.xml")({
             lastmod: au.updated_at,
             changefreq: "monthly",
             priority: "0.5",
+          })),
+          ...((skills ?? []) as { slug: string; updated_at: string }[]).map((s) => ({
+            loc: `${BASE_URL}/resources/skills/${s.slug}`,
+            lastmod: s.updated_at,
+            changefreq: "monthly",
+            priority: "0.6",
           })),
         ];
 
