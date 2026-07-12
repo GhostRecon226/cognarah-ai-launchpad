@@ -2,7 +2,7 @@ import { Link, useRouter, useLocation } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import logoAsset from "@/assets/cognarah-logo.png.asset.json";
-import { LayoutDashboard, FileText, Tags, Users, Image, Settings, LogOut, ExternalLink, Menu, X, Shield, RefreshCw, Sparkles, Rocket, Mail } from "lucide-react";
+import { LayoutDashboard, FileText, Tags, Users, Image, Settings, LogOut, ExternalLink, Menu, X, Shield, RefreshCw, Sparkles, Rocket, Mail, GraduationCap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RolesContext, type AppRole, ROLE_LABELS } from "@/lib/admin-roles";
 
