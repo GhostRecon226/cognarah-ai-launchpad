@@ -55,15 +55,20 @@ function SkillsPage() {
   const { data: skills } = useSuspenseQuery(skillsQuery);
   const [category, setCategory] = useState("All");
   const [difficulty, setDifficulty] = useState("All");
+  const [query, setQuery] = useState("");
 
+  const normalizedQuery = query.trim().toLowerCase();
   const filtered = useMemo(
     () =>
       skills.filter(
         (s) =>
           (category === "All" || s.category === category) &&
-          (difficulty === "All" || s.difficulty === difficulty),
+          (difficulty === "All" || s.difficulty === difficulty) &&
+          (normalizedQuery === "" ||
+            s.title.toLowerCase().includes(normalizedQuery) ||
+            s.description.toLowerCase().includes(normalizedQuery)),
       ),
-    [skills, category, difficulty],
+    [skills, category, difficulty, normalizedQuery],
   );
 
   return (
@@ -84,6 +89,20 @@ function SkillsPage() {
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <FilterGroup label="Category" value={category} options={CATEGORIES} onChange={setCategory} />
             <FilterGroup label="Level" value={difficulty} options={DIFFICULTIES} onChange={setDifficulty} />
+          </div>
+
+          <div className="mb-8">
+            <label htmlFor="skill-search" className="sr-only">
+              Search skills
+            </label>
+            <input
+              id="skill-search"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search skills by title or description"
+              className="w-full rounded-md border border-border bg-background px-4 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-brand focus:outline-none focus:ring-1 focus:ring-brand"
+            />
           </div>
 
           {filtered.length === 0 ? (
