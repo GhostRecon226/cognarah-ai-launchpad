@@ -45,13 +45,30 @@ function SkillsAdmin() {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [editing, setEditing] = useState<(Partial<Skill> & { id?: string }) | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [autoPublishPaused, setAutoPublishPaused] = useState<boolean>(false);
+  const [savingToggle, setSavingToggle] = useState(false);
 
   async function load() {
     const { data, error } = await supabase.from("skills").select("*").order("created_at", { ascending: false });
     if (error) toast.error(error.message);
     setSkills((data ?? []) as Skill[]);
   }
-  useEffect(() => { load(); }, []);
+  async function loadSettings() {
+    const { data } = await supabase.from("agent_settings").select("auto_publish_paused").eq("singleton", true).maybeSingle();
+    setAutoPublishPaused(!!(data as any)?.auto_publish_paused);
+  }
+  useEffect(() => { load(); loadSettings(); }, []);
+
+  async function toggleAutoPublishPaused() {
+    setSavingToggle(true);
+    const next = !autoPublishPaused;
+    const { error } = await supabase.from("agent_settings").update({ auto_publish_paused: next } as any).eq("singleton", true);
+    setSavingToggle(false);
+    if (error) { toast.error(error.message); return; }
+    setAutoPublishPaused(next);
+    toast.success(next ? "Auto-publish paused. New Tier 1 skills will go to manual review." : "Auto-publish resumed.");
+  }
+
 
   function openNew() {
     setEditing({ ...EMPTY });
@@ -118,12 +135,33 @@ function SkillsAdmin() {
 
   return (
     <AdminShell title="Skills" requiredRoles={["admin", "editor"]}>
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground">{skills.length} skill{skills.length === 1 ? "" : "s"}</p>
-        <button onClick={openNew} className="inline-flex items-center gap-1 rounded bg-navy px-4 py-2 text-sm font-medium text-white">
-          <Plus className="h-4 w-4" /> New skill
-        </button>
+        <div className="flex items-center gap-3">
+          <label className="flex items-center gap-2 rounded border border-border bg-background px-3 py-1.5 text-sm">
+            <input
+              type="checkbox"
+              checked={autoPublishPaused}
+              onChange={toggleAutoPublishPaused}
+              disabled={savingToggle}
+              className="h-4 w-4"
+            />
+            <span className={autoPublishPaused ? "font-semibold text-amber-600" : ""}>
+              Pause auto-publish
+            </span>
+          </label>
+          <button onClick={openNew} className="inline-flex items-center gap-1 rounded bg-navy px-4 py-2 text-sm font-medium text-white">
+            <Plus className="h-4 w-4" /> New skill
+          </button>
+        </div>
       </div>
+      {autoPublishPaused && (
+        <div className="mb-4 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+          Auto-publish is paused. All new skills from the Skills agent will land in the manual review queue,
+          even if they meet Tier 1 criteria.
+        </div>
+      )}
+
 
       <div className="overflow-hidden rounded-lg border border-border bg-background">
         <table className="w-full text-sm">
