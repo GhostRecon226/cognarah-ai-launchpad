@@ -495,6 +495,57 @@ export type Database = {
         }
         Relationships: []
       }
+      skill_audit_log: {
+        Row: {
+          actor_id: string | null
+          actor_label: string | null
+          created_at: string
+          event: string
+          id: string
+          matched_criteria: Json | null
+          note: string | null
+          run_id: string | null
+          skill_id: string
+        }
+        Insert: {
+          actor_id?: string | null
+          actor_label?: string | null
+          created_at?: string
+          event: string
+          id?: string
+          matched_criteria?: Json | null
+          note?: string | null
+          run_id?: string | null
+          skill_id: string
+        }
+        Update: {
+          actor_id?: string | null
+          actor_label?: string | null
+          created_at?: string
+          event?: string
+          id?: string
+          matched_criteria?: Json | null
+          note?: string | null
+          run_id?: string | null
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "skill_audit_log_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "agent_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "skill_audit_log_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skills"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       skills: {
         Row: {
           author: string

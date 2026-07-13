@@ -438,6 +438,24 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
           autoPublished++;
           autoPublishedItems.push({ title: draft.title, source: cand.url, slug });
           logLine(`AUTO-PUBLISHED: ${draft.title} (${insertedSkill.id})`);
+          const matchedCriteria = {
+            trusted_host: TRUSTED_AUTO_HOST,
+            source_url: cand.url,
+            author: attribution,
+            content_length: draft.content.length,
+            unique_source: true,
+            file_url: fileUrl,
+            license: licenseCheck.reason,
+          };
+          const { error: auditErr } = await supabase.from("skill_audit_log").insert({
+            skill_id: insertedSkill.id,
+            event: "auto_published",
+            run_id: runId,
+            matched_criteria: matchedCriteria,
+            actor_label: "skills-agent",
+            note: `Tier 1 auto-publish from ${cand.url}`,
+          });
+          if (auditErr) logLine(`Audit log insert failed: ${auditErr.message}`);
         } else {
           manualReview++;
           if (meetsTier1 && autoPublishPaused) {

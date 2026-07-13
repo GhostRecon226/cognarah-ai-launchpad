@@ -4,8 +4,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { toast } from "sonner";
 import slugify from "slugify";
-import { Trash2, Plus, ExternalLink, X } from "lucide-react";
+import { Trash2, Plus, ExternalLink, X, History } from "lucide-react";
 import { stripEmDashes } from "@/lib/strip-em-dashes";
+
+type AuditEntry = {
+  id: string;
+  event: "auto_published" | "manual_published" | "reverted_to_draft" | "manual_created";
+  run_id: string | null;
+  matched_criteria: Record<string, unknown> | null;
+  actor_label: string | null;
+  note: string | null;
+  created_at: string;
+};
 
 type Skill = {
   id: string;
@@ -133,8 +143,36 @@ function SkillsAdmin() {
   }
 
   async function togglePublished(s: Skill) {
-    const { error } = await supabase.from("skills").update({ published: !s.published }).eq("id", s.id);
-    if (error) toast.error(error.message); else load();
+    const nextPublished = !s.published;
+    const { error } = await supabase.from("skills").update({ published: nextPublished }).eq("id", s.id);
+    if (error) { toast.error(error.message); return; }
+    const { data: userRes } = await supabase.auth.getUser();
+    const actorId = userRes?.user?.id ?? null;
+    await supabase.from("skill_audit_log").insert({
+      skill_id: s.id,
+      event: nextPublished ? "manual_published" : "reverted_to_draft",
+      actor_id: actorId,
+      actor_label: userRes?.user?.email ?? "admin",
+      note: nextPublished
+        ? "Manually published from admin skills table"
+        : "Reverted to draft from admin skills table",
+    });
+    load();
+  }
+
+  const [history, setHistory] = useState<{ skill: Skill; entries: AuditEntry[] } | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  async function openHistory(s: Skill) {
+    setHistory({ skill: s, entries: [] });
+    setHistoryLoading(true);
+    const { data, error } = await supabase
+      .from("skill_audit_log")
+      .select("id,event,run_id,matched_criteria,actor_label,note,created_at")
+      .eq("skill_id", s.id)
+      .order("created_at", { ascending: false });
+    setHistoryLoading(false);
+    if (error) { toast.error(error.message); return; }
+    setHistory({ skill: s, entries: (data ?? []) as AuditEntry[] });
   }
 
   return (
@@ -210,6 +248,9 @@ function SkillsAdmin() {
                         <ExternalLink className="h-4 w-4" />
                       </Link>
                     )}
+                    <button onClick={() => openHistory(s)} className="text-muted-foreground hover:text-brand" aria-label="History" title="View audit history">
+                      <History className="h-4 w-4" />
+                    </button>
                     <button onClick={() => openEdit(s)} className="rounded bg-secondary px-3 py-1 text-xs font-medium">Edit</button>
                     <button onClick={() => del(s.id)} className="text-muted-foreground hover:text-destructive">
                       <Trash2 className="h-4 w-4" />
@@ -293,6 +334,54 @@ function SkillsAdmin() {
             <div className="flex items-center justify-end gap-2 border-t border-border px-6 py-4">
               <button onClick={() => setEditing(null)} className="rounded px-4 py-2 text-sm font-medium text-muted-foreground hover:bg-secondary">Cancel</button>
               <button onClick={save} className="rounded bg-brand px-4 py-2 text-sm font-semibold text-navy hover:bg-brand/90">Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {history && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4" role="dialog" aria-modal="true">
+          <div className="my-8 w-full max-w-2xl rounded-lg bg-background shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <div>
+                <h2 className="text-lg font-bold">Audit history</h2>
+                <p className="text-xs text-muted-foreground">{history.skill.title}</p>
+              </div>
+              <button onClick={() => setHistory(null)} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="max-h-[70vh] space-y-3 overflow-y-auto p-6">
+              {historyLoading && <p className="text-sm text-muted-foreground">Loading...</p>}
+              {!historyLoading && history.entries.length === 0 && (
+                <p className="text-sm text-muted-foreground">No audit entries recorded yet.</p>
+              )}
+              {history.entries.map((e) => {
+                const labels: Record<AuditEntry["event"], { text: string; className: string }> = {
+                  auto_published: { text: "Auto-published", className: "bg-green-100 text-green-800" },
+                  manual_published: { text: "Manually published", className: "bg-blue-100 text-blue-800" },
+                  reverted_to_draft: { text: "Reverted to draft", className: "bg-amber-100 text-amber-900" },
+                  manual_created: { text: "Manually created", className: "bg-secondary text-muted-foreground" },
+                };
+                const l = labels[e.event] ?? { text: e.event, className: "bg-secondary text-muted-foreground" };
+                return (
+                  <div key={e.id} className="rounded border border-border p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${l.className}`}>{l.text}</span>
+                      <span className="text-xs text-muted-foreground">{new Date(e.created_at).toLocaleString()}</span>
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      By {e.actor_label ?? "system"}
+                      {e.run_id && <> · Run <code className="rounded bg-secondary px-1 py-0.5 font-mono">{e.run_id.slice(0, 8)}</code></>}
+                    </div>
+                    {e.note && <p className="mt-2 text-sm">{e.note}</p>}
+                    {e.matched_criteria && (
+                      <details className="mt-2">
+                        <summary className="cursor-pointer text-xs font-semibold text-muted-foreground">Matched criteria</summary>
+                        <pre className="mt-1 overflow-x-auto rounded bg-secondary p-2 text-xs">{JSON.stringify(e.matched_criteria, null, 2)}</pre>
+                      </details>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
