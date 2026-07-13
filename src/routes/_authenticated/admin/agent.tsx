@@ -171,6 +171,32 @@ function AgentInner() {
         </button>
       </section>
 
+      {/* Skills Mode panel */}
+      <section className="rounded-lg border border-border bg-background p-5 lg:col-span-2">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-brand" />
+          <h2 className="text-lg font-semibold">Import skills now</h2>
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          The agent fetches configured <code>skill_url</code> sources, extracts a self-contained skill in Cognarah's voice, preserves the original creator's name and source URL, and saves as a <strong>draft</strong> in the Skills library.
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <label className="text-sm">Number of skill drafts
+            <select value={skillsCount} onChange={(e) => setSkillsCount(Number(e.target.value))} className="mt-1 w-full rounded border border-border bg-background px-2 py-2 text-sm">
+              <option value={1}>1</option><option value={2}>2</option><option value={3}>3</option><option value={5}>5</option>
+            </select>
+          </label>
+          <div className="text-xs text-muted-foreground sm:col-span-2 self-end">
+            Add candidate URLs below under <em>Trusted sources</em> with kind <code>skill_url</code>. Each URL is imported only once.
+          </div>
+        </div>
+        <button disabled={runningSkills} onClick={doRunSkills} className="mt-4 inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90 disabled:opacity-60">
+          {runningSkills ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+          {runningSkills ? "Importing…" : "Run skills agent"}
+        </button>
+      </section>
+
+
       {/* Schedule */}
       <section className="rounded-lg border border-border bg-background p-5">
         <h2 className="text-lg font-semibold">Schedule</h2>
