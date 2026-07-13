@@ -498,6 +498,8 @@ export type Database = {
           id: string
           published: boolean
           slug: string
+          source_attribution: string | null
+          source_url: string | null
           title: string
           updated_at: string
         }
@@ -512,6 +514,8 @@ export type Database = {
           id?: string
           published?: boolean
           slug: string
+          source_attribution?: string | null
+          source_url?: string | null
           title: string
           updated_at?: string
         }
@@ -526,6 +530,8 @@ export type Database = {
           id?: string
           published?: boolean
           slug?: string
+          source_attribution?: string | null
+          source_url?: string | null
           title?: string
           updated_at?: string
         }
