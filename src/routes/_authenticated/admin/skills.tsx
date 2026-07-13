@@ -103,6 +103,7 @@ function SkillsAdmin() {
     }
     const slug = (editing.slug || slugify(title, { lower: true, strict: true })).trim();
 
+    const licenseTerms = (editing.license_terms ?? "").toString().trim();
     const payload = {
       title, description, content, slug,
       category,
@@ -110,6 +111,7 @@ function SkillsAdmin() {
       file_url: editing.file_url ?? null,
       author: stripEmDashes(editing.author ?? "Cognarah Team"),
       published: !!editing.published,
+      license_terms: licenseTerms ? stripEmDashes(licenseTerms) : null,
     };
 
     if (editing.id) {
