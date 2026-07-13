@@ -127,12 +127,17 @@ function SkillsPage() {
                     <span className="rounded-full bg-secondary px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
                       {s.difficulty}
                     </span>
-                    {s.file_url && (
+                    {s.entry_type === "original" && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-brand px-2 py-0.5 text-[11px] font-semibold text-navy">
+                        <Sparkles className="h-3 w-3" /> Cognarah Original
+                      </span>
+                    )}
+                    {s.entry_type === "directory" && (
                       <span
-                        title="Includes downloadable file"
-                        className="inline-flex items-center gap-1 rounded-full bg-brand/10 px-2 py-0.5 text-[11px] font-semibold text-brand"
+                        title="Links to original source"
+                        className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-[11px] font-semibold text-muted-foreground"
                       >
-                        <Download className="h-3 w-3" /> File
+                        <ExternalLink className="h-3 w-3" /> Directory
                       </span>
                     )}
                   </div>
@@ -141,14 +146,25 @@ function SkillsPage() {
                   </h2>
                   <p className="mt-2 flex-1 text-sm text-muted-foreground">{s.description}</p>
                   <div className="mt-4 flex items-center gap-2">
-                    <Link
-                      to="/resources/skills/$slug"
-                      params={{ slug: s.slug }}
-                      className="inline-flex flex-1 items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-semibold text-navy transition hover:bg-brand/90"
-                    >
-                      Get Skill
-                    </Link>
-                    {s.file_url && (
+                    {s.entry_type === "directory" && s.source_url ? (
+                      <a
+                        href={s.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex flex-1 items-center justify-center gap-1 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-navy transition hover:bg-brand/90"
+                      >
+                        <ExternalLink className="h-4 w-4" /> Get Skill
+                      </a>
+                    ) : (
+                      <Link
+                        to="/resources/skills/$slug"
+                        params={{ slug: s.slug }}
+                        className="inline-flex flex-1 items-center justify-center rounded-md bg-brand px-4 py-2 text-sm font-semibold text-navy transition hover:bg-brand/90"
+                      >
+                        Get Skill
+                      </Link>
+                    )}
+                    {s.entry_type === "original" && s.file_url && (
                       <a
                         href={`${s.file_url}${s.file_url.includes("?") ? "&" : "?"}download=1`}
                         download
