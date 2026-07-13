@@ -1,5 +1,6 @@
 import type { ComponentType } from 'react'
 import { template as startupSubmissionNotification } from './startup-submission-notification'
+import { template as skillsAutoPublished } from './skills-auto-published'
 
 export interface TemplateEntry {
   component: ComponentType<any>
@@ -16,4 +17,5 @@ export interface TemplateEntry {
  */
 export const TEMPLATES: Record<string, TemplateEntry> = {
   'startup-submission-notification': startupSubmissionNotification,
+  'skills-auto-published': skillsAutoPublished,
 }
