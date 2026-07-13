@@ -239,8 +239,8 @@ function SkillsAdmin() {
               <Field label="Slug (auto-generated if blank)">
                 <input value={editing.slug ?? ""} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} placeholder="auto" className="w-full rounded border border-border bg-background px-3 py-2 text-sm" />
               </Field>
-              <Field label="Short description">
-                <textarea value={editing.description ?? ""} rows={2} onChange={(e) => setEditing({ ...editing, description: e.target.value })} className="w-full rounded border border-border bg-background px-3 py-2 text-sm" />
+              <Field label={`Short description (max 250 chars, currently ${(editing.description ?? "").length})`}>
+                <textarea value={editing.description ?? ""} rows={2} maxLength={250} onChange={(e) => setEditing({ ...editing, description: e.target.value })} className="w-full rounded border border-border bg-background px-3 py-2 text-sm" />
               </Field>
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Category">
