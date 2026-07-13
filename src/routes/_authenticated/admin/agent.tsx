@@ -61,6 +61,7 @@ function AgentInner() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [sources, setSources] = useState<Source[]>([]);
   const [runs, setRuns] = useState<Run[]>([]);
+  const [mode, setMode] = useState<"news" | "skills">("news");
   const [running, setRunning] = useState(false);
   const [runningSkills, setRunningSkills] = useState(false);
   const [count, setCount] = useState(2);
