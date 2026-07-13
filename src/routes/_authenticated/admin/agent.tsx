@@ -61,6 +61,7 @@ function AgentInner() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [sources, setSources] = useState<Source[]>([]);
   const [runs, setRuns] = useState<Run[]>([]);
+  const [mode, setMode] = useState<"news" | "skills">("news");
   const [running, setRunning] = useState(false);
   const [runningSkills, setRunningSkills] = useState(false);
   const [count, setCount] = useState(2);
@@ -146,55 +147,72 @@ function AgentInner() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
-      {/* Run panel */}
+      {/* Run panel with mode toggle */}
       <section className="rounded-lg border border-border bg-background p-5 lg:col-span-2">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-brand" />
-          <h2 className="text-lg font-semibold">Generate drafts now</h2>
-        </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          The agent searches the web for fresh AI news, rewrites in Cognarah's editorial voice, attaches a hero image, and saves as <strong>draft</strong>. Nothing publishes until you approve it.
-        </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <label className="text-sm">Number of drafts
-            <select value={count} onChange={(e) => setCount(Number(e.target.value))} className="mt-1 w-full rounded border border-border bg-background px-2 py-2 text-sm">
-              <option value={1}>1</option><option value={2}>2</option><option value={3}>3</option>
-            </select>
-          </label>
-          <label className="text-sm sm:col-span-2">Topic focus (optional)
-            <input value={focus} onChange={(e) => setFocus(e.target.value)} placeholder="e.g. African AI startups, LLM regulation, open source models" className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-sm" />
-          </label>
-        </div>
-        <button disabled={running} onClick={doRun} className="mt-4 inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90 disabled:opacity-60">
-          {running ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-          {running ? "Running…" : "Run agent"}
-        </button>
-      </section>
-
-      {/* Skills Mode panel */}
-      <section className="rounded-lg border border-border bg-background p-5 lg:col-span-2">
-        <div className="flex items-center gap-2">
-          <Sparkles className="h-5 w-5 text-brand" />
-          <h2 className="text-lg font-semibold">Import skills now</h2>
-        </div>
-        <p className="mt-1 text-sm text-muted-foreground">
-          The agent fetches configured <code>skill_url</code> sources, extracts a self-contained skill in Cognarah's voice, preserves the original creator's name and source URL, and saves as a <strong>draft</strong> in the Skills library.
-        </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <label className="text-sm">Number of skill drafts
-            <select value={skillsCount} onChange={(e) => setSkillsCount(Number(e.target.value))} className="mt-1 w-full rounded border border-border bg-background px-2 py-2 text-sm">
-              <option value={1}>1</option><option value={2}>2</option><option value={3}>3</option><option value={5}>5</option>
-            </select>
-          </label>
-          <div className="text-xs text-muted-foreground sm:col-span-2 self-end">
-            Add candidate URLs below under <em>Trusted sources</em> with kind <code>skill_url</code>. Each URL is imported only once.
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-brand" />
+            <h2 className="text-lg font-semibold">{mode === "news" ? "Generate news drafts" : "Import skill drafts"}</h2>
+          </div>
+          <div className="inline-flex rounded-md border border-border p-0.5 text-xs">
+            <button
+              onClick={() => setMode("news")}
+              className={`rounded px-3 py-1 font-medium transition ${mode === "news" ? "bg-brand text-white" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              News mode
+            </button>
+            <button
+              onClick={() => setMode("skills")}
+              className={`rounded px-3 py-1 font-medium transition ${mode === "skills" ? "bg-brand text-white" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              Skills mode
+            </button>
           </div>
         </div>
-        <button disabled={runningSkills} onClick={doRunSkills} className="mt-4 inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90 disabled:opacity-60">
-          {runningSkills ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-          {runningSkills ? "Importing…" : "Run skills agent"}
-        </button>
+
+        {mode === "news" ? (
+          <>
+            <p className="mt-3 text-sm text-muted-foreground">
+              The agent searches the web for fresh AI news, rewrites in Cognarah's editorial voice, attaches a hero image, and saves as <strong>draft</strong>. Nothing publishes until you approve it.
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <label className="text-sm">Number of drafts
+                <select value={count} onChange={(e) => setCount(Number(e.target.value))} className="mt-1 w-full rounded border border-border bg-background px-2 py-2 text-sm">
+                  <option value={1}>1</option><option value={2}>2</option><option value={3}>3</option>
+                </select>
+              </label>
+              <label className="text-sm sm:col-span-2">Topic focus (optional)
+                <input value={focus} onChange={(e) => setFocus(e.target.value)} placeholder="e.g. African AI startups, LLM regulation, open source models" className="mt-1 w-full rounded border border-border bg-background px-3 py-2 text-sm" />
+              </label>
+            </div>
+            <button disabled={running} onClick={doRun} className="mt-4 inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90 disabled:opacity-60">
+              {running ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              {running ? "Running…" : "Run news agent"}
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="mt-3 text-sm text-muted-foreground">
+              The agent fetches configured <code>skill_url</code> sources (Anthropic Skills, skillsmp.com, claudeskills.info, claudemarketplaces.com), extracts a self-contained skill, preserves the <strong>original creator's name and source URL</strong>, and saves as a <strong>draft</strong> in the Skills library. Entries without attribution are skipped and flagged in the run log.
+            </p>
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <label className="text-sm">Number of skill drafts
+                <select value={skillsCount} onChange={(e) => setSkillsCount(Number(e.target.value))} className="mt-1 w-full rounded border border-border bg-background px-2 py-2 text-sm">
+                  <option value={1}>1</option><option value={2}>2</option><option value={3}>3</option><option value={5}>5</option>
+                </select>
+              </label>
+              <div className="text-xs text-muted-foreground sm:col-span-2 self-end">
+                Manage candidate URLs below under <em>Trusted sources</em> with kind <code>skill_url</code>. Each URL is imported only once.
+              </div>
+            </div>
+            <button disabled={runningSkills} onClick={doRunSkills} className="mt-4 inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90 disabled:opacity-60">
+              {runningSkills ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              {runningSkills ? "Importing…" : "Run skills agent"}
+            </button>
+          </>
+        )}
       </section>
+
 
 
       {/* Schedule */}
@@ -275,14 +293,21 @@ function AgentInner() {
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[720px] text-sm">
             <thead className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-              <tr><th className="py-2">Started</th><th>Trigger</th><th>Focus</th><th>Status</th><th>Drafts</th><th></th></tr>
+              <tr><th className="py-2">Started</th><th>Mode</th><th>Trigger</th><th>Focus</th><th>Status</th><th>Drafts</th><th></th></tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {runs.map((r) => (
+              {runs.map((r) => {
+                const isSkills = r.trigger.includes("skills");
+                return (
                 <Fragment key={r.id}>
                   <tr>
                     <td className="py-2">{format(new Date(r.started_at), "MMM d, HH:mm")}</td>
-                    <td>{r.trigger}</td>
+                    <td>
+                      <span className={`inline-block rounded px-2 py-0.5 text-[11px] font-medium ${isSkills ? "bg-brand/15 text-brand" : "bg-navy/10 text-navy"}`}>
+                        {isSkills ? "Skills" : "News"}
+                      </span>
+                    </td>
+                    <td>{r.trigger.replace(/-skills$/, "")}</td>
                     <td className="text-muted-foreground">{r.focus ?? "None"}</td>
                     <td>
                       <span className={`inline-block rounded px-2 py-0.5 text-xs ${r.status === "success" ? "bg-emerald-100 text-emerald-700" : r.status === "error" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"}`}>{r.status}</span>
@@ -292,15 +317,16 @@ function AgentInner() {
                   </tr>
                   {expandedRun === r.id && (
                     <tr>
-                      <td colSpan={6} className="bg-secondary/40 p-3">
+                      <td colSpan={7} className="bg-secondary/40 p-3">
                         {r.error && <div className="mb-2 text-xs text-rose-700">Error: {r.error}</div>}
                         <pre className="max-h-64 overflow-auto whitespace-pre-wrap text-[11px] text-muted-foreground">{r.log || "(no log)"}</pre>
                       </td>
                     </tr>
                   )}
                 </Fragment>
-              ))}
-              {runs.length === 0 && <tr><td colSpan={6} className="py-6 text-center text-muted-foreground">No runs yet.</td></tr>}
+                );
+              })}
+              {runs.length === 0 && <tr><td colSpan={7} className="py-6 text-center text-muted-foreground">No runs yet.</td></tr>}
             </tbody>
           </table>
         </div>

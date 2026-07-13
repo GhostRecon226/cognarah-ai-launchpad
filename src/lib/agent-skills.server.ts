@@ -44,7 +44,7 @@ const SKILLS_SYSTEM_PROMPT =
   "- Never use em dashes (—) or en dashes (–). Use commas, periods, semicolons, or colons.\n" +
   "- Attribute the original creator by name in the `author` field. If no creator is named on the page, use the publication or site name.\n" +
   "- `title` should be a clear, specific title for the skill (max 12 words). Prefer the original page title if usable.\n" +
-  "- `description` is a one-sentence summary (max 200 characters).\n" +
+  "- `description` is a fresh one-sentence summary (STRICT max 100 characters). Do NOT copy from the source verbatim.\n" +
   "- `category` MUST be one of: " + CATEGORIES.join(", ") + ".\n" +
   "- `difficulty` MUST be one of: " + DIFFICULTIES.join(", ") + ".\n" +
   "- `content` is the full skill body in Markdown, minimum 200 words.\n\n" +
@@ -233,7 +233,13 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
           draft.category = "Other";
         }
 
-        const attribution = draft.author?.trim() || pageAuthor?.trim() || siteName?.trim() || new URL(cand.url).hostname;
+        // Attribution is REQUIRED. Never present a fetched skill as Cognarah's own work.
+        const rawAttribution = (draft.author?.trim() || pageAuthor?.trim() || siteName?.trim() || "");
+        if (!rawAttribution) {
+          logLine(`FLAGGED for manual review: no attributable author or source name for ${cand.url}. Skill NOT saved.`);
+          continue;
+        }
+        const attribution = rawAttribution;
         const slug = slugify(draft.title, { lower: true, strict: true }).slice(0, 110) + "-" + Date.now().toString(36);
 
         const { data: insertedSkill, error: insErr } = await supabase
@@ -241,7 +247,7 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
           .insert({
             title: draft.title.slice(0, 200),
             slug,
-            description: draft.description.slice(0, 400),
+            description: draft.description.slice(0, 100),
             category: draft.category,
             difficulty: draft.difficulty,
             content: draft.content,
@@ -249,7 +255,7 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
             author: attribution.slice(0, 120),
             published: false,
             source_url: cand.url,
-            source_attribution: attribution.slice(0, 200),
+            source_attribution: cand.url,
           })
           .select("id")
           .single();
