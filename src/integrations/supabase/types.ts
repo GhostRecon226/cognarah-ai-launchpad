@@ -16,12 +16,14 @@ export type Database = {
     Tables: {
       agent_runs: {
         Row: {
+          auto_published_count: number
           drafts_created: number
           error: string | null
           finished_at: string | null
           focus: string | null
           id: string
           log: string | null
+          manual_review_count: number
           requested_count: number
           started_at: string
           status: string
@@ -29,12 +31,14 @@ export type Database = {
           triggered_by: string | null
         }
         Insert: {
+          auto_published_count?: number
           drafts_created?: number
           error?: string | null
           finished_at?: string | null
           focus?: string | null
           id?: string
           log?: string | null
+          manual_review_count?: number
           requested_count?: number
           started_at?: string
           status?: string
@@ -42,12 +46,14 @@ export type Database = {
           triggered_by?: string | null
         }
         Update: {
+          auto_published_count?: number
           drafts_created?: number
           error?: string | null
           finished_at?: string | null
           focus?: string | null
           id?: string
           log?: string | null
+          manual_review_count?: number
           requested_count?: number
           started_at?: string
           status?: string
@@ -97,6 +103,7 @@ export type Database = {
       }
       agent_settings: {
         Row: {
+          auto_publish_paused: boolean
           created_at: string
           cron_expression: string
           default_count: number
@@ -110,6 +117,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_publish_paused?: boolean
           created_at?: string
           cron_expression?: string
           default_count?: number
@@ -123,6 +131,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_publish_paused?: boolean
           created_at?: string
           cron_expression?: string
           default_count?: number
