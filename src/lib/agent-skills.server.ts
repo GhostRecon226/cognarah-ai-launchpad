@@ -216,7 +216,14 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
     const seenHashes = new Set((seen ?? []).map((r: any) => r.url_hash));
     const fresh = hashed.filter((h) => !seenHashes.has(h.hash));
     logLine(`${fresh.length} URL(s) fresh after dedupe`);
-    if (fresh.length === 0) throw new Error("All configured skill URLs have already been imported. Add new URLs or remove entries from agent_seen_sources.");
+    if (fresh.length === 0) {
+      logLine("All configured skill URLs have already been imported. Add new URLs under Trusted sources, or clear entries from agent_seen_sources to re-import.");
+      await supabase
+        .from("agent_runs")
+        .update({ status: "success", drafts_created: 0, auto_published_count: 0, manual_review_count: 0, finished_at: new Date().toISOString(), log: logLines.join("\n") })
+        .eq("id", runId);
+      return { drafts_created: 0, auto_published_count: 0, manual_review_count: 0, run_id: runId, note: "no_fresh_urls" };
+    }
 
     const target = Math.min(args.count, fresh.length);
     let created = 0;
