@@ -275,6 +275,16 @@ function SkillsAdmin() {
                 )}
                 <p className="mt-1 text-xs text-muted-foreground">Accepted: .md, .txt, .json, .zip</p>
               </Field>
+              <Field label="License terms (paste license text, or 'unspecified' if none)">
+                <textarea
+                  value={editing.license_terms ?? ""}
+                  rows={4}
+                  onChange={(e) => setEditing({ ...editing, license_terms: e.target.value })}
+                  className="w-full rounded border border-border bg-background px-3 py-2 font-mono text-xs"
+                  placeholder="MIT License&#10;&#10;Copyright (c) ..."
+                />
+                <p className="mt-1 text-xs text-muted-foreground">Auto-populated by the Skills agent from LICENSE files or frontmatter. Required (non-'unspecified' + permissive) for Tier 1 auto-publish.</p>
+              </Field>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={!!editing.published} onChange={(e) => setEditing({ ...editing, published: e.target.checked })} />
                 Published
