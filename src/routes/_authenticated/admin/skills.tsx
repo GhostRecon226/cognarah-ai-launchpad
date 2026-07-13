@@ -18,6 +18,7 @@ type Skill = {
   file_url: string | null;
   author: string;
   published: boolean;
+  license_terms: string | null;
   created_at: string;
 };
 
@@ -34,6 +35,7 @@ const EMPTY: Omit<Skill, "id" | "created_at"> = {
   file_url: null,
   author: "Cognarah Team",
   published: false,
+  license_terms: null,
 };
 
 export const Route = createFileRoute("/_authenticated/admin/skills")({
