@@ -5,6 +5,7 @@ import Firecrawl from "@mendable/firecrawl-js";
 import slugify from "slugify";
 import { createHash } from "crypto";
 import { stripEmDashes } from "./strip-em-dashes";
+import { fetchSkillPackage, buildZip, assessLicense, strToU8, type ParsedSkillPackage } from "./skill-package.server";
 
 type Sb = any;
 
@@ -25,8 +26,8 @@ interface SkillDraft {
   description: string;
   category: SkillCategory;
   difficulty: SkillDifficulty;
-  content: string; // markdown
-  author: string; // creator name
+  content: string;
+  author: string;
 }
 
 function hashUrl(url: string) {
@@ -44,7 +45,7 @@ const SKILLS_SYSTEM_PROMPT =
   "- Never use em dashes (—) or en dashes (–). Use commas, periods, semicolons, or colons.\n" +
   "- Attribute the original creator by name in the `author` field. If no creator is named on the page, use the publication or site name.\n" +
   "- `title` should be a clear, specific title for the skill (max 12 words). Prefer the original page title if usable.\n" +
-  "- `description` is a fresh one-sentence summary (STRICT max 100 characters). Do NOT copy from the source verbatim.\n" +
+  "- `description` is a fresh one-sentence summary (STRICT max 250 characters). Do NOT copy from the source verbatim.\n" +
   "- `category` MUST be one of: " + CATEGORIES.join(", ") + ".\n" +
   "- `difficulty` MUST be one of: " + DIFFICULTIES.join(", ") + ".\n" +
   "- `content` is the full skill body in Markdown, minimum 200 words.\n\n" +
@@ -119,6 +120,54 @@ function validateDraft(d: SkillDraft): { ok: true } | { ok: false; reason: strin
   return { ok: true };
 }
 
+// Guess category/difficulty from frontmatter, defaulting sensibly.
+function pickCategory(fm: Record<string, unknown>): SkillCategory {
+  const raw = String(fm.category ?? "").trim();
+  const match = CATEGORIES.find((c) => c.toLowerCase() === raw.toLowerCase());
+  return match ?? "Claude Code";
+}
+function pickDifficulty(fm: Record<string, unknown>): SkillDifficulty {
+  const raw = String(fm.difficulty ?? "").trim();
+  const match = DIFFICULTIES.find((d) => d.toLowerCase() === raw.toLowerCase());
+  return match ?? "Beginner";
+}
+
+async function uploadSkillFile(
+  supabase: Sb,
+  slug: string,
+  pkg: ParsedSkillPackage,
+  logLine: (m: string) => void,
+): Promise<string | null> {
+  try {
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    let path: string;
+    let bytes: Uint8Array;
+    let contentType: string;
+    if (pkg.isBundle) {
+      path = `${slug}/${slug}.zip`;
+      bytes = buildZip(pkg.files);
+      contentType = "application/zip";
+    } else {
+      path = `${slug}/SKILL.md`;
+      bytes = strToU8(pkg.skillMd);
+      contentType = "text/markdown";
+    }
+    const { error } = await supabaseAdmin.storage.from("skills-files").upload(path, bytes, {
+      upsert: true,
+      contentType,
+    });
+    if (error) {
+      logLine(`File upload failed: ${error.message}`);
+      return null;
+    }
+    logLine(`Uploaded ${pkg.isBundle ? "bundle zip" : "SKILL.md"} to skills-files/${path}`);
+    return `/api/public/skills-files/${path}`;
+  } catch (e: any) {
+    logLine(`File upload exception: ${e?.message || e}`);
+    return null;
+  }
+}
+
 export async function runSkillsAgentCore(args: RunSkillsArgs) {
   const { supabase } = args;
   const log: string[] = [];
@@ -139,7 +188,6 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
   const runId = runRow.id as string;
 
   try {
-    // 0. Load auto-publish safety toggle
     const { data: settings } = await supabase
       .from("agent_settings")
       .select("auto_publish_paused")
@@ -148,7 +196,6 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
     const autoPublishPaused = !!settings?.auto_publish_paused;
     logLine(`Auto-publish paused toggle: ${autoPublishPaused ? "ON (all skills go to manual review)" : "off"}`);
 
-    // 1. Load skill source URLs
     const { data: sources } = await supabase
       .from("agent_sources")
       .select("value,label")
@@ -161,7 +208,6 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
     if (urls.length === 0) throw new Error("No enabled skill_url sources. Add one under Trusted sources with kind 'skill_url'.");
     logLine(`Loaded ${urls.length} skill source URL(s)`);
 
-    // 2. Dedupe against seen table
     const hashed = urls.map((s) => ({ ...s, hash: hashUrl(s.url) }));
     const { data: seen } = await supabase
       .from("agent_seen_sources")
@@ -172,9 +218,6 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
     logLine(`${fresh.length} URL(s) fresh after dedupe`);
     if (fresh.length === 0) throw new Error("All configured skill URLs have already been imported. Add new URLs or remove entries from agent_seen_sources.");
 
-    if (!process.env.FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY missing, link Firecrawl in Connectors.");
-    const fc = new Firecrawl({ apiKey: process.env.FIRECRAWL_API_KEY });
-
     const target = Math.min(args.count, fresh.length);
     let created = 0;
     let autoPublished = 0;
@@ -183,52 +226,112 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
 
     const TRUSTED_AUTO_HOST = "github.com/anthropics/skills";
 
+    // Lazy Firecrawl init only if we hit a generic URL.
+    let fc: Firecrawl | null = null;
+    const getFc = () => {
+      if (fc) return fc;
+      if (!process.env.FIRECRAWL_API_KEY) throw new Error("FIRECRAWL_API_KEY missing (needed for non-SKILL.md sources).");
+      fc = new Firecrawl({ apiKey: process.env.FIRECRAWL_API_KEY });
+      return fc;
+    };
+
     for (const cand of fresh) {
       if (created >= target) break;
       try {
-        logLine(`Scraping skill URL: ${cand.url}`);
-        const scraped: any = await fc.scrape(cand.url, {
-          formats: ["markdown"],
-          onlyMainContent: true,
-        });
-        const md: string = scraped?.markdown || scraped?.data?.markdown || "";
-        const meta: any = scraped?.metadata || scraped?.data?.metadata || {};
-        const pageTitle: string = meta.title || meta.ogTitle || cand.label || "";
-        const siteName: string = meta.siteName || meta.ogSiteName || "";
-        const pageAuthor: string = meta.author || meta.byline || "";
+        logLine(`Processing skill URL: ${cand.url}`);
 
-        const words = md.split(/\s+/).filter(Boolean).length;
-        if (words < 150) { logLine(`Skipped: page has only ${words} words`); continue; }
+        // ==== Stage A: Try to parse as a real SKILL.md package ====
+        let pkg: ParsedSkillPackage | null = null;
+        try {
+          pkg = await fetchSkillPackage(cand.url);
+        } catch (e: any) {
+          logLine(`Package fetch failed, will try scraping fallback: ${e?.message || e}`);
+        }
 
-        const userPrompt =
-          `Source URL: ${cand.url}\n` +
-          `Page title: ${pageTitle}\n` +
-          `Site name: ${siteName}\n` +
-          `Detected author (may be empty): ${pageAuthor}\n\n` +
-          `SCRAPED CONTENT:\n${md.slice(0, 16000)}`;
-
-        // Stage 1: Gemini extraction
-        const aiRes: any = await callLovableAI({
-          model: "google/gemini-3-flash-preview",
-          messages: [
-            { role: "system", content: SKILLS_SYSTEM_PROMPT },
-            { role: "user", content: userPrompt },
-          ],
-          response_format: { type: "json_object" },
-        });
-        const content: string = aiRes?.choices?.[0]?.message?.content ?? "";
         let draft: SkillDraft;
-        try { draft = JSON.parse(content); }
-        catch { logLine("Skipped: non-JSON response from Gemini"); continue; }
+        let licenseText: string | null;
 
-        const v = validateDraft(draft);
-        if (!v.ok) { logLine(`Skipped: validation failed (${v.reason})`); continue; }
-        logLine(`Gemini draft accepted: ${draft.title}`);
+        if (pkg) {
+          logLine(`Detected format: ${pkg.format} (${pkg.files.length} file(s), bundle=${pkg.isBundle})`);
+          const fm = pkg.frontmatter;
+          const fmTitle = typeof fm.name === "string" ? fm.name : "";
+          const fmDesc = typeof fm.description === "string" ? fm.description : "";
+          const fmAuthor = typeof fm.author === "string" ? fm.author : "";
 
-        // Stage 2: Claude refinement
-        const refined = await refineWithClaude(draft);
-        if (refined) { draft = refined; logLine("Claude editor pass applied"); }
-        else logLine("Claude pass skipped/failed, using Gemini draft");
+          // Attribution: frontmatter author, else GitHub owner, else site label
+          let author = fmAuthor;
+          if (!author && cand.url.toLowerCase().includes("github.com/")) {
+            const m = cand.url.match(/github\.com\/([^\/]+)/i);
+            if (m) author = m[1];
+          }
+          if (!author) author = cand.label || "";
+
+          licenseText = pkg.licenseText;
+          logLine(
+            licenseText
+              ? `License source: ${pkg.licenseText ? "LICENSE file or frontmatter" : "unknown"} (${licenseText.length} chars)`
+              : `License source: unspecified`,
+          );
+
+          draft = {
+            title: (fmTitle || cand.label || "Untitled Skill").slice(0, 200),
+            description: (fmDesc || "").slice(0, 250),
+            category: pickCategory(fm as Record<string, unknown>),
+            difficulty: pickDifficulty(fm as Record<string, unknown>),
+            content: pkg.body || pkg.skillMd,
+            author: author || "Unknown",
+          };
+
+          // If description missing, synthesize a short one from body's first sentence.
+          if (!draft.description || draft.description.length < 10) {
+            const first = draft.content.replace(/[#>*_`]/g, "").trim().split(/\.\s+/)[0] ?? "";
+            draft.description = first.slice(0, 250) || draft.title;
+          }
+        } else {
+          // ==== Fallback: Firecrawl scrape + AI extraction (previous flow) ====
+          logLine("No SKILL.md detected, falling back to Firecrawl scrape + AI extraction");
+          const scraped: any = await getFc().scrape(cand.url, {
+            formats: ["markdown"],
+            onlyMainContent: true,
+          });
+          const md: string = scraped?.markdown || scraped?.data?.markdown || "";
+          const meta: any = scraped?.metadata || scraped?.data?.metadata || {};
+          const pageTitle: string = meta.title || meta.ogTitle || cand.label || "";
+          const siteName: string = meta.siteName || meta.ogSiteName || "";
+          const pageAuthor: string = meta.author || meta.byline || "";
+
+          const words = md.split(/\s+/).filter(Boolean).length;
+          if (words < 150) { logLine(`Skipped: page has only ${words} words`); continue; }
+
+          const userPrompt =
+            `Source URL: ${cand.url}\n` +
+            `Page title: ${pageTitle}\n` +
+            `Site name: ${siteName}\n` +
+            `Detected author (may be empty): ${pageAuthor}\n\n` +
+            `SCRAPED CONTENT:\n${md.slice(0, 16000)}`;
+
+          const aiRes: any = await callLovableAI({
+            model: "google/gemini-3-flash-preview",
+            messages: [
+              { role: "system", content: SKILLS_SYSTEM_PROMPT },
+              { role: "user", content: userPrompt },
+            ],
+            response_format: { type: "json_object" },
+          });
+          const content: string = aiRes?.choices?.[0]?.message?.content ?? "";
+          try { draft = JSON.parse(content); }
+          catch { logLine("Skipped: non-JSON response from Gemini"); continue; }
+
+          const v = validateDraft(draft);
+          if (!v.ok) { logLine(`Skipped: validation failed (${v.reason})`); continue; }
+          logLine(`Gemini draft accepted: ${draft.title}`);
+
+          const refined = await refineWithClaude(draft);
+          if (refined) { draft = refined; logLine("Claude editor pass applied"); }
+          else logLine("Claude pass skipped/failed, using Gemini draft");
+
+          licenseText = null; // scraped pages have no license file
+        }
 
         // Strip em/en dashes across all string fields
         draft = {
@@ -239,22 +342,31 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
           author: stripEmDashes(draft.author),
         };
 
-        // Enforce category validity for Claude Code file requirement:
-        // if extractor picked "Claude Code" but we have no file, downgrade to "Other"
-        // to avoid violating the CHECK constraint.
-        if (draft.category === "Claude Code") {
-          logLine("Downgrading category from 'Claude Code' to 'Other' (no downloadable file attached; add manually to promote)");
+        // Ensure attribution exists.
+        const attribution = draft.author?.trim() || "";
+        if (!attribution) {
+          logLine(`FLAGGED: no attributable author for ${cand.url}. Skipping.`);
+          continue;
+        }
+
+        const slug = slugify(draft.title, { lower: true, strict: true }).slice(0, 110) + "-" + Date.now().toString(36);
+
+        // Upload file (SKILL.md or zip) if we have a package.
+        let fileUrl: string | null = null;
+        if (pkg) {
+          fileUrl = await uploadSkillFile(supabase, slug, pkg, logLine);
+        }
+
+        // If Claude Code category but no file, downgrade to Other (satisfies CHECK constraint).
+        if (draft.category === "Claude Code" && !fileUrl) {
+          logLine("Downgrading category 'Claude Code' -> 'Other' (no file attached)");
           draft.category = "Other";
         }
 
-        // Attribution is REQUIRED. Never present a fetched skill as Cognarah's own work.
-        const rawAttribution = (draft.author?.trim() || pageAuthor?.trim() || siteName?.trim() || "");
-        if (!rawAttribution) {
-          logLine(`FLAGGED for manual review: no attributable author or source name for ${cand.url}. Skill NOT saved.`);
-          continue;
-        }
-        const attribution = rawAttribution;
-        const slug = slugify(draft.title, { lower: true, strict: true }).slice(0, 110) + "-" + Date.now().toString(36);
+        // Normalize license_terms field
+        const licenseTermsForDb: string = (licenseText && licenseText.trim().length > 0)
+          ? licenseText
+          : "unspecified";
 
         // ===== TIER 1 auto-publish evaluation =====
         const tier1Reasons: string[] = [];
@@ -264,7 +376,6 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
         if (!attribution || attribution.length < 2) tier1Reasons.push("author empty");
         if (!draft.content || draft.content.length < 200) tier1Reasons.push(`content shorter than 200 chars (${draft.content?.length ?? 0})`);
 
-        // De-dupe by source_attribution URL in skills table
         const { data: existingSkill } = await supabase
           .from("skills")
           .select("id")
@@ -272,22 +383,26 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
           .maybeSingle();
         if (existingSkill) tier1Reasons.push("duplicate source_attribution already in skills table");
 
-        // File URL validation (only meaningful when a file is present).
-        // For Tier 1, a valid file_url is REQUIRED and must return successfully.
-        // The extraction pipeline currently doesn't attach files, so this fails for now
-        // unless a future extension pulls the file. This preserves the rule while keeping
-        // the pipeline safe.
-        let fileUrl: string | null = null;
+        // File must be present + reachable
         if (!fileUrl) {
-          tier1Reasons.push("no file_url attached (Tier 1 requires a valid downloadable file)");
+          tier1Reasons.push("no file_url attached");
         } else {
           try {
-            const head = await fetch(fileUrl, { method: "HEAD" });
-            if (!head.ok) tier1Reasons.push(`file_url HEAD returned ${head.status}`);
+            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+            const storagePath = fileUrl.replace(/^\/api\/public\/skills-files\//, "");
+            const { data: signed } = await supabaseAdmin.storage
+              .from("skills-files")
+              .createSignedUrl(storagePath, 60);
+            if (!signed?.signedUrl) tier1Reasons.push("file_url not resolvable in storage");
           } catch (e: any) {
-            tier1Reasons.push(`file_url fetch failed: ${e?.message || e}`);
+            tier1Reasons.push(`file_url check failed: ${e?.message || e}`);
           }
         }
+
+        // License check (Tier 1 condition #6)
+        const licenseCheck = assessLicense(licenseText);
+        if (!licenseCheck.ok) tier1Reasons.push(`license: ${licenseCheck.reason}`);
+        else logLine(`License check passed: ${licenseCheck.reason}`);
 
         const meetsTier1 = tier1Reasons.length === 0;
         const publishNow = meetsTier1 && !autoPublishPaused;
@@ -297,7 +412,7 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
           .insert({
             title: draft.title.slice(0, 200),
             slug,
-            description: draft.description.slice(0, 100),
+            description: draft.description.slice(0, 250),
             category: draft.category,
             difficulty: draft.difficulty,
             content: draft.content,
@@ -306,6 +421,7 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
             published: publishNow,
             source_url: cand.url,
             source_attribution: cand.url,
+            license_terms: licenseTermsForDb,
           })
           .select("id")
           .single();
@@ -327,7 +443,7 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
           if (meetsTier1 && autoPublishPaused) {
             logLine(`MANUAL REVIEW (auto-publish paused): ${draft.title} (${insertedSkill.id})`);
           } else {
-            logLine(`MANUAL REVIEW: ${draft.title} (${insertedSkill.id}) — Tier 1 failed: ${tier1Reasons.join("; ")}`);
+            logLine(`MANUAL REVIEW: ${draft.title} (${insertedSkill.id}). Tier 1 failed: ${tier1Reasons.join("; ")}`);
           }
         }
       } catch (e: any) {
@@ -337,7 +453,6 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
 
     logLine(`Run summary: ${autoPublished} auto-published, ${manualReview} sent to manual review`);
 
-    // Send notification for auto-published skills
     if (autoPublished > 0) {
       try {
         const { enqueueTransactionalEmail } = await import("./email/enqueue-internal.server");
