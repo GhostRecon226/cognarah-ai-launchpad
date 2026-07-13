@@ -111,8 +111,14 @@ function SkillsAdmin() {
     const content = stripEmDashes(editing.content ?? "");
     if (!title || !description || !content) { toast.error("Title, description, and content are required"); return; }
     const category = editing.category ?? "Claude Code";
-    if (category === "Claude Code" && !editing.file_url) {
-      toast.error("Claude Code skills require a downloadable file");
+    const entryType: "directory" | "original" = editing.entry_type ?? "original";
+    const sourceUrl = (editing.source_url ?? "").toString().trim();
+    if (entryType === "original" && !editing.file_url) {
+      toast.error("Original entries require a downloadable file");
+      return;
+    }
+    if (entryType === "directory" && !/^https?:\/\//i.test(sourceUrl)) {
+      toast.error("Directory entries require a valid source URL (https://...)");
       return;
     }
     const slug = (editing.slug || slugify(title, { lower: true, strict: true })).trim();
@@ -122,10 +128,12 @@ function SkillsAdmin() {
       title, description, content, slug,
       category,
       difficulty: editing.difficulty ?? "Beginner",
-      file_url: editing.file_url ?? null,
+      file_url: entryType === "original" ? (editing.file_url ?? null) : null,
       author: stripEmDashes(editing.author ?? "Cognarah Team"),
       published: !!editing.published,
       license_terms: licenseTerms ? stripEmDashes(licenseTerms) : null,
+      entry_type: entryType,
+      source_url: entryType === "directory" ? sourceUrl : null,
     };
 
     if (editing.id) {
