@@ -5,7 +5,7 @@ import Firecrawl from "@mendable/firecrawl-js";
 import slugify from "slugify";
 import { createHash } from "crypto";
 import { stripEmDashes } from "./strip-em-dashes";
-import { fetchSkillPackage, buildZip, assessLicense, strToU8, type ParsedSkillPackage } from "./skill-package.server";
+import { fetchSkillPackage, assessLicense, type ParsedSkillPackage } from "./skill-package.server";
 
 type Sb = any;
 
@@ -132,41 +132,8 @@ function pickDifficulty(fm: Record<string, unknown>): SkillDifficulty {
   return match ?? "Beginner";
 }
 
-async function uploadSkillFile(
-  supabase: Sb,
-  slug: string,
-  pkg: ParsedSkillPackage,
-  logLine: (m: string) => void,
-): Promise<string | null> {
-  try {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    let path: string;
-    let bytes: Uint8Array;
-    let contentType: string;
-    if (pkg.isBundle) {
-      path = `${slug}/${slug}.zip`;
-      bytes = buildZip(pkg.files);
-      contentType = "application/zip";
-    } else {
-      path = `${slug}/SKILL.md`;
-      bytes = strToU8(pkg.skillMd);
-      contentType = "text/markdown";
-    }
-    const { error } = await supabaseAdmin.storage.from("skills-files").upload(path, bytes, {
-      upsert: true,
-      contentType,
-    });
-    if (error) {
-      logLine(`File upload failed: ${error.message}`);
-      return null;
-    }
-    logLine(`Uploaded ${pkg.isBundle ? "bundle zip" : "SKILL.md"} to skills-files/${path}`);
-    return `/api/public/skills-files/${path}`;
-  } catch (e: any) {
-    logLine(`File upload exception: ${e?.message || e}`);
-    return null;
-  }
-}
+
+
 
 export async function runSkillsAgentCore(args: RunSkillsArgs) {
   const { supabase } = args;
@@ -358,24 +325,17 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
 
         const slug = slugify(draft.title, { lower: true, strict: true }).slice(0, 110) + "-" + Date.now().toString(36);
 
-        // Upload file (SKILL.md or zip) if we have a package.
-        let fileUrl: string | null = null;
-        if (pkg) {
-          fileUrl = await uploadSkillFile(supabase, slug, pkg, logLine);
-        }
-
-        // If Claude Code category but no file, downgrade to Other (satisfies CHECK constraint).
-        if (draft.category === "Claude Code" && !fileUrl) {
-          logLine("Downgrading category 'Claude Code' -> 'Other' (no file attached)");
-          draft.category = "Other";
-        }
+        // Agent entries are ALWAYS 'directory' type. We never rehost external content.
+        // The Get Skill button on the frontend links directly to the source URL.
+        const fileUrl: string | null = null;
+        logLine(`Entry type: directory (linking to ${cand.url}, no file rehosted)`);
 
         // Normalize license_terms field
         const licenseTermsForDb: string = (licenseText && licenseText.trim().length > 0)
           ? licenseText
           : "unspecified";
 
-        // ===== TIER 1 auto-publish evaluation =====
+        // ===== TIER 1 auto-publish evaluation (directory entries) =====
         const tier1Reasons: string[] = [];
         const normalizedUrl = cand.url.toLowerCase();
         const isTrustedHost = normalizedUrl.includes(TRUSTED_AUTO_HOST);
@@ -386,25 +346,12 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
         const { data: existingSkill } = await supabase
           .from("skills")
           .select("id")
-          .eq("source_attribution", cand.url)
+          .eq("source_url", cand.url)
           .maybeSingle();
-        if (existingSkill) tier1Reasons.push("duplicate source_attribution already in skills table");
+        if (existingSkill) tier1Reasons.push("duplicate source_url already in skills table");
 
-        // File must be present + reachable
-        if (!fileUrl) {
-          tier1Reasons.push("no file_url attached");
-        } else {
-          try {
-            const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-            const storagePath = fileUrl.replace(/^\/api\/public\/skills-files\//, "");
-            const { data: signed } = await supabaseAdmin.storage
-              .from("skills-files")
-              .createSignedUrl(storagePath, 60);
-            if (!signed?.signedUrl) tier1Reasons.push("file_url not resolvable in storage");
-          } catch (e: any) {
-            tier1Reasons.push(`file_url check failed: ${e?.message || e}`);
-          }
-        }
+        // Directory entries require a resolvable source_url
+        if (!cand.url) tier1Reasons.push("no source_url");
 
         // License check (Tier 1 condition #6)
         const licenseCheck = assessLicense(licenseText);
@@ -426,6 +373,7 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
             file_url: fileUrl,
             author: attribution.slice(0, 120),
             published: publishNow,
+            entry_type: "directory",
             source_url: cand.url,
             source_attribution: cand.url,
             license_terms: licenseTermsForDb,
@@ -451,7 +399,7 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
             author: attribution,
             content_length: draft.content.length,
             unique_source: true,
-            file_url: fileUrl,
+            entry_type: "directory",
             license: licenseCheck.reason,
           };
           const { error: auditErr } = await supabase.from("skill_audit_log").insert({

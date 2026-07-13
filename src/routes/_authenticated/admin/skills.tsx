@@ -29,6 +29,8 @@ type Skill = {
   author: string;
   published: boolean;
   license_terms: string | null;
+  entry_type: "directory" | "original";
+  source_url: string | null;
   created_at: string;
 };
 
@@ -46,6 +48,8 @@ const EMPTY: Omit<Skill, "id" | "created_at"> = {
   author: "Cognarah Team",
   published: false,
   license_terms: null,
+  entry_type: "original",
+  source_url: null,
 };
 
 export const Route = createFileRoute("/_authenticated/admin/skills")({
@@ -107,8 +111,14 @@ function SkillsAdmin() {
     const content = stripEmDashes(editing.content ?? "");
     if (!title || !description || !content) { toast.error("Title, description, and content are required"); return; }
     const category = editing.category ?? "Claude Code";
-    if (category === "Claude Code" && !editing.file_url) {
-      toast.error("Claude Code skills require a downloadable file");
+    const entryType: "directory" | "original" = editing.entry_type ?? "original";
+    const sourceUrl = (editing.source_url ?? "").toString().trim();
+    if (entryType === "original" && !editing.file_url) {
+      toast.error("Original entries require a downloadable file");
+      return;
+    }
+    if (entryType === "directory" && !/^https?:\/\//i.test(sourceUrl)) {
+      toast.error("Directory entries require a valid source URL (https://...)");
       return;
     }
     const slug = (editing.slug || slugify(title, { lower: true, strict: true })).trim();
@@ -118,10 +128,12 @@ function SkillsAdmin() {
       title, description, content, slug,
       category,
       difficulty: editing.difficulty ?? "Beginner",
-      file_url: editing.file_url ?? null,
+      file_url: entryType === "original" ? (editing.file_url ?? null) : null,
       author: stripEmDashes(editing.author ?? "Cognarah Team"),
       published: !!editing.published,
       license_terms: licenseTerms ? stripEmDashes(licenseTerms) : null,
+      entry_type: entryType,
+      source_url: entryType === "directory" ? sourceUrl : null,
     };
 
     if (editing.id) {
@@ -301,21 +313,59 @@ function SkillsAdmin() {
               <Field label="Content (Markdown supported)">
                 <textarea value={editing.content ?? ""} rows={12} onChange={(e) => setEditing({ ...editing, content: e.target.value })} className="w-full rounded border border-border bg-background px-3 py-2 font-mono text-xs" placeholder="## Overview&#10;&#10;What this skill does..." />
               </Field>
-              <Field label={editing.category === "Claude Code" ? "Downloadable file (required)" : "Downloadable file (optional)"}>
-                <div className="flex flex-wrap items-center gap-3">
-                  <input type="file" accept=".md,.txt,.json,.zip" onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0])} disabled={uploading} className="text-sm" />
-                  {editing.file_url && (
-                    <div className="flex items-center gap-2 text-xs">
-                      <a href={editing.file_url} target="_blank" rel="noopener noreferrer" className="text-brand underline">Current file</a>
-                      <button onClick={() => setEditing({ ...editing, file_url: null })} className="text-muted-foreground hover:text-destructive">Remove</button>
-                    </div>
-                  )}
+              <Field label="Entry type">
+                <div className="flex gap-4 text-sm">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="entry_type"
+                      value="original"
+                      checked={(editing.entry_type ?? "original") === "original"}
+                      onChange={() => setEditing({ ...editing, entry_type: "original" })}
+                    />
+                    <span>Cognarah Original (self-hosted file)</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="entry_type"
+                      value="directory"
+                      checked={editing.entry_type === "directory"}
+                      onChange={() => setEditing({ ...editing, entry_type: "directory" })}
+                    />
+                    <span>Directory (external link)</span>
+                  </label>
                 </div>
-                {editing.category === "Claude Code" && !editing.file_url && (
-                  <p className="mt-2 text-xs font-medium text-destructive">A downloadable file is required for Claude Code skills.</p>
-                )}
-                <p className="mt-1 text-xs text-muted-foreground">Accepted: .md, .txt, .json, .zip</p>
+                <p className="mt-1 text-xs text-muted-foreground">Originals host a downloadable file. Directory entries link to the original source page.</p>
               </Field>
+              {editing.entry_type === "directory" && (
+                <Field label="Source URL (required for directory entries)">
+                  <input
+                    type="text"
+                    value={editing.source_url ?? ""}
+                    onChange={(e) => setEditing({ ...editing, source_url: e.target.value })}
+                    placeholder="https://github.com/..."
+                    className="w-full rounded border border-border bg-background px-3 py-2 text-sm"
+                  />
+                </Field>
+              )}
+              {(editing.entry_type ?? "original") === "original" && (
+                <Field label="Downloadable file (required for original entries)">
+                  <div className="flex flex-wrap items-center gap-3">
+                    <input type="file" accept=".md,.txt,.json,.zip" onChange={(e) => e.target.files?.[0] && uploadFile(e.target.files[0])} disabled={uploading} className="text-sm" />
+                    {editing.file_url && (
+                      <div className="flex items-center gap-2 text-xs">
+                        <a href={editing.file_url} target="_blank" rel="noopener noreferrer" className="text-brand underline">Current file</a>
+                        <button onClick={() => setEditing({ ...editing, file_url: null })} className="text-muted-foreground hover:text-destructive">Remove</button>
+                      </div>
+                    )}
+                  </div>
+                  {!editing.file_url && (
+                    <p className="mt-2 text-xs font-medium text-destructive">A downloadable file is required for original entries.</p>
+                  )}
+                  <p className="mt-1 text-xs text-muted-foreground">Accepted: .md, .txt, .json, .zip</p>
+                </Field>
+              )}
               <Field label="License terms (paste license text, or 'unspecified' if none)">
                 <textarea
                   value={editing.license_terms ?? ""}

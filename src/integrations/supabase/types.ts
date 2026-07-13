@@ -554,6 +554,7 @@ export type Database = {
           created_at: string
           description: string
           difficulty: Database["public"]["Enums"]["skill_difficulty"]
+          entry_type: string
           file_url: string | null
           id: string
           license_terms: string | null
@@ -571,6 +572,7 @@ export type Database = {
           created_at?: string
           description: string
           difficulty: Database["public"]["Enums"]["skill_difficulty"]
+          entry_type?: string
           file_url?: string | null
           id?: string
           license_terms?: string | null
@@ -588,6 +590,7 @@ export type Database = {
           created_at?: string
           description?: string
           difficulty?: Database["public"]["Enums"]["skill_difficulty"]
+          entry_type?: string
           file_url?: string | null
           id?: string
           license_terms?: string | null

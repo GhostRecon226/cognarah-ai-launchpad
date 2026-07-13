@@ -6,7 +6,7 @@ import { SiteFooter } from "@/components/site/footer";
 import { supabase } from "@/integrations/supabase/client";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { SITE_URL } from "@/lib/types";
-import { Download, ArrowLeft } from "lucide-react";
+import { Download, ArrowLeft, ExternalLink, Sparkles } from "lucide-react";
 
 type Skill = {
   id: string;
@@ -19,6 +19,8 @@ type Skill = {
   file_url: string | null;
   author: string;
   published: boolean;
+  entry_type: "directory" | "original";
+  source_url: string | null;
 };
 
 const skillQuery = (slug: string) =>
@@ -104,11 +106,16 @@ function SkillDetail() {
               <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11px] font-semibold text-white/80">
                 {skill.difficulty}
               </span>
+              {skill.entry_type === "original" && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-brand px-2.5 py-0.5 text-[11px] font-semibold text-navy">
+                  <Sparkles className="h-3 w-3" /> Cognarah Original
+                </span>
+              )}
             </div>
             <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">{skill.title}</h1>
             <p className="mt-3 text-base text-white/75 sm:text-lg">{skill.description}</p>
             <p className="mt-2 text-xs text-white/50">By {skill.author}</p>
-            {skill.file_url && (
+            {skill.entry_type === "original" && skill.file_url && (
               <a
                 href={`${skill.file_url}${skill.file_url.includes("?") ? "&" : "?"}download=1`}
                 download
@@ -117,11 +124,21 @@ function SkillDetail() {
                 <Download className="h-5 w-5" /> Download Skill File
               </a>
             )}
+            {skill.entry_type === "directory" && skill.source_url && (
+              <a
+                href={skill.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-6 inline-flex items-center gap-2 rounded-md bg-brand px-6 py-3 text-base font-semibold text-navy shadow-lg shadow-brand/20 transition hover:bg-brand/90 sm:text-lg"
+              >
+                <ExternalLink className="h-5 w-5" /> Get Skill from Source
+              </a>
+            )}
           </div>
         </section>
         <article className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
           <div className="prose-article" dangerouslySetInnerHTML={{ __html: html }} />
-          {skill.file_url && (
+          {skill.entry_type === "original" && skill.file_url && (
             <div className="mt-10 rounded-lg border border-brand/30 bg-brand/5 p-6 text-center">
               <p className="text-sm font-medium text-foreground">Ready to use this skill?</p>
               <a
@@ -130,6 +147,19 @@ function SkillDetail() {
                 className="mt-3 inline-flex items-center gap-2 rounded-md bg-brand px-5 py-2.5 text-sm font-semibold text-navy transition hover:bg-brand/90"
               >
                 <Download className="h-4 w-4" /> Download Skill File
+              </a>
+            </div>
+          )}
+          {skill.entry_type === "directory" && skill.source_url && (
+            <div className="mt-10 rounded-lg border border-brand/30 bg-brand/5 p-6 text-center">
+              <p className="text-sm font-medium text-foreground">This skill lives at the original source.</p>
+              <a
+                href={skill.source_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex items-center gap-2 rounded-md bg-brand px-5 py-2.5 text-sm font-semibold text-navy transition hover:bg-brand/90"
+              >
+                <ExternalLink className="h-4 w-4" /> Open Source Page
               </a>
             </div>
           )}
