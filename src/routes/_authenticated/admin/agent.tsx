@@ -293,14 +293,21 @@ function AgentInner() {
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[720px] text-sm">
             <thead className="text-left text-xs uppercase tracking-wider text-muted-foreground">
-              <tr><th className="py-2">Started</th><th>Trigger</th><th>Focus</th><th>Status</th><th>Drafts</th><th></th></tr>
+              <tr><th className="py-2">Started</th><th>Mode</th><th>Trigger</th><th>Focus</th><th>Status</th><th>Drafts</th><th></th></tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {runs.map((r) => (
+              {runs.map((r) => {
+                const isSkills = r.trigger.includes("skills");
+                return (
                 <Fragment key={r.id}>
                   <tr>
                     <td className="py-2">{format(new Date(r.started_at), "MMM d, HH:mm")}</td>
-                    <td>{r.trigger}</td>
+                    <td>
+                      <span className={`inline-block rounded px-2 py-0.5 text-[11px] font-medium ${isSkills ? "bg-brand/15 text-brand" : "bg-navy/10 text-navy"}`}>
+                        {isSkills ? "Skills" : "News"}
+                      </span>
+                    </td>
+                    <td>{r.trigger.replace(/-skills$/, "")}</td>
                     <td className="text-muted-foreground">{r.focus ?? "None"}</td>
                     <td>
                       <span className={`inline-block rounded px-2 py-0.5 text-xs ${r.status === "success" ? "bg-emerald-100 text-emerald-700" : r.status === "error" ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"}`}>{r.status}</span>
@@ -310,15 +317,16 @@ function AgentInner() {
                   </tr>
                   {expandedRun === r.id && (
                     <tr>
-                      <td colSpan={6} className="bg-secondary/40 p-3">
+                      <td colSpan={7} className="bg-secondary/40 p-3">
                         {r.error && <div className="mb-2 text-xs text-rose-700">Error: {r.error}</div>}
                         <pre className="max-h-64 overflow-auto whitespace-pre-wrap text-[11px] text-muted-foreground">{r.log || "(no log)"}</pre>
                       </td>
                     </tr>
                   )}
                 </Fragment>
-              ))}
-              {runs.length === 0 && <tr><td colSpan={6} className="py-6 text-center text-muted-foreground">No runs yet.</td></tr>}
+                );
+              })}
+              {runs.length === 0 && <tr><td colSpan={7} className="py-6 text-center text-muted-foreground">No runs yet.</td></tr>}
             </tbody>
           </table>
         </div>
