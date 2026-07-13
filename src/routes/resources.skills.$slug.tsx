@@ -6,7 +6,7 @@ import { SiteFooter } from "@/components/site/footer";
 import { supabase } from "@/integrations/supabase/client";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { SITE_URL } from "@/lib/types";
-import { Download, ArrowLeft } from "lucide-react";
+import { Download, ArrowLeft, ExternalLink, Sparkles } from "lucide-react";
 
 type Skill = {
   id: string;
