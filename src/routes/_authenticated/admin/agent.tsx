@@ -15,6 +15,7 @@ import {
   deleteAgentSource,
   listAgentRuns,
   runAgent,
+  runSkillsAgent,
 } from "@/lib/agent.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/agent")({
