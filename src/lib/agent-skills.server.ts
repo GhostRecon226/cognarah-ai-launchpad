@@ -147,7 +147,7 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
       .eq("kind", "skill_url");
     const urls: Array<{ url: string; label: string }> = (sources ?? [])
       .map((s: any) => ({ url: String(s.value).trim(), label: String(s.label ?? "") }))
-      .filter((s) => /^https?:\/\//i.test(s.url));
+      .filter((s: { url: string; label: string }) => /^https?:\/\//i.test(s.url));
 
     if (urls.length === 0) throw new Error("No enabled skill_url sources. Add one under Trusted sources with kind 'skill_url'.");
     logLine(`Loaded ${urls.length} skill source URL(s)`);
