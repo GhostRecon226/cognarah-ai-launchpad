@@ -143,8 +143,36 @@ function SkillsAdmin() {
   }
 
   async function togglePublished(s: Skill) {
-    const { error } = await supabase.from("skills").update({ published: !s.published }).eq("id", s.id);
-    if (error) toast.error(error.message); else load();
+    const nextPublished = !s.published;
+    const { error } = await supabase.from("skills").update({ published: nextPublished }).eq("id", s.id);
+    if (error) { toast.error(error.message); return; }
+    const { data: userRes } = await supabase.auth.getUser();
+    const actorId = userRes?.user?.id ?? null;
+    await supabase.from("skill_audit_log").insert({
+      skill_id: s.id,
+      event: nextPublished ? "manual_published" : "reverted_to_draft",
+      actor_id: actorId,
+      actor_label: userRes?.user?.email ?? "admin",
+      note: nextPublished
+        ? "Manually published from admin skills table"
+        : "Reverted to draft from admin skills table",
+    });
+    load();
+  }
+
+  const [history, setHistory] = useState<{ skill: Skill; entries: AuditEntry[] } | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  async function openHistory(s: Skill) {
+    setHistory({ skill: s, entries: [] });
+    setHistoryLoading(true);
+    const { data, error } = await supabase
+      .from("skill_audit_log")
+      .select("id,event,run_id,matched_criteria,actor_label,note,created_at")
+      .eq("skill_id", s.id)
+      .order("created_at", { ascending: false });
+    setHistoryLoading(false);
+    if (error) { toast.error(error.message); return; }
+    setHistory({ skill: s, entries: (data ?? []) as AuditEntry[] });
   }
 
   return (
