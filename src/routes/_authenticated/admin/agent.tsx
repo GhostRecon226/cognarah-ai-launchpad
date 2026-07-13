@@ -217,9 +217,9 @@ function AgentInner() {
         <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_120px_1fr_auto]">
           <input placeholder="Label" value={newSrc.label} onChange={(e) => setNewSrc({ ...newSrc, label: e.target.value })} className="rounded border border-border bg-background px-2 py-1.5 text-sm" />
           <select value={newSrc.kind} onChange={(e) => setNewSrc({ ...newSrc, kind: e.target.value as any })} className="rounded border border-border bg-background px-2 py-1.5 text-sm">
-            <option value="domain">domain</option><option value="rss">rss</option><option value="url">url</option>
+            <option value="domain">domain</option><option value="rss">rss</option><option value="url">url</option><option value="skill_url">skill_url</option>
           </select>
-          <input placeholder="techcrunch.com" value={newSrc.value} onChange={(e) => setNewSrc({ ...newSrc, value: e.target.value })} className="rounded border border-border bg-background px-2 py-1.5 text-sm" />
+          <input placeholder={newSrc.kind === "skill_url" ? "https://example.com/skill-guide" : "techcrunch.com"} value={newSrc.value} onChange={(e) => setNewSrc({ ...newSrc, value: e.target.value })} className="rounded border border-border bg-background px-2 py-1.5 text-sm" />
           <button onClick={addSrc} className="inline-flex items-center gap-1 rounded bg-navy px-3 py-1.5 text-sm text-white"><Plus className="h-4 w-4" /> Add</button>
         </div>
         <ul className="mt-4 divide-y divide-border text-sm">
