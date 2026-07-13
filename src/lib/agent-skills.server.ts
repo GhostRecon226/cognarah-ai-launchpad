@@ -220,7 +220,7 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
       logLine("All configured skill URLs have already been imported. Add new URLs under Trusted sources, or clear entries from agent_seen_sources to re-import.");
       await supabase
         .from("agent_runs")
-        .update({ status: "success", drafts_created: 0, auto_published_count: 0, manual_review_count: 0, finished_at: new Date().toISOString(), log: logLines.join("\n") })
+        .update({ status: "success", drafts_created: 0, auto_published_count: 0, manual_review_count: 0, finished_at: new Date().toISOString(), log: log.join("\n") })
         .eq("id", runId);
       return { drafts_created: 0, auto_published_count: 0, manual_review_count: 0, run_id: runId, note: "no_fresh_urls" };
     }
