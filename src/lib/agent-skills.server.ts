@@ -139,6 +139,15 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
   const runId = runRow.id as string;
 
   try {
+    // 0. Load auto-publish safety toggle
+    const { data: settings } = await supabase
+      .from("agent_settings")
+      .select("auto_publish_paused")
+      .eq("singleton", true)
+      .maybeSingle();
+    const autoPublishPaused = !!settings?.auto_publish_paused;
+    logLine(`Auto-publish paused toggle: ${autoPublishPaused ? "ON (all skills go to manual review)" : "off"}`);
+
     // 1. Load skill source URLs
     const { data: sources } = await supabase
       .from("agent_sources")
@@ -168,6 +177,11 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
 
     const target = Math.min(args.count, fresh.length);
     let created = 0;
+    let autoPublished = 0;
+    let manualReview = 0;
+    const autoPublishedItems: Array<{ title: string; source: string; slug: string }> = [];
+
+    const TRUSTED_AUTO_HOST = "github.com/anthropics/skills";
 
     for (const cand of fresh) {
       if (created >= target) break;
@@ -242,6 +256,42 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
         const attribution = rawAttribution;
         const slug = slugify(draft.title, { lower: true, strict: true }).slice(0, 110) + "-" + Date.now().toString(36);
 
+        // ===== TIER 1 auto-publish evaluation =====
+        const tier1Reasons: string[] = [];
+        const normalizedUrl = cand.url.toLowerCase();
+        const isTrustedHost = normalizedUrl.includes(TRUSTED_AUTO_HOST);
+        if (!isTrustedHost) tier1Reasons.push(`source not from ${TRUSTED_AUTO_HOST}`);
+        if (!attribution || attribution.length < 2) tier1Reasons.push("author empty");
+        if (!draft.content || draft.content.length < 200) tier1Reasons.push(`content shorter than 200 chars (${draft.content?.length ?? 0})`);
+
+        // De-dupe by source_attribution URL in skills table
+        const { data: existingSkill } = await supabase
+          .from("skills")
+          .select("id")
+          .eq("source_attribution", cand.url)
+          .maybeSingle();
+        if (existingSkill) tier1Reasons.push("duplicate source_attribution already in skills table");
+
+        // File URL validation (only meaningful when a file is present).
+        // For Tier 1, a valid file_url is REQUIRED and must return successfully.
+        // The extraction pipeline currently doesn't attach files, so this fails for now
+        // unless a future extension pulls the file. This preserves the rule while keeping
+        // the pipeline safe.
+        let fileUrl: string | null = null;
+        if (!fileUrl) {
+          tier1Reasons.push("no file_url attached (Tier 1 requires a valid downloadable file)");
+        } else {
+          try {
+            const head = await fetch(fileUrl, { method: "HEAD" });
+            if (!head.ok) tier1Reasons.push(`file_url HEAD returned ${head.status}`);
+          } catch (e: any) {
+            tier1Reasons.push(`file_url fetch failed: ${e?.message || e}`);
+          }
+        }
+
+        const meetsTier1 = tier1Reasons.length === 0;
+        const publishNow = meetsTier1 && !autoPublishPaused;
+
         const { data: insertedSkill, error: insErr } = await supabase
           .from("skills")
           .insert({
@@ -251,9 +301,9 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
             category: draft.category,
             difficulty: draft.difficulty,
             content: draft.content,
-            file_url: null,
+            file_url: fileUrl,
             author: attribution.slice(0, 120),
-            published: false,
+            published: publishNow,
             source_url: cand.url,
             source_attribution: cand.url,
           })
@@ -268,9 +318,42 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
           run_id: runId,
         });
         created++;
-        logLine(`Created skill draft: ${draft.title} (${insertedSkill.id})`);
+        if (publishNow) {
+          autoPublished++;
+          autoPublishedItems.push({ title: draft.title, source: cand.url, slug });
+          logLine(`AUTO-PUBLISHED: ${draft.title} (${insertedSkill.id})`);
+        } else {
+          manualReview++;
+          if (meetsTier1 && autoPublishPaused) {
+            logLine(`MANUAL REVIEW (auto-publish paused): ${draft.title} (${insertedSkill.id})`);
+          } else {
+            logLine(`MANUAL REVIEW: ${draft.title} (${insertedSkill.id}) — Tier 1 failed: ${tier1Reasons.join("; ")}`);
+          }
+        }
       } catch (e: any) {
         logLine(`Candidate error: ${e?.message || e}`);
+      }
+    }
+
+    logLine(`Run summary: ${autoPublished} auto-published, ${manualReview} sent to manual review`);
+
+    // Send notification for auto-published skills
+    if (autoPublished > 0) {
+      try {
+        const { enqueueTransactionalEmail } = await import("./email/enqueue-internal.server");
+        const notif = await enqueueTransactionalEmail({
+          templateName: "skills-auto-published",
+          templateData: {
+            skills: autoPublishedItems,
+            runId,
+            reviewUrl: "https://cognarah.com/admin/skills",
+          },
+          idempotencyKey: `skills-auto-published:${runId}`,
+        });
+        if ("ok" in notif && notif.ok) logLine("Notification queued for auto-published skills");
+        else logLine(`Notification skipped: ${(notif as any).reason ?? "unknown"}`);
+      } catch (e: any) {
+        logLine(`Notification error: ${e?.message || e}`);
       }
     }
 
@@ -279,13 +362,15 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
       .update({
         status: created > 0 ? "success" : "error",
         drafts_created: created,
+        auto_published_count: autoPublished,
+        manual_review_count: manualReview,
         log: log.join("\n"),
         finished_at: new Date().toISOString(),
         error: created === 0 ? "No skill drafts created, see log" : null,
       })
       .eq("id", runId);
 
-    return { run_id: runId, drafts_created: created, log };
+    return { run_id: runId, drafts_created: created, auto_published: autoPublished, manual_review: manualReview, log };
   } catch (e: any) {
     await supabase
       .from("agent_runs")
