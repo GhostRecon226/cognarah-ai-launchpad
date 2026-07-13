@@ -432,7 +432,7 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
             author: attribution,
             content_length: draft.content.length,
             unique_source: true,
-            file_url: fileUrl,
+            entry_type: "directory",
             license: licenseCheck.reason,
           };
           const { error: auditErr } = await supabase.from("skill_audit_log").insert({
