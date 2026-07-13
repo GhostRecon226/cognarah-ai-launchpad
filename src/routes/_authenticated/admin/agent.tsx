@@ -119,6 +119,21 @@ function AgentInner() {
     }
   }
 
+  async function doRunSkills() {
+    setRunningSkills(true);
+    toast.info(`Skills agent running, importing up to ${skillsCount} skill draft(s)…`);
+    try {
+      const res: any = await _runSkillsAgent({ data: { count: skillsCount } });
+      toast.success(`${res.drafts_created} skill draft(s) created. Review in Skills.`);
+      loadAll();
+    } catch (e: any) {
+      toast.error(e?.message || "Skills run failed");
+      loadAll();
+    } finally {
+      setRunningSkills(false);
+    }
+  }
+
   async function addSrc() {
     if (!newSrc.label || !newSrc.value) return;
     try {
