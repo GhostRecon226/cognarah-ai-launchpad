@@ -78,7 +78,7 @@ export const addAgentSource = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     z.object({
       label: z.string().min(1).max(120),
-      kind: z.enum(["domain", "rss", "url"]),
+      kind: z.enum(["domain", "rss", "url", "skill_url"]),
       value: z.string().min(1).max(300),
     }).parse(d),
   )
@@ -143,6 +143,25 @@ export const runAgent = createServerFn({ method: "POST" })
       count: data.count,
       focus: data.focus ?? null,
       categoryId: data.category_id ?? null,
+    });
+  });
+
+// ================== RUN SKILLS AGENT ==================
+export const runSkillsAgent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) =>
+    z.object({
+      count: z.number().int().min(1).max(5).default(2),
+    }).parse(d),
+  )
+  .handler(async ({ context, data }) => {
+    await requireStaff(context);
+    const { runSkillsAgentCore } = await import("./agent-skills.server");
+    return runSkillsAgentCore({
+      supabase: context.supabase,
+      triggeredBy: context.userId,
+      trigger: "manual",
+      count: data.count,
     });
   });
 

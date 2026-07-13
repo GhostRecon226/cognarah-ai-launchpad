@@ -15,6 +15,7 @@ import {
   deleteAgentSource,
   listAgentRuns,
   runAgent,
+  runSkillsAgent,
 } from "@/lib/agent.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/agent")({
@@ -55,14 +56,17 @@ function AgentInner() {
   const _deleteSource = useServerFn(deleteAgentSource);
   const _listRuns = useServerFn(listAgentRuns);
   const _runAgent = useServerFn(runAgent);
+  const _runSkillsAgent = useServerFn(runSkillsAgent);
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [sources, setSources] = useState<Source[]>([]);
   const [runs, setRuns] = useState<Run[]>([]);
   const [running, setRunning] = useState(false);
+  const [runningSkills, setRunningSkills] = useState(false);
   const [count, setCount] = useState(2);
+  const [skillsCount, setSkillsCount] = useState(2);
   const [focus, setFocus] = useState("");
-  const [newSrc, setNewSrc] = useState({ label: "", kind: "domain" as "domain" | "rss" | "url", value: "" });
+  const [newSrc, setNewSrc] = useState({ label: "", kind: "domain" as "domain" | "rss" | "url" | "skill_url", value: "" });
   const [expandedRun, setExpandedRun] = useState<string | null>(null);
   const [presetsText, setPresetsText] = useState("");
 
@@ -115,6 +119,21 @@ function AgentInner() {
     }
   }
 
+  async function doRunSkills() {
+    setRunningSkills(true);
+    toast.info(`Skills agent running, importing up to ${skillsCount} skill draft(s)…`);
+    try {
+      const res: any = await _runSkillsAgent({ data: { count: skillsCount } });
+      toast.success(`${res.drafts_created} skill draft(s) created. Review in Skills.`);
+      loadAll();
+    } catch (e: any) {
+      toast.error(e?.message || "Skills run failed");
+      loadAll();
+    } finally {
+      setRunningSkills(false);
+    }
+  }
+
   async function addSrc() {
     if (!newSrc.label || !newSrc.value) return;
     try {
@@ -151,6 +170,32 @@ function AgentInner() {
           {running ? "Running…" : "Run agent"}
         </button>
       </section>
+
+      {/* Skills Mode panel */}
+      <section className="rounded-lg border border-border bg-background p-5 lg:col-span-2">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-5 w-5 text-brand" />
+          <h2 className="text-lg font-semibold">Import skills now</h2>
+        </div>
+        <p className="mt-1 text-sm text-muted-foreground">
+          The agent fetches configured <code>skill_url</code> sources, extracts a self-contained skill in Cognarah's voice, preserves the original creator's name and source URL, and saves as a <strong>draft</strong> in the Skills library.
+        </p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <label className="text-sm">Number of skill drafts
+            <select value={skillsCount} onChange={(e) => setSkillsCount(Number(e.target.value))} className="mt-1 w-full rounded border border-border bg-background px-2 py-2 text-sm">
+              <option value={1}>1</option><option value={2}>2</option><option value={3}>3</option><option value={5}>5</option>
+            </select>
+          </label>
+          <div className="text-xs text-muted-foreground sm:col-span-2 self-end">
+            Add candidate URLs below under <em>Trusted sources</em> with kind <code>skill_url</code>. Each URL is imported only once.
+          </div>
+        </div>
+        <button disabled={runningSkills} onClick={doRunSkills} className="mt-4 inline-flex items-center gap-2 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white hover:bg-brand/90 disabled:opacity-60">
+          {runningSkills ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+          {runningSkills ? "Importing…" : "Run skills agent"}
+        </button>
+      </section>
+
 
       {/* Schedule */}
       <section className="rounded-lg border border-border bg-background p-5">
@@ -198,9 +243,9 @@ function AgentInner() {
         <div className="mt-4 grid gap-2 sm:grid-cols-[1fr_120px_1fr_auto]">
           <input placeholder="Label" value={newSrc.label} onChange={(e) => setNewSrc({ ...newSrc, label: e.target.value })} className="rounded border border-border bg-background px-2 py-1.5 text-sm" />
           <select value={newSrc.kind} onChange={(e) => setNewSrc({ ...newSrc, kind: e.target.value as any })} className="rounded border border-border bg-background px-2 py-1.5 text-sm">
-            <option value="domain">domain</option><option value="rss">rss</option><option value="url">url</option>
+            <option value="domain">domain</option><option value="rss">rss</option><option value="url">url</option><option value="skill_url">skill_url</option>
           </select>
-          <input placeholder="techcrunch.com" value={newSrc.value} onChange={(e) => setNewSrc({ ...newSrc, value: e.target.value })} className="rounded border border-border bg-background px-2 py-1.5 text-sm" />
+          <input placeholder={newSrc.kind === "skill_url" ? "https://example.com/skill-guide" : "techcrunch.com"} value={newSrc.value} onChange={(e) => setNewSrc({ ...newSrc, value: e.target.value })} className="rounded border border-border bg-background px-2 py-1.5 text-sm" />
           <button onClick={addSrc} className="inline-flex items-center gap-1 rounded bg-navy px-3 py-1.5 text-sm text-white"><Plus className="h-4 w-4" /> Add</button>
         </div>
         <ul className="mt-4 divide-y divide-border text-sm">
