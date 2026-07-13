@@ -5,7 +5,7 @@ import Firecrawl from "@mendable/firecrawl-js";
 import slugify from "slugify";
 import { createHash } from "crypto";
 import { stripEmDashes } from "./strip-em-dashes";
-import { fetchSkillPackage, buildZip, assessLicense, strToU8, type ParsedSkillPackage } from "./skill-package.server";
+import { fetchSkillPackage, assessLicense, type ParsedSkillPackage } from "./skill-package.server";
 
 type Sb = any;
 
