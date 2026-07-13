@@ -132,41 +132,8 @@ function pickDifficulty(fm: Record<string, unknown>): SkillDifficulty {
   return match ?? "Beginner";
 }
 
-async function uploadSkillFile(
-  supabase: Sb,
-  slug: string,
-  pkg: ParsedSkillPackage,
-  logLine: (m: string) => void,
-): Promise<string | null> {
-  try {
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    let path: string;
-    let bytes: Uint8Array;
-    let contentType: string;
-    if (pkg.isBundle) {
-      path = `${slug}/${slug}.zip`;
-      bytes = buildZip(pkg.files);
-      contentType = "application/zip";
-    } else {
-      path = `${slug}/SKILL.md`;
-      bytes = strToU8(pkg.skillMd);
-      contentType = "text/markdown";
-    }
-    const { error } = await supabaseAdmin.storage.from("skills-files").upload(path, bytes, {
-      upsert: true,
-      contentType,
-    });
-    if (error) {
-      logLine(`File upload failed: ${error.message}`);
-      return null;
-    }
-    logLine(`Uploaded ${pkg.isBundle ? "bundle zip" : "SKILL.md"} to skills-files/${path}`);
-    return `/api/public/skills-files/${path}`;
-  } catch (e: any) {
-    logLine(`File upload exception: ${e?.message || e}`);
-    return null;
-  }
-}
+
+
 
 export async function runSkillsAgentCore(args: RunSkillsArgs) {
   const { supabase } = args;
