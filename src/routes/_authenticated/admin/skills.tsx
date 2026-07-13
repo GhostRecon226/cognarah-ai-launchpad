@@ -248,6 +248,9 @@ function SkillsAdmin() {
                         <ExternalLink className="h-4 w-4" />
                       </Link>
                     )}
+                    <button onClick={() => openHistory(s)} className="text-muted-foreground hover:text-brand" aria-label="History" title="View audit history">
+                      <History className="h-4 w-4" />
+                    </button>
                     <button onClick={() => openEdit(s)} className="rounded bg-secondary px-3 py-1 text-xs font-medium">Edit</button>
                     <button onClick={() => del(s.id)} className="text-muted-foreground hover:text-destructive">
                       <Trash2 className="h-4 w-4" />
