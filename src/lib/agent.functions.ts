@@ -78,7 +78,7 @@ export const addAgentSource = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) =>
     z.object({
       label: z.string().min(1).max(120),
-      kind: z.enum(["domain", "rss", "url"]),
+      kind: z.enum(["domain", "rss", "url", "skill_url"]),
       value: z.string().min(1).max(300),
     }).parse(d),
   )
