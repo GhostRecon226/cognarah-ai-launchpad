@@ -18,6 +18,7 @@ type Skill = {
   file_url: string | null;
   author: string;
   published: boolean;
+  license_terms: string | null;
   created_at: string;
 };
 
@@ -34,6 +35,7 @@ const EMPTY: Omit<Skill, "id" | "created_at"> = {
   file_url: null,
   author: "Cognarah Team",
   published: false,
+  license_terms: null,
 };
 
 export const Route = createFileRoute("/_authenticated/admin/skills")({
@@ -101,6 +103,7 @@ function SkillsAdmin() {
     }
     const slug = (editing.slug || slugify(title, { lower: true, strict: true })).trim();
 
+    const licenseTerms = (editing.license_terms ?? "").toString().trim();
     const payload = {
       title, description, content, slug,
       category,
@@ -108,6 +111,7 @@ function SkillsAdmin() {
       file_url: editing.file_url ?? null,
       author: stripEmDashes(editing.author ?? "Cognarah Team"),
       published: !!editing.published,
+      license_terms: licenseTerms ? stripEmDashes(licenseTerms) : null,
     };
 
     if (editing.id) {
@@ -235,8 +239,8 @@ function SkillsAdmin() {
               <Field label="Slug (auto-generated if blank)">
                 <input value={editing.slug ?? ""} onChange={(e) => setEditing({ ...editing, slug: e.target.value })} placeholder="auto" className="w-full rounded border border-border bg-background px-3 py-2 text-sm" />
               </Field>
-              <Field label="Short description">
-                <textarea value={editing.description ?? ""} rows={2} onChange={(e) => setEditing({ ...editing, description: e.target.value })} className="w-full rounded border border-border bg-background px-3 py-2 text-sm" />
+              <Field label={`Short description (max 250 chars, currently ${(editing.description ?? "").length})`}>
+                <textarea value={editing.description ?? ""} rows={2} maxLength={250} onChange={(e) => setEditing({ ...editing, description: e.target.value })} className="w-full rounded border border-border bg-background px-3 py-2 text-sm" />
               </Field>
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Category">
@@ -270,6 +274,16 @@ function SkillsAdmin() {
                   <p className="mt-2 text-xs font-medium text-destructive">A downloadable file is required for Claude Code skills.</p>
                 )}
                 <p className="mt-1 text-xs text-muted-foreground">Accepted: .md, .txt, .json, .zip</p>
+              </Field>
+              <Field label="License terms (paste license text, or 'unspecified' if none)">
+                <textarea
+                  value={editing.license_terms ?? ""}
+                  rows={4}
+                  onChange={(e) => setEditing({ ...editing, license_terms: e.target.value })}
+                  className="w-full rounded border border-border bg-background px-3 py-2 font-mono text-xs"
+                  placeholder="MIT License&#10;&#10;Copyright (c) ..."
+                />
+                <p className="mt-1 text-xs text-muted-foreground">Auto-populated by the Skills agent from LICENSE files or frontmatter. Required (non-'unspecified' + permissive) for Tier 1 auto-publish.</p>
               </Field>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={!!editing.published} onChange={(e) => setEditing({ ...editing, published: e.target.checked })} />

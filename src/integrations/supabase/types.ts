@@ -505,6 +505,7 @@ export type Database = {
           difficulty: Database["public"]["Enums"]["skill_difficulty"]
           file_url: string | null
           id: string
+          license_terms: string | null
           published: boolean
           slug: string
           source_attribution: string | null
@@ -521,6 +522,7 @@ export type Database = {
           difficulty: Database["public"]["Enums"]["skill_difficulty"]
           file_url?: string | null
           id?: string
+          license_terms?: string | null
           published?: boolean
           slug: string
           source_attribution?: string | null
@@ -537,6 +539,7 @@ export type Database = {
           difficulty?: Database["public"]["Enums"]["skill_difficulty"]
           file_url?: string | null
           id?: string
+          license_terms?: string | null
           published?: boolean
           slug?: string
           source_attribution?: string | null

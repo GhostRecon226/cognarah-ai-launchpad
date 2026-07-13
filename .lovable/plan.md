@@ -1,51 +1,108 @@
-## Why hero image generation keeps failing
+## Goal
 
-The AI News Agent calls the Lovable AI image endpoint with a Gemini model but uses the **OpenAI** request shape:
+Update the Skills agent and `skills` table so it can ingest real-world Anthropic-style skill packages, whether the source is a single `SKILL.md` file or a zip bundle containing `SKILL.md` plus `LICENSE.txt` and helper scripts. Extract metadata from the SKILL.md YAML frontmatter, capture license terms, bundle multi-file skills into a zip in storage, and require a permissive license for Tier 1 auto-publish.
 
-```ts
-// src/lib/agent-core.server.ts, generateAiImage()
-body: JSON.stringify({
-  model: "google/gemini-2.5-flash-image",
-  prompt,   // ← OpenAI-only field
-})
+## 1. Schema changes (`skills` table)
+
+Single migration:
+- Widen `description` limit from 100 to 250 chars (drop/relax existing CHECK constraint if any, otherwise just document; column already `text`).
+- Add `license_terms text` (nullable). Value convention:
+  - Full license file contents when found.
+  - The literal string `'unspecified'` when nothing is detected.
+  - `null` only when unknown before agent processing (manual entries).
+- Keep `file_url` semantics: points to a single object in `skills-files` bucket. For multi-file packages it points to a generated zip.
+
+Update `src/integrations/supabase/types.ts` will regenerate automatically after migration approval.
+
+## 2. Admin UI (`/admin/skills`)
+
+- Increase `description` textarea `maxLength` guidance to 250.
+- Add a `license_terms` textarea (optional, monospace, small). Show current value as read-only preview in the table row tooltip.
+- No other layout changes.
+
+## 3. Skills agent parser (`src/lib/agent-skills.server.ts`)
+
+Add a new helper module `src/lib/skill-package.server.ts` responsible for turning a source URL into a normalized package:
+
+```
+type ParsedSkillPackage = {
+  skillMd: string;              // raw SKILL.md contents
+  frontmatter: { name?: string; description?: string; license?: string; [k: string]: unknown };
+  body: string;                 // SKILL.md without frontmatter
+  files: Array<{ path: string; bytes: Uint8Array }>;  // all files in bundle (incl. SKILL.md)
+  licenseText: string | null;   // from LICENSE* file if present
+  isBundle: boolean;
+};
 ```
 
-Per the AI Gateway rules, Gemini image models on `/v1/images/generations` require the chat shape (`messages` + `modalities`). When `prompt` is sent to a Gemini model, the gateway returns HTTP 200 with a legacy-completions-shaped body that has **no `data[]` and no `b64_json`**. Our parser then reads `json?.data?.[0]?.b64_json`, gets `undefined`, and returns `null` — the agent logs "AI hero generation failed" and the draft is saved without a hero.
+Detection flow per source URL:
+1. If URL ends in `SKILL.md` (or a raw github blob for one), fetch directly.
+2. If URL points at a GitHub tree/folder (e.g. `github.com/anthropics/skills/tree/main/<slug>`), resolve to the folder's raw contents via the GitHub API (`api.github.com/repos/anthropics/skills/contents/<slug>?ref=main`) and download every file. Bundle into a zip in memory.
+3. If URL ends in `.zip`, download and unzip.
+4. Otherwise, fall back to the existing Firecrawl scrape path and treat the scraped markdown as the SKILL.md body with empty frontmatter.
 
-This matches what we see in the AI Gateway logs: recent `image_generations` calls all return 200 but no image lands in storage.
+Parse YAML frontmatter with a minimal, dependency-free parser (regex over the leading `---\n...\n---` block, handles `key: value` lines including quoted strings). Avoids adding a new npm dep. If a `license:` key is present in frontmatter, prefer it over LICENSE file contents for the "permissive?" check but still store the LICENSE file text in `license_terms` when available.
 
-## Fix
+License extraction:
+- Look for any file whose basename matches `/^LICENSE(\.txt|\.md)?$/i` or `/^COPYING$/i`.
+- Store its full text in `license_terms`.
+- If none found and no `license:` in frontmatter, set `license_terms = 'unspecified'`.
 
-Edit only `generateAiImage()` in `src/lib/agent-core.server.ts`:
+Packaging for storage:
+- Single-file source: upload the raw SKILL.md as `skills-files/<slug>/SKILL.md`, set `file_url` to `/api/public/skills-files/<slug>/SKILL.md`.
+- Multi-file source: build a zip in memory and upload as `skills-files/<slug>/<slug>.zip`, set `file_url` accordingly. Zip creation uses a tiny inline STORE-only zip writer (no compression) to avoid adding a dependency; alternatively install `fflate` (small, Worker-safe) if a compressed zip is preferred. Preference: `fflate`, since it's ~8 KB and Worker-compatible.
 
-1. Send the Gemini-correct body:
-   ```ts
-   {
-     model: "google/gemini-3.1-flash-image", // latest Nano Banana 2, fast + high quality
-     messages: [{ role: "user", content: prompt }],
-     modalities: ["image", "text"]
-   }
-   ```
-   (Upgrading from `gemini-2.5-flash-image` to `gemini-3.1-flash-image` in the same edit — newer generation, same response shape.)
+## 4. Draft assembly changes
 
-2. Keep response parsing as `json?.data?.[0]?.b64_json` — the gateway normalizes Gemini image responses into the OpenAI-images shape, so this field is the correct one once the request body is right.
+- Use `frontmatter.name` as `title` when present; fall back to current AI extraction.
+- Use `frontmatter.description` as `description` when present (truncate to 250 chars); otherwise let Gemini generate it under the new 250-char limit.
+- Use `body` (post-frontmatter markdown) as `content`. Skip the AI extraction step entirely when a valid SKILL.md is found; only run Gemini/Claude when the source is a generic web page. This preserves author voice for Anthropic-format packages.
+- `author`: infer from GitHub repo owner (`anthropics`) or frontmatter `author` if present.
 
-3. Improve failure diagnostics so the run log tells us *why* it failed instead of a silent `null`:
-   - On non-2xx, log `status` + a short response body snippet via the existing `logLine` pathway (return `null` from `generateAiImage` but include the reason in the thrown/returned info).
-   - On 2xx with no `b64_json`, log the top-level keys of the response so future regressions surface immediately.
+Update `SKILLS_SYSTEM_PROMPT`:
+- Raise `description` STRICT max from 100 to 250 characters.
 
-   Concretely: change `generateAiImage` to return `{ buf: Buffer } | { error: string }` (or keep `Buffer | null` and thread an out-param), and update the single call site around line 598 to log the reason before falling through.
+Update `validateDraft`:
+- Description length check up to 250.
 
-## Scope
+## 5. Tier 1 auto-publish criteria
 
-- Only file touched: `src/lib/agent-core.server.ts` (function `generateAiImage` + the ~2 lines at its call site that log the outcome).
-- No schema, RLS, UI, or route changes.
-- No changes to source-image sniffing, vision relevance check, or upload path.
+Extend the six-condition rule in `runSkillsAgentCore`:
 
-## Verification
+1. Source is `github.com/anthropics/skills` (existing).
+2. `author` populated.
+3. `content` >= 200 chars.
+4. No existing skill with same `source_attribution` URL.
+5. `file_url` is valid and HEAD returns 2xx (now actually true because we upload).
+6. NEW: `license_terms` is not `'unspecified'`, not null, AND does not contain restrictive language. Check via regex against lowercased text:
+   - Reject if it matches `\bnoncommercial\b|\bnon-commercial\b|\bno\s+redistribution\b|\ball\s+rights\s+reserved\b` and does not also match a known permissive marker (`\bMIT\b|\bApache\b|\bBSD\b|\bCC0\b|\bUnlicense\b|\bMPL\b`).
+   - If unclear (neither permissive nor restrictive markers), treat as unclear and fail Tier 1.
 
-1. Open **Admin → AI Agent**, click **Run agent** with count=1.
-2. Expand the run log. Expect either:
-   - `Hero: source image used …` (unchanged path), or
-   - `Falling back to AI-generated hero` → `AI hero generated` (previously failing path, now succeeds), and the new draft in Articles has a hero image populated.
-3. If it still fails, the new diagnostic line in the log will show the exact HTTP status / missing field so we can iterate.
+Route to Tier 2 (`published=false`) whenever any of the six conditions fail, exactly as today. Log which condition(s) failed.
+
+## 6. Logging & run summary
+
+- New log lines for: package format detected (single/bundle), license source (frontmatter/file/unspecified), permissive-check outcome, zip upload path.
+- Run summary already reports `auto_published` / `manual_review`; keep as is.
+
+## 7. Out of scope
+
+- No changes to News mode.
+- No changes to email notification template (skills-auto-published already summarizes titles).
+- No new admin filter for license status yet; can add later if needed.
+
+## Technical notes
+
+- Add `fflate` dependency (`bun add fflate`) for zip read/write. It's edge/Worker safe and has no Node built-in requirements.
+- GitHub API calls are anonymous (60 req/hr per IP). Enough for expected volume; no token required.
+- Storage uploads use `supabaseAdmin.storage.from('skills-files').upload(path, bytes, { upsert: true, contentType })`.
+- All strings passed through `stripEmDashes` before insert (unchanged).
+- Migration will include: `ALTER TABLE public.skills ADD COLUMN license_terms text;` and any needed CHECK/length relaxations for `description`.
+
+## Files touched
+
+- `supabase/migrations/*` (new): schema change.
+- `src/lib/skill-package.server.ts` (new): parser + zip helpers.
+- `src/lib/agent-skills.server.ts`: integrate parser, update prompt/validation, extend Tier 1.
+- `src/routes/_authenticated/admin/skills.tsx`: 250-char description, license_terms field.
+- `package.json`: add `fflate`.
