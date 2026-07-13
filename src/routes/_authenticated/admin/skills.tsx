@@ -338,6 +338,54 @@ function SkillsAdmin() {
           </div>
         </div>
       )}
+
+      {history && (
+        <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/50 p-4" role="dialog" aria-modal="true">
+          <div className="my-8 w-full max-w-2xl rounded-lg bg-background shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border px-6 py-4">
+              <div>
+                <h2 className="text-lg font-bold">Audit history</h2>
+                <p className="text-xs text-muted-foreground">{history.skill.title}</p>
+              </div>
+              <button onClick={() => setHistory(null)} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
+            </div>
+            <div className="max-h-[70vh] space-y-3 overflow-y-auto p-6">
+              {historyLoading && <p className="text-sm text-muted-foreground">Loading...</p>}
+              {!historyLoading && history.entries.length === 0 && (
+                <p className="text-sm text-muted-foreground">No audit entries recorded yet.</p>
+              )}
+              {history.entries.map((e) => {
+                const labels: Record<AuditEntry["event"], { text: string; className: string }> = {
+                  auto_published: { text: "Auto-published", className: "bg-green-100 text-green-800" },
+                  manual_published: { text: "Manually published", className: "bg-blue-100 text-blue-800" },
+                  reverted_to_draft: { text: "Reverted to draft", className: "bg-amber-100 text-amber-900" },
+                  manual_created: { text: "Manually created", className: "bg-secondary text-muted-foreground" },
+                };
+                const l = labels[e.event] ?? { text: e.event, className: "bg-secondary text-muted-foreground" };
+                return (
+                  <div key={e.id} className="rounded border border-border p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${l.className}`}>{l.text}</span>
+                      <span className="text-xs text-muted-foreground">{new Date(e.created_at).toLocaleString()}</span>
+                    </div>
+                    <div className="mt-2 text-xs text-muted-foreground">
+                      By {e.actor_label ?? "system"}
+                      {e.run_id && <> · Run <code className="rounded bg-secondary px-1 py-0.5 font-mono">{e.run_id.slice(0, 8)}</code></>}
+                    </div>
+                    {e.note && <p className="mt-2 text-sm">{e.note}</p>}
+                    {e.matched_criteria && (
+                      <details className="mt-2">
+                        <summary className="cursor-pointer text-xs font-semibold text-muted-foreground">Matched criteria</summary>
+                        <pre className="mt-1 overflow-x-auto rounded bg-secondary p-2 text-xs">{JSON.stringify(e.matched_criteria, null, 2)}</pre>
+                      </details>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
     </AdminShell>
   );
 }
