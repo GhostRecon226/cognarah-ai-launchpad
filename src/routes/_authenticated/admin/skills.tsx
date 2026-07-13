@@ -4,8 +4,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { toast } from "sonner";
 import slugify from "slugify";
-import { Trash2, Plus, ExternalLink, X } from "lucide-react";
+import { Trash2, Plus, ExternalLink, X, History } from "lucide-react";
 import { stripEmDashes } from "@/lib/strip-em-dashes";
+
+type AuditEntry = {
+  id: string;
+  event: "auto_published" | "manual_published" | "reverted_to_draft" | "manual_created";
+  run_id: string | null;
+  matched_criteria: Record<string, unknown> | null;
+  actor_label: string | null;
+  note: string | null;
+  created_at: string;
+};
 
 type Skill = {
   id: string;
