@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useSuspenseQuery, queryOptions } from "@tanstack/react-query";
-import { Download } from "lucide-react";
+import { Download, ExternalLink, Sparkles } from "lucide-react";
 import { SiteNav } from "@/components/site/nav";
 import { SiteFooter } from "@/components/site/footer";
 import { NewsletterSignup } from "@/components/site/newsletter";
@@ -17,6 +17,8 @@ type Skill = {
   category: string;
   difficulty: string;
   file_url: string | null;
+  entry_type: "directory" | "original";
+  source_url: string | null;
 };
 
 const skillsQuery = queryOptions({
@@ -24,7 +26,7 @@ const skillsQuery = queryOptions({
   queryFn: async (): Promise<Skill[]> => {
     const { data, error } = await supabase
       .from("skills")
-      .select("id, slug, title, description, category, difficulty, file_url")
+      .select("id, slug, title, description, category, difficulty, file_url, entry_type, source_url")
       .eq("published", true)
       .order("created_at", { ascending: false });
     if (error) throw error;
