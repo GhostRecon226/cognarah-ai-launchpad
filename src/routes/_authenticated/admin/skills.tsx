@@ -29,6 +29,8 @@ type Skill = {
   author: string;
   published: boolean;
   license_terms: string | null;
+  entry_type: "directory" | "original";
+  source_url: string | null;
   created_at: string;
 };
 
@@ -46,6 +48,8 @@ const EMPTY: Omit<Skill, "id" | "created_at"> = {
   author: "Cognarah Team",
   published: false,
   license_terms: null,
+  entry_type: "original",
+  source_url: null,
 };
 
 export const Route = createFileRoute("/_authenticated/admin/skills")({
