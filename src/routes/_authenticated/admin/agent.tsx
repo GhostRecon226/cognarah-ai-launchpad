@@ -56,6 +56,7 @@ function AgentInner() {
   const _deleteSource = useServerFn(deleteAgentSource);
   const _listRuns = useServerFn(listAgentRuns);
   const _runAgent = useServerFn(runAgent);
+  const _runSkillsAgent = useServerFn(runSkillsAgent);
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [sources, setSources] = useState<Source[]>([]);
