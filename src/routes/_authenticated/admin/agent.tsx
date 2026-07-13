@@ -62,9 +62,11 @@ function AgentInner() {
   const [sources, setSources] = useState<Source[]>([]);
   const [runs, setRuns] = useState<Run[]>([]);
   const [running, setRunning] = useState(false);
+  const [runningSkills, setRunningSkills] = useState(false);
   const [count, setCount] = useState(2);
+  const [skillsCount, setSkillsCount] = useState(2);
   const [focus, setFocus] = useState("");
-  const [newSrc, setNewSrc] = useState({ label: "", kind: "domain" as "domain" | "rss" | "url", value: "" });
+  const [newSrc, setNewSrc] = useState({ label: "", kind: "domain" as "domain" | "rss" | "url" | "skill_url", value: "" });
   const [expandedRun, setExpandedRun] = useState<string | null>(null);
   const [presetsText, setPresetsText] = useState("");
 
