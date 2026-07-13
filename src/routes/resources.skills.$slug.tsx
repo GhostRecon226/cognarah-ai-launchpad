@@ -19,6 +19,8 @@ type Skill = {
   file_url: string | null;
   author: string;
   published: boolean;
+  entry_type: "directory" | "original";
+  source_url: string | null;
 };
 
 const skillQuery = (slug: string) =>
