@@ -419,7 +419,10 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
             source_url: cand.url,
             source_attribution: cand.url,
             license_terms: licenseTermsForDb,
-          })
+            stars_count: starsCount,
+            last_updated: lastUpdated,
+            bundled_files: bundledFiles,
+          } as any)
           .select("id")
           .single();
         if (insErr) { logLine(`Insert failed: ${insErr.message}`); continue; }
