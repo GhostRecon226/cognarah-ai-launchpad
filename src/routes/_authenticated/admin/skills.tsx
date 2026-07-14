@@ -286,6 +286,42 @@ function SkillsAdmin() {
               <button onClick={() => setEditing(null)} className="text-muted-foreground hover:text-foreground"><X className="h-5 w-5" /></button>
             </div>
             <div className="space-y-4 p-6">
+              <Field label="Entry type">
+                <div className="flex gap-4 text-sm">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="entry_type"
+                      value="original"
+                      checked={(editing.entry_type ?? "original") === "original"}
+                      onChange={() => setEditing({ ...editing, entry_type: "original" })}
+                    />
+                    <span>Cognarah Original (self-hosted file)</span>
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="entry_type"
+                      value="directory"
+                      checked={editing.entry_type === "directory"}
+                      onChange={() => setEditing({ ...editing, entry_type: "directory" })}
+                    />
+                    <span>Directory (external link)</span>
+                  </label>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">Originals host a downloadable file. Directory entries link to the original source page.</p>
+              </Field>
+              {editing.entry_type === "directory" && (
+                <Field label="Original source URL (GitHub or marketplace link)">
+                  <input
+                    type="text"
+                    value={editing.source_url ?? ""}
+                    onChange={(e) => setEditing({ ...editing, source_url: e.target.value })}
+                    placeholder="https://github.com/..."
+                    className="w-full rounded border border-border bg-background px-3 py-2 text-sm"
+                  />
+                </Field>
+              )}
               <Field label="Title">
                 <input value={editing.title ?? ""} onChange={(e) => setEditing({ ...editing, title: e.target.value })} className="w-full rounded border border-border bg-background px-3 py-2 text-sm" />
               </Field>
@@ -313,42 +349,6 @@ function SkillsAdmin() {
               <Field label="Content (Markdown supported)">
                 <textarea value={editing.content ?? ""} rows={12} onChange={(e) => setEditing({ ...editing, content: e.target.value })} className="w-full rounded border border-border bg-background px-3 py-2 font-mono text-xs" placeholder="## Overview&#10;&#10;What this skill does..." />
               </Field>
-              <Field label="Entry type">
-                <div className="flex gap-4 text-sm">
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="entry_type"
-                      value="original"
-                      checked={(editing.entry_type ?? "original") === "original"}
-                      onChange={() => setEditing({ ...editing, entry_type: "original" })}
-                    />
-                    <span>Cognarah Original (self-hosted file)</span>
-                  </label>
-                  <label className="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="entry_type"
-                      value="directory"
-                      checked={editing.entry_type === "directory"}
-                      onChange={() => setEditing({ ...editing, entry_type: "directory" })}
-                    />
-                    <span>Directory (external link)</span>
-                  </label>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">Originals host a downloadable file. Directory entries link to the original source page.</p>
-              </Field>
-              {editing.entry_type === "directory" && (
-                <Field label="Source URL (required for directory entries)">
-                  <input
-                    type="text"
-                    value={editing.source_url ?? ""}
-                    onChange={(e) => setEditing({ ...editing, source_url: e.target.value })}
-                    placeholder="https://github.com/..."
-                    className="w-full rounded border border-border bg-background px-3 py-2 text-sm"
-                  />
-                </Field>
-              )}
               {(editing.entry_type ?? "original") === "original" && (
                 <Field label="Downloadable file (required for original entries)">
                   <div className="flex flex-wrap items-center gap-3">
@@ -366,7 +366,7 @@ function SkillsAdmin() {
                   <p className="mt-1 text-xs text-muted-foreground">Accepted: .md, .txt, .json, .zip</p>
                 </Field>
               )}
-              <Field label="License terms (paste license text, or 'unspecified' if none)">
+              <Field label={`License terms ${editing.entry_type === "directory" ? "(optional for directory entries)" : "(required for original entries, paste license text)"}`}>
                 <textarea
                   value={editing.license_terms ?? ""}
                   rows={4}
@@ -374,7 +374,7 @@ function SkillsAdmin() {
                   className="w-full rounded border border-border bg-background px-3 py-2 font-mono text-xs"
                   placeholder="MIT License&#10;&#10;Copyright (c) ..."
                 />
-                <p className="mt-1 text-xs text-muted-foreground">Auto-populated by the Skills agent from LICENSE files or frontmatter. Required (non-'unspecified' + permissive) for Tier 1 auto-publish.</p>
+                <p className="mt-1 text-xs text-muted-foreground">{editing.entry_type === "directory" ? "Optional for directory entries. The source page owns its own license." : "Required for Cognarah Originals. Also auto-populated by the Skills agent from LICENSE files or frontmatter."}</p>
               </Field>
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={!!editing.published} onChange={(e) => setEditing({ ...editing, published: e.target.checked })} />
