@@ -140,6 +140,64 @@ function SkillDetail() {
           </div>
         </section>
         <article className="mx-auto max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
+          {skill.entry_type === "directory" && skill.source_url && (() => {
+            const url = skill.source_url;
+            const ghMatch = url.match(/github\.com\/([^\/#?]+)\/([^\/#?]+)/i);
+            const isGithub = !!ghMatch;
+            const repoLabel = ghMatch ? `${ghMatch[1]}/${ghMatch[2].replace(/\.git$/i, "")}` : new URL(url).hostname;
+            return (
+              <aside className="mb-8 rounded-lg border border-border bg-secondary/40 p-5">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Source</p>
+                    <p className="mt-1 text-sm font-medium text-foreground">
+                      By <span className="font-semibold">{skill.author}</span>
+                    </p>
+                    <p className="mt-1 flex items-center gap-1.5 text-sm text-muted-foreground">
+                      {isGithub && <Github className="h-4 w-4" aria-hidden="true" />}
+                      <span className="break-all">{repoLabel}</span>
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                      {typeof skill.stars_count === "number" && (
+                        <span className="inline-flex items-center gap-1">
+                          <Star className="h-3.5 w-3.5" aria-hidden="true" />
+                          {skill.stars_count.toLocaleString()} stars
+                        </span>
+                      )}
+                      {skill.last_updated && (
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                          Updated {new Date(skill.last_updated).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex shrink-0 items-center gap-2 rounded-md border border-border bg-background px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary"
+                  >
+                    {isGithub ? <Github className="h-4 w-4" /> : <ExternalLink className="h-4 w-4" />}
+                    {isGithub ? "View GitHub Repository" : "View Source"}
+                  </a>
+                </div>
+                {skill.bundled_files && skill.bundled_files.length > 0 && (
+                  <div className="mt-4 border-t border-border pt-4">
+                    <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Files in bundle</p>
+                    <ul className="mt-2 grid gap-1 sm:grid-cols-2">
+                      {skill.bundled_files.map((f) => (
+                        <li key={f} className="inline-flex items-center gap-2 text-sm text-foreground">
+                          <FileText className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+                          <span className="truncate font-mono text-xs">{f}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </aside>
+            );
+          })()}
           <div className="prose-article" dangerouslySetInnerHTML={{ __html: html }} />
           {skill.entry_type === "original" && skill.file_url && (
             <div className="mt-10 rounded-lg border border-brand/30 bg-brand/5 p-6 text-center">
