@@ -214,6 +214,12 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
       try {
         logLine(`Processing skill URL: ${cand.url}`);
 
+        if (!/^https?:\/\/\S+/i.test(cand.url)) {
+          logLine(`SKIPPED (flagged): no valid source URL for candidate labeled "${cand.label}"`);
+          continue;
+        }
+
+
         // ==== Stage A: Try to parse as a real SKILL.md package ====
         let pkg: ParsedSkillPackage | null = null;
         try {
