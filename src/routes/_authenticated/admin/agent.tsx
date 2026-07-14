@@ -194,7 +194,7 @@ function AgentInner() {
         ) : (
           <>
             <p className="mt-3 text-sm text-muted-foreground">
-              The agent fetches configured <code>skill_url</code> sources (Anthropic Skills, skillsmp.com, claudeskills.info, claudemarketplaces.com), extracts a self-contained skill, preserves the <strong>original creator's name and source URL</strong>, and saves as a <strong>draft</strong> in the Skills library. Entries without attribution are skipped and flagged in the run log.
+              The agent fetches configured <code>skill_url</code> sources, extracts skill metadata including title, description, and source URL, and saves as a Directory draft. It does not download or rehost the original file. Entries without a valid source URL are skipped and flagged in the run log.
             </p>
             <div className="mt-4 grid gap-3 sm:grid-cols-3">
               <label className="text-sm">Number of skill drafts
