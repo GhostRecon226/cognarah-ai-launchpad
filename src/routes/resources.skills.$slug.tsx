@@ -6,7 +6,7 @@ import { SiteFooter } from "@/components/site/footer";
 import { supabase } from "@/integrations/supabase/client";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { SITE_URL } from "@/lib/types";
-import { Download, ArrowLeft, ExternalLink, Sparkles } from "lucide-react";
+import { Download, ArrowLeft, ExternalLink, Sparkles, Github, Star, Clock, FileText } from "lucide-react";
 
 type Skill = {
   id: string;
@@ -21,6 +21,9 @@ type Skill = {
   published: boolean;
   entry_type: "directory" | "original";
   source_url: string | null;
+  stars_count: number | null;
+  last_updated: string | null;
+  bundled_files: string[] | null;
 };
 
 const skillQuery = (slug: string) =>
