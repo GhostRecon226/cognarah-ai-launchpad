@@ -549,6 +549,7 @@ export type Database = {
       skills: {
         Row: {
           author: string
+          bundled_files: string[] | null
           category: Database["public"]["Enums"]["skill_category"]
           content: string
           created_at: string
@@ -557,16 +558,19 @@ export type Database = {
           entry_type: string
           file_url: string | null
           id: string
+          last_updated: string | null
           license_terms: string | null
           published: boolean
           slug: string
           source_attribution: string | null
           source_url: string | null
+          stars_count: number | null
           title: string
           updated_at: string
         }
         Insert: {
           author?: string
+          bundled_files?: string[] | null
           category: Database["public"]["Enums"]["skill_category"]
           content: string
           created_at?: string
@@ -575,16 +579,19 @@ export type Database = {
           entry_type?: string
           file_url?: string | null
           id?: string
+          last_updated?: string | null
           license_terms?: string | null
           published?: boolean
           slug: string
           source_attribution?: string | null
           source_url?: string | null
+          stars_count?: number | null
           title: string
           updated_at?: string
         }
         Update: {
           author?: string
+          bundled_files?: string[] | null
           category?: Database["public"]["Enums"]["skill_category"]
           content?: string
           created_at?: string
@@ -593,11 +600,13 @@ export type Database = {
           entry_type?: string
           file_url?: string | null
           id?: string
+          last_updated?: string | null
           license_terms?: string | null
           published?: boolean
           slug?: string
           source_attribution?: string | null
           source_url?: string | null
+          stars_count?: number | null
           title?: string
           updated_at?: string
         }
