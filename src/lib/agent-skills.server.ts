@@ -336,10 +336,46 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
         const fileUrl: string | null = null;
         logLine(`Entry type: directory (linking to ${cand.url}, no file rehosted)`);
 
+        // Bundled files list (basenames only) from parsed package, if available
+        const bundledFiles: string[] | null = pkg && pkg.files.length > 0
+          ? Array.from(new Set(pkg.files.map((f) => f.path.split("/").pop() || f.path))).slice(0, 50)
+          : null;
+        if (bundledFiles) logLine(`Bundled files (${bundledFiles.length}): ${bundledFiles.slice(0, 8).join(", ")}${bundledFiles.length > 8 ? "..." : ""}`);
+
+        // Optional GitHub repo metadata: stars + last update (pushed_at)
+        let starsCount: number | null = null;
+        let lastUpdated: string | null = null;
+        const ghMatch = cand.url.match(/github\.com\/([^\/#?]+)\/([^\/#?]+)/i);
+        if (ghMatch) {
+          try {
+            const owner = ghMatch[1];
+            const repo = ghMatch[2].replace(/\.git$/i, "");
+            const ghRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`, {
+              headers: {
+                Accept: "application/vnd.github+json",
+                "User-Agent": "cognarah-skills-agent",
+                ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}),
+              },
+            });
+            if (ghRes.ok) {
+              const ghJson: any = await ghRes.json();
+              if (typeof ghJson.stargazers_count === "number") starsCount = ghJson.stargazers_count;
+              const ts: string | undefined = ghJson.pushed_at || ghJson.updated_at;
+              if (ts) lastUpdated = ts.slice(0, 10); // YYYY-MM-DD
+              logLine(`GitHub metadata: stars=${starsCount ?? "?"}, last_updated=${lastUpdated ?? "?"}`);
+            } else {
+              logLine(`GitHub API returned ${ghRes.status} for ${owner}/${repo}, skipping stars/last_updated`);
+            }
+          } catch (e: any) {
+            logLine(`GitHub metadata fetch failed: ${e?.message || e}`);
+          }
+        }
+
         // Normalize license_terms field
         const licenseTermsForDb: string = (licenseText && licenseText.trim().length > 0)
           ? licenseText
           : "unspecified";
+
 
         // ===== TIER 1 auto-publish evaluation (directory entries) =====
         const tier1Reasons: string[] = [];
