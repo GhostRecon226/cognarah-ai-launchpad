@@ -527,6 +527,8 @@ export async function runAgentCore(args: RunAgentArgs) {
     for (const cand of fresh) {
       if (created >= target) break;
       try {
+        // Throttle to stay under provider rate limits (Gemini free tier ~10 RPM).
+        await sleep(2500);
         logLine(`Scraping: ${cand.url}`);
         const scraped: any = await fc.scrape(cand.url, {
           formats: ["markdown"],
