@@ -585,8 +585,9 @@ export async function runAgentCore(args: RunAgentArgs) {
 
     async function processCandidate(cand: (typeof fresh)[number]) {
       try {
+        if (modelUnavailable || created >= target || Date.now() - runStartedAt > RUN_MAX_MS) return;
         await acquireScrapeSlot();
-        if (created >= target) return;
+        if (modelUnavailable || created >= target || Date.now() - runStartedAt > RUN_MAX_MS) return;
         logLine(`Scraping: ${cand.url}`);
         const scraped: any = await fc.scrape(cand.url, {
           formats: ["markdown"],
