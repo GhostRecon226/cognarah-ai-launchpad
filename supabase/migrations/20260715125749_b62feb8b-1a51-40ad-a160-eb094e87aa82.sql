@@ -1,0 +1,1 @@
+UPDATE agent_runs SET status='error', error='Stale run reaped (crashed on deprecated Gemini model)', finished_at=now() WHERE status='running' AND started_at < now() - interval '5 minutes';
