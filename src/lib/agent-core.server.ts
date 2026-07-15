@@ -209,6 +209,10 @@ async function callGemini(opts: {
     if (res.ok) return res.json();
     const t = await res.text();
     lastErr = `Gemini ${res.status}: ${t.slice(0, 300)}`;
+    // Fail fast on 404 NOT_FOUND — the model id is wrong/retired; retrying won't help.
+    if (res.status === 404) {
+      throw new Error(`${GEMINI_MODEL_UNAVAILABLE}: model ${model} not available (${t.slice(0, 200)})`);
+    }
     // Retry on rate limit and transient server errors with exponential backoff.
     if ((res.status === 429 || res.status >= 500) && attempt < maxAttempts) {
       // Prefer server-suggested retry delay when present.
