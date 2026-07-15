@@ -141,19 +141,61 @@ function sniffImageDimensions(buf: Buffer): { width: number; height: number } | 
   return null;
 }
 
-async function callLovableAI<T>(body: unknown): Promise<T> {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("LOVABLE_API_KEY missing");
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+// Direct Google Generative Language API. Model kept close to Gemini 3 Flash preview;
+// falls back to a stable direct-API model when the preview id is not available.
+const GEMINI_TEXT_MODEL = "gemini-2.5-flash";
+const GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image-preview";
+
+interface GeminiPart {
+  text?: string;
+  inline_data?: { mime_type: string; data: string };
+}
+
+async function callGemini(opts: {
+  model?: string;
+  system?: string;
+  userParts: GeminiPart[];
+  json?: boolean;
+  responseModalities?: string[];
+}): Promise<any> {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) throw new Error("GEMINI_API_KEY missing");
+  const model = opts.model ?? GEMINI_TEXT_MODEL;
+  const body: any = {
+    contents: [{ role: "user", parts: opts.userParts }],
+    generationConfig: {},
+  };
+  if (opts.system) body.systemInstruction = { parts: [{ text: opts.system }] };
+  if (opts.json) body.generationConfig.responseMimeType = "application/json";
+  if (opts.responseModalities) body.generationConfig.responseModalities = opts.responseModalities;
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
   if (!res.ok) {
     const t = await res.text();
-    throw new Error(`AI gateway ${res.status}: ${t.slice(0, 300)}`);
+    throw new Error(`Gemini ${res.status}: ${t.slice(0, 300)}`);
   }
-  return res.json() as Promise<T>;
+  return res.json();
+}
+
+function geminiText(json: any): string {
+  const parts: any[] = json?.candidates?.[0]?.content?.parts ?? [];
+  return parts.map((p) => (typeof p?.text === "string" ? p.text : "")).join("");
+}
+
+function geminiInlineImage(json: any): string | null {
+  const parts: any[] = json?.candidates?.[0]?.content?.parts ?? [];
+  for (const p of parts) {
+    const data = p?.inline_data?.data ?? p?.inlineData?.data;
+    if (data) return data as string;
+  }
+  return null;
 }
 
 // Stage 2 editor: Claude refines the Gemini draft for tone/structure/quality.
