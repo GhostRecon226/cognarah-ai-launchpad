@@ -442,6 +442,20 @@ export async function runAgentCore(args: RunAgentArgs) {
   const log: string[] = [];
   const logLine = (m: string) => { log.push(`[${new Date().toISOString()}] ${m}`); };
 
+  // 0. Reap stuck runs from previous crashes so the UI stops spinning on them.
+  try {
+    const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    await supabase
+      .from("agent_runs")
+      .update({
+        status: "error",
+        error: "Stale run reaped (crashed or timed out)",
+        finished_at: new Date().toISOString(),
+      })
+      .eq("status", "running")
+      .lt("started_at", cutoff);
+  } catch { /* best-effort cleanup */ }
+
   // 1. Create run row
   const { data: runRow, error: runErr } = await supabase
     .from("agent_runs")
@@ -456,6 +470,10 @@ export async function runAgentCore(args: RunAgentArgs) {
     .single();
   if (runErr) throw new Error(runErr.message);
   const runId = runRow.id as string;
+  const runStartedAt = Date.now();
+  const RUN_MAX_MS = 10 * 60 * 1000; // hard 10 min wall-clock ceiling
+  let modelUnavailable = false;
+  let modelUnavailableMsg = "";
 
   try {
     // 2. Load sources + settings (time window + query presets)
