@@ -141,15 +141,17 @@ function sniffImageDimensions(buf: Buffer): { width: number; height: number } | 
   return null;
 }
 
-// Direct Google Generative Language API. Model kept close to Gemini 3 Flash preview;
-// falls back to a stable direct-API model when the preview id is not available.
+// Direct Google Generative Language API model ids (verified GA on v1beta as of 2025).
+// Text: gemini-2.5-flash (stable). Image: gemini-2.5-flash-image (stable, no "-preview").
 const GEMINI_TEXT_MODEL = "gemini-2.5-flash";
-const GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image-preview";
+const GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image";
 
 interface GeminiPart {
   text?: string;
   inline_data?: { mime_type: string; data: string };
 }
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function callGemini(opts: {
   model?: string;
@@ -169,19 +171,32 @@ async function callGemini(opts: {
   if (opts.json) body.generationConfig.responseMimeType = "application/json";
   if (opts.responseModalities) body.generationConfig.responseModalities = opts.responseModalities;
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
-    {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
+  const maxAttempts = 5;
+  let delay = 1500;
+  let lastErr = "";
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const res = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
-    },
-  );
-  if (!res.ok) {
+    });
+    if (res.ok) return res.json();
     const t = await res.text();
-    throw new Error(`Gemini ${res.status}: ${t.slice(0, 300)}`);
+    lastErr = `Gemini ${res.status}: ${t.slice(0, 300)}`;
+    // Retry on rate limit and transient server errors with exponential backoff.
+    if ((res.status === 429 || res.status >= 500) && attempt < maxAttempts) {
+      // Prefer server-suggested retry delay when present.
+      let waitMs = delay;
+      const m = t.match(/"retryDelay"\s*:\s*"(\d+(?:\.\d+)?)s"/);
+      if (m) waitMs = Math.max(waitMs, Math.ceil(parseFloat(m[1]) * 1000));
+      await sleep(waitMs);
+      delay = Math.min(delay * 2, 30_000);
+      continue;
+    }
+    throw new Error(lastErr);
   }
-  return res.json();
+  throw new Error(lastErr || "Gemini: exhausted retries");
 }
 
 function geminiText(json: any): string {
