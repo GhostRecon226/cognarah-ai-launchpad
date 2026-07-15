@@ -251,28 +251,18 @@ async function refineWithClaude(draft: DraftPayload, sourceUrl: string): Promise
 async function isImageRelevant(imageBuf: Buffer, contentType: string, title: string, dek: string): Promise<{ ok: boolean; reason: string }> {
   try {
     const b64 = imageBuf.toString("base64");
-    const dataUrl = `data:${contentType};base64,${b64}`;
-    const res: any = await callLovableAI({
-      model: "google/gemini-3-flash-preview",
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a photo editor for a news publication. Decide if the given image is a plausible editorial hero for the given article. " +
-            "Reject generic stock photos, unrelated product shots, brand logos with no article context, and default social share cards. " +
-            'Respond with STRICT JSON only: {"relevant": true|false, "reason": "short reason"}',
-        },
-        {
-          role: "user",
-          content: [
-            { type: "text", text: `Article title: ${title}\nSubtitle: ${dek}\n\nIs this image a plausible editorial hero?` },
-            { type: "image_url", image_url: { url: dataUrl } },
-          ],
-        },
+    const json = await callGemini({
+      system:
+        "You are a photo editor for a news publication. Decide if the given image is a plausible editorial hero for the given article. " +
+        "Reject generic stock photos, unrelated product shots, brand logos with no article context, and default social share cards. " +
+        'Respond with STRICT JSON only: {"relevant": true|false, "reason": "short reason"}',
+      userParts: [
+        { text: `Article title: ${title}\nSubtitle: ${dek}\n\nIs this image a plausible editorial hero?` },
+        { inline_data: { mime_type: contentType, data: b64 } },
       ],
-      response_format: { type: "json_object" },
+      json: true,
     });
-    const content: string = res?.choices?.[0]?.message?.content ?? "";
+    const content = geminiText(json);
     const parsed = JSON.parse(content);
     return { ok: !!parsed.relevant, reason: String(parsed.reason ?? "") };
   } catch (e: any) {
@@ -286,39 +276,25 @@ async function generateAiImage(
   title: string,
   dek: string,
 ): Promise<{ buf: Buffer } | { error: string }> {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) return { error: "LOVABLE_API_KEY missing" };
+  if (!process.env.GEMINI_API_KEY) return { error: "GEMINI_API_KEY missing" };
   const subject = `${title}. ${dek}`.slice(0, 400);
   const prompt =
     `Editorial magazine hero illustration for a news article. Subject: ${subject}. ` +
     `Style: cinematic, symbolic, minimal, sophisticated. Dark navy #0A0F2C background with lavender purple #AFA9EC and coral #EF9F27 accents. ` +
     `No text, no words, no logos, no watermarks. Wide 16:9 composition, high detail.`;
   try {
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({
-        // Gemini image models require the chat shape (messages + modalities) on
-        // /v1/images/generations. Sending `prompt` returns a legacy-completions
-        // body with no data[] / b64_json.
-        model: "google/gemini-3.1-flash-image",
-        messages: [{ role: "user", content: prompt }],
-        modalities: ["image", "text"],
-      }),
+    const json = await callGemini({
+      model: GEMINI_IMAGE_MODEL,
+      userParts: [{ text: prompt }],
+      responseModalities: ["IMAGE", "TEXT"],
     });
-    if (!res.ok) {
-      const t = await res.text().catch(() => "");
-      return { error: `image gateway ${res.status}: ${t.slice(0, 200)}` };
-    }
-    const json: any = await res.json();
-    const b64 = json?.data?.[0]?.b64_json;
+    const b64 = geminiInlineImage(json);
     if (!b64) {
-      const keys = json && typeof json === "object" ? Object.keys(json).join(",") : typeof json;
-      return { error: `no b64_json in response (top-level keys: ${keys})` };
+      return { error: `no inline image in response` };
     }
     return { buf: Buffer.from(b64, "base64") };
   } catch (e: any) {
-    return { error: `image fetch threw: ${e?.message || e}` };
+    return { error: `image generation failed: ${e?.message || e}` };
   }
 }
 
