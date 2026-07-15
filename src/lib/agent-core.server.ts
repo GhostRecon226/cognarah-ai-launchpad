@@ -547,15 +547,12 @@ export async function runAgentCore(args: RunAgentArgs) {
           const nudge = i === 0
             ? undefined
             : `Your previous draft was ${lastWords} words and failed with: ${lastReason}. Rewrite to AT LEAST 500 words by expanding the Africa Angle paragraph and adding verifiable context drawn from the source. Do not invent facts. Ensure a specific actor+action headline and a dek containing at least one concrete fact (name, number, or date).`;
-          const aiRes: any = await callLovableAI({
-            model: "google/gemini-3-flash-preview",
-            messages: [
-              { role: "system", content: SYSTEM_PROMPT },
-              { role: "user", content: buildUserPrompt(nudge) },
-            ],
-            response_format: { type: "json_object" },
+          const aiRes: any = await callGemini({
+            system: SYSTEM_PROMPT,
+            userParts: [{ text: buildUserPrompt(nudge) }],
+            json: true,
           });
-          const content: string = aiRes?.choices?.[0]?.message?.content ?? "";
+          const content: string = geminiText(aiRes);
           let parsed: DraftPayload;
           try { parsed = JSON.parse(content); } catch { logLine(`Attempt ${attempts}: non-JSON response`); lastReason = "non-JSON response"; continue; }
           const v = validateDraft(parsed);
