@@ -742,12 +742,20 @@ export async function runAgentCore(args: RunAgentArgs) {
         created++;
         logLine(`Created draft (attempts=${attempts}): ${draft.title}`);
       } catch (e: any) {
-        logLine(`Candidate error: ${e?.message || e}`);
+        const msg = String(e?.message || e);
+        if (msg.includes(GEMINI_MODEL_UNAVAILABLE)) {
+          modelUnavailable = true;
+          modelUnavailableMsg = msg;
+          logLine(`ABORT RUN: ${msg}. Update GEMINI_TEXT_MODEL / GEMINI_IMAGE_MODEL env or code.`);
+          return;
+        }
+        logLine(`Candidate error: ${msg}`);
       }
     }
 
     async function worker() {
       while (created < target) {
+        if (modelUnavailable || Date.now() - runStartedAt > RUN_MAX_MS) return;
         const i = nextIdx++;
         if (i >= fresh.length) return;
         await processCandidate(fresh[i]);
