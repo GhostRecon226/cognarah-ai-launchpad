@@ -763,6 +763,11 @@ export async function runAgentCore(args: RunAgentArgs) {
     }
     await Promise.all(Array.from({ length: Math.min(CONCURRENCY, fresh.length) }, () => worker()));
 
+    const finalError = modelUnavailable
+      ? `Gemini model unavailable: ${modelUnavailableMsg}`
+      : created === 0
+        ? "No drafts created, see log"
+        : null;
     await supabase
       .from("agent_runs")
       .update({
@@ -770,7 +775,7 @@ export async function runAgentCore(args: RunAgentArgs) {
         drafts_created: created,
         log: log.join("\n"),
         finished_at: new Date().toISOString(),
-        error: created === 0 ? "No drafts created, see log" : null,
+        error: finalError,
       })
       .eq("id", runId);
 
