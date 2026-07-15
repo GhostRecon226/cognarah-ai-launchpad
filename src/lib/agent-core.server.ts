@@ -83,6 +83,31 @@ function looksLikeArticleUrl(rawUrl: string): { ok: boolean; reason?: string } {
     }
   }
 
+function looksLikeArticleUrl(rawUrl: string): { ok: boolean; reason?: string } {
+  let u: URL;
+  try { u = new URL(rawUrl); } catch { return { ok: false, reason: "invalid URL" }; }
+  const host = u.hostname.toLowerCase();
+  if (VIDEO_HOSTS.has(host)) return { ok: false, reason: `video host: ${host}` };
+  if (NON_ARTICLE_EXT.test(u.pathname)) return { ok: false, reason: `non-article extension` };
+
+  const segments = u.pathname.split("/").filter(Boolean);
+  if (segments.length === 0) return { ok: false, reason: "root path" };
+
+  // Reject if any segment is a known listing keyword AND it's the last segment
+  // (or followed only by a taxonomy value like "artificial-intelligence").
+  for (let i = 0; i < segments.length; i++) {
+    const seg = segments[i].toLowerCase();
+    if (LISTING_SEGMENTS.has(seg)) {
+      // If the listing keyword is followed only by 0-1 more slug segments AND
+      // the URL doesn't also contain a date fragment, it's a taxonomy page.
+      const tail = segments.slice(i + 1);
+      const hasDate = segments.some((s) => /^(19|20)\d{2}$/.test(s));
+      if (tail.length <= 1 && !hasDate) {
+        return { ok: false, reason: `listing segment: /${seg}/` };
+      }
+    }
+  }
+
   // Prefer either a date fragment in URL or a slug-like final segment (>= 4 words).
   const last = segments[segments.length - 1].toLowerCase().replace(/\.(html?|php|aspx?)$/, "");
   const wordCount = last.split(/[-_]/).filter((w) => w.length > 1).length;
