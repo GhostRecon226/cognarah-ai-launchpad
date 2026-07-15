@@ -526,8 +526,8 @@ export async function runAgentCore(args: RunAgentArgs) {
       .select("url_hash")
       .in("url_hash", hashes.map((h) => h.hash));
     const seenHashes = new Set((seen ?? []).map((s: any) => s.url_hash));
-    const fresh = hashes.filter((h) => !seenHashes.has(h.hash));
-    logLine(`${fresh.length} fresh after dedupe`);
+    const fresh = hashes.filter((h) => !seenHashes.has(h.hash)).slice(0, 15);
+    logLine(`${fresh.length} fresh after dedupe (capped at 15, trusted domains prioritized)`);
 
     // 6. Load categories & Cognarah AI author
     const [{ data: cats }, { data: authorRow }] = await Promise.all([
