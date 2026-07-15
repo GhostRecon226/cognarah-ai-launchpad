@@ -160,10 +160,16 @@ function sniffImageDimensions(buf: Buffer): { width: number; height: number } | 
   return null;
 }
 
-// Direct Google Generative Language API model ids (verified GA on v1beta as of 2025).
-// Text: gemini-2.5-flash (stable). Image: gemini-2.5-flash-image (stable, no "-preview").
-const GEMINI_TEXT_MODEL = "gemini-2.5-flash";
-const GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image";
+// Direct Google Generative Language API model ids. Use the "-latest" aliases so
+// free-tier keys keep working when Google retires a specific dated snapshot
+// (which is what caused every draft to fail with a 404 on gemini-2.5-flash).
+// Overridable via env so we can swap without a redeploy.
+const GEMINI_TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-flash-latest";
+const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
+
+// Sentinel error message the worker pool checks so a model 404 aborts the
+// entire run instead of burning every candidate on the same guaranteed failure.
+const GEMINI_MODEL_UNAVAILABLE = "GEMINI_MODEL_UNAVAILABLE";
 
 interface GeminiPart {
   text?: string;
@@ -203,6 +209,10 @@ async function callGemini(opts: {
     if (res.ok) return res.json();
     const t = await res.text();
     lastErr = `Gemini ${res.status}: ${t.slice(0, 300)}`;
+    // Fail fast on 404 NOT_FOUND — the model id is wrong/retired; retrying won't help.
+    if (res.status === 404) {
+      throw new Error(`${GEMINI_MODEL_UNAVAILABLE}: model ${model} not available (${t.slice(0, 200)})`);
+    }
     // Retry on rate limit and transient server errors with exponential backoff.
     if ((res.status === 429 || res.status >= 500) && attempt < maxAttempts) {
       // Prefer server-suggested retry delay when present.
@@ -432,6 +442,20 @@ export async function runAgentCore(args: RunAgentArgs) {
   const log: string[] = [];
   const logLine = (m: string) => { log.push(`[${new Date().toISOString()}] ${m}`); };
 
+  // 0. Reap stuck runs from previous crashes so the UI stops spinning on them.
+  try {
+    const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    await supabase
+      .from("agent_runs")
+      .update({
+        status: "error",
+        error: "Stale run reaped (crashed or timed out)",
+        finished_at: new Date().toISOString(),
+      })
+      .eq("status", "running")
+      .lt("started_at", cutoff);
+  } catch { /* best-effort cleanup */ }
+
   // 1. Create run row
   const { data: runRow, error: runErr } = await supabase
     .from("agent_runs")
@@ -446,6 +470,10 @@ export async function runAgentCore(args: RunAgentArgs) {
     .single();
   if (runErr) throw new Error(runErr.message);
   const runId = runRow.id as string;
+  const runStartedAt = Date.now();
+  const RUN_MAX_MS = 10 * 60 * 1000; // hard 10 min wall-clock ceiling
+  let modelUnavailable = false;
+  let modelUnavailableMsg = "";
 
   try {
     // 2. Load sources + settings (time window + query presets)
@@ -557,8 +585,9 @@ export async function runAgentCore(args: RunAgentArgs) {
 
     async function processCandidate(cand: (typeof fresh)[number]) {
       try {
+        if (modelUnavailable || created >= target || Date.now() - runStartedAt > RUN_MAX_MS) return;
         await acquireScrapeSlot();
-        if (created >= target) return;
+        if (modelUnavailable || created >= target || Date.now() - runStartedAt > RUN_MAX_MS) return;
         logLine(`Scraping: ${cand.url}`);
         const scraped: any = await fc.scrape(cand.url, {
           formats: ["markdown"],
@@ -713,12 +742,20 @@ export async function runAgentCore(args: RunAgentArgs) {
         created++;
         logLine(`Created draft (attempts=${attempts}): ${draft.title}`);
       } catch (e: any) {
-        logLine(`Candidate error: ${e?.message || e}`);
+        const msg = String(e?.message || e);
+        if (msg.includes(GEMINI_MODEL_UNAVAILABLE)) {
+          modelUnavailable = true;
+          modelUnavailableMsg = msg;
+          logLine(`ABORT RUN: ${msg}. Update GEMINI_TEXT_MODEL / GEMINI_IMAGE_MODEL env or code.`);
+          return;
+        }
+        logLine(`Candidate error: ${msg}`);
       }
     }
 
     async function worker() {
       while (created < target) {
+        if (modelUnavailable || Date.now() - runStartedAt > RUN_MAX_MS) return;
         const i = nextIdx++;
         if (i >= fresh.length) return;
         await processCandidate(fresh[i]);
@@ -726,6 +763,11 @@ export async function runAgentCore(args: RunAgentArgs) {
     }
     await Promise.all(Array.from({ length: Math.min(CONCURRENCY, fresh.length) }, () => worker()));
 
+    const finalError = modelUnavailable
+      ? `Gemini model unavailable: ${modelUnavailableMsg}`
+      : created === 0
+        ? "No drafts created, see log"
+        : null;
     await supabase
       .from("agent_runs")
       .update({
@@ -733,7 +775,7 @@ export async function runAgentCore(args: RunAgentArgs) {
         drafts_created: created,
         log: log.join("\n"),
         finished_at: new Date().toISOString(),
-        error: created === 0 ? "No drafts created, see log" : null,
+        error: finalError,
       })
       .eq("id", runId);
 
