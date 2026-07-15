@@ -32,10 +32,24 @@ const CATEGORY_HINTS = [
 
 // URL path segments that indicate a listing / index page, not an article.
 const LISTING_SEGMENTS = new Set([
-  "tag", "tags", "category", "categories", "topic", "topics", "topics",
+  "tag", "tags", "category", "categories", "topic", "topics",
   "section", "sections", "author", "authors", "feed", "feeds", "rss",
   "search", "archive", "archives", "page", "pages", "index",
+  "video", "videos", "watch", "gallery", "galleries", "photos", "podcast", "podcasts",
+  "newsletter", "newsletters", "subscribe", "about", "contact", "login", "signin",
 ]);
+
+// Hosts that serve video/media, not text articles.
+const VIDEO_HOSTS = new Set([
+  "youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be",
+  "vimeo.com", "www.vimeo.com", "tiktok.com", "www.tiktok.com",
+  "twitch.tv", "www.twitch.tv", "dailymotion.com", "www.dailymotion.com",
+  "facebook.com", "www.facebook.com", "fb.watch",
+  "instagram.com", "www.instagram.com",
+]);
+
+// File extensions that are clearly not articles.
+const NON_ARTICLE_EXT = /\.(mp4|mov|avi|mkv|webm|mp3|wav|m4a|pdf|zip|rar|jpg|jpeg|png|gif|webp|svg)$/i;
 
 // og:image URL patterns that indicate a generic/default share image, not an article-specific hero.
 const GENERIC_IMAGE_HINTS = [
@@ -48,9 +62,14 @@ function hashUrl(url: string) {
   return createHash("sha256").update(url.trim().toLowerCase()).digest("hex");
 }
 
+
 function looksLikeArticleUrl(rawUrl: string): { ok: boolean; reason?: string } {
   let u: URL;
   try { u = new URL(rawUrl); } catch { return { ok: false, reason: "invalid URL" }; }
+  const host = u.hostname.toLowerCase();
+  if (VIDEO_HOSTS.has(host)) return { ok: false, reason: `video host: ${host}` };
+  if (NON_ARTICLE_EXT.test(u.pathname)) return { ok: false, reason: `non-article extension` };
+
   const segments = u.pathname.split("/").filter(Boolean);
   if (segments.length === 0) return { ok: false, reason: "root path" };
 
@@ -507,8 +526,8 @@ export async function runAgentCore(args: RunAgentArgs) {
       .select("url_hash")
       .in("url_hash", hashes.map((h) => h.hash));
     const seenHashes = new Set((seen ?? []).map((s: any) => s.url_hash));
-    const fresh = hashes.filter((h) => !seenHashes.has(h.hash));
-    logLine(`${fresh.length} fresh after dedupe`);
+    const fresh = hashes.filter((h) => !seenHashes.has(h.hash)).slice(0, 15);
+    logLine(`${fresh.length} fresh after dedupe (capped at 15, trusted domains prioritized)`);
 
     // 6. Load categories & Cognarah AI author
     const [{ data: cats }, { data: authorRow }] = await Promise.all([
@@ -521,14 +540,25 @@ export async function runAgentCore(args: RunAgentArgs) {
       ? (cats ?? []).find((c: any) => c.id === args.categoryId)
       : null;
 
-    // 7. For up to N, scrape + write + insert
+    // 7. Concurrent worker pool. Firecrawl scrape starts are throttled to
+    //    SCRAPE_INTERVAL_MS apart; Gemini/Claude calls run in parallel and
+    //    self-retry on 429. Workers stop pulling as soon as `created >= target`.
     const target = Math.min(args.count, fresh.length);
+    const CONCURRENCY = 3;
+    const SCRAPE_INTERVAL_MS = 1500;
     let created = 0;
-    for (const cand of fresh) {
-      if (created >= target) break;
+    let nextIdx = 0;
+    let scrapeChain: Promise<unknown> = Promise.resolve();
+    const acquireScrapeSlot = async () => {
+      const prev = scrapeChain;
+      scrapeChain = prev.then(() => sleep(SCRAPE_INTERVAL_MS));
+      await scrapeChain;
+    };
+
+    async function processCandidate(cand: (typeof fresh)[number]) {
       try {
-        // Throttle to stay under provider rate limits (Gemini free tier ~10 RPM).
-        await sleep(2500);
+        await acquireScrapeSlot();
+        if (created >= target) return;
         logLine(`Scraping: ${cand.url}`);
         const scraped: any = await fc.scrape(cand.url, {
           formats: ["markdown"],
@@ -539,18 +569,16 @@ export async function runAgentCore(args: RunAgentArgs) {
         const ogImg: string | undefined =
           meta.ogImage || meta["og:image"] || meta.twitterImage || meta["twitter:image"];
 
-        // Article-shape check on the scraped page itself.
         const bodyWords = md.split(/\s+/).filter(Boolean).length;
-        if (bodyWords < 600) { logLine(`Skipped: page has only ${bodyWords} words (not article)`); continue; }
+        if (bodyWords < 600) { logLine(`Skipped: page has only ${bodyWords} words (not article)`); return; }
         const published: string | undefined =
           meta.publishedTime || meta["article:published_time"] || meta.publishedDate;
         const hasUrlDate = /\/(19|20)\d{2}\//.test(cand.url);
         if (!published && !hasUrlDate) {
           logLine(`Skipped: no publication date on page or in URL`);
-          continue;
+          return;
         }
 
-        // 8. Ask Lovable AI to rewrite, with one retry on validation failure.
         const buildUserPrompt = (nudge?: string) =>
           `Focus: ${focusPart}\nSource URL: ${cand.url}\nSource title: ${cand.title ?? meta.title ?? ""}\n\nSource content:\n${md.slice(0, 12000)}` +
           (nudge ? `\n\nEDITOR NOTE: ${nudge}` : "");
@@ -578,9 +606,8 @@ export async function runAgentCore(args: RunAgentArgs) {
           lastReason = v.reason;
           logLine(`Attempt ${attempts} failed validation: ${v.reason}`);
         }
-        if (!draft) { logLine("Skipped: could not produce valid draft after 2 attempts"); continue; }
+        if (!draft) { logLine("Skipped: could not produce valid draft after 2 attempts"); return; }
 
-        // Stage 2: Claude editor pass. On any failure, keep Gemini's draft.
         const refined = await refineWithClaude(draft, cand.url);
         if (refined) {
           draft = refined;
@@ -589,7 +616,6 @@ export async function runAgentCore(args: RunAgentArgs) {
           logLine("Claude editor pass skipped/failed, using Gemini draft");
         }
 
-        // Enforce em/en dash ban, replace with comma+space (period would over-fragment mid-clause).
         const stripDashes = (s: string | undefined | null) =>
           typeof s === "string" ? stripEmDashes(s) : s;
         const beforeDashCount = (JSON.stringify(draft).match(/[—–]/g) || []).length;
@@ -607,7 +633,6 @@ export async function runAgentCore(args: RunAgentArgs) {
 
         const slug = slugify(draft.title, { lower: true, strict: true }).slice(0, 110) + "-" + Date.now().toString(36);
 
-        // 9. Hero image, prefer source, but validate strictly.
         let heroPath: string | null = null;
         let heroDecision = "";
         if (ogImg) {
@@ -649,13 +674,12 @@ export async function runAgentCore(args: RunAgentArgs) {
           }
         }
 
-        // 10. Resolve category
         const category = overrideCategory
           || catBySlug.get(draft.category_slug)
           || catBySlug.get("latest")
           || (cats ?? [])[0];
 
-        // 11. Insert draft article
+        if (created >= target) return;
         const { data: insertedArticle, error: insErr } = await supabase
           .from("articles")
           .insert({
@@ -678,7 +702,7 @@ export async function runAgentCore(args: RunAgentArgs) {
           })
           .select("id")
           .single();
-        if (insErr) { logLine(`Insert failed: ${insErr.message}`); continue; }
+        if (insErr) { logLine(`Insert failed: ${insErr.message}`); return; }
 
         await supabase.from("agent_seen_sources").insert({
           url_hash: hashUrl(cand.url),
@@ -692,6 +716,15 @@ export async function runAgentCore(args: RunAgentArgs) {
         logLine(`Candidate error: ${e?.message || e}`);
       }
     }
+
+    async function worker() {
+      while (created < target) {
+        const i = nextIdx++;
+        if (i >= fresh.length) return;
+        await processCandidate(fresh[i]);
+      }
+    }
+    await Promise.all(Array.from({ length: Math.min(CONCURRENCY, fresh.length) }, () => worker()));
 
     await supabase
       .from("agent_runs")
