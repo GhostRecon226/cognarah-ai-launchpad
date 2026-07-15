@@ -32,10 +32,24 @@ const CATEGORY_HINTS = [
 
 // URL path segments that indicate a listing / index page, not an article.
 const LISTING_SEGMENTS = new Set([
-  "tag", "tags", "category", "categories", "topic", "topics", "topics",
+  "tag", "tags", "category", "categories", "topic", "topics",
   "section", "sections", "author", "authors", "feed", "feeds", "rss",
   "search", "archive", "archives", "page", "pages", "index",
+  "video", "videos", "watch", "gallery", "galleries", "photos", "podcast", "podcasts",
+  "newsletter", "newsletters", "subscribe", "about", "contact", "login", "signin",
 ]);
+
+// Hosts that serve video/media, not text articles.
+const VIDEO_HOSTS = new Set([
+  "youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be",
+  "vimeo.com", "www.vimeo.com", "tiktok.com", "www.tiktok.com",
+  "twitch.tv", "www.twitch.tv", "dailymotion.com", "www.dailymotion.com",
+  "facebook.com", "www.facebook.com", "fb.watch",
+  "instagram.com", "www.instagram.com",
+]);
+
+// File extensions that are clearly not articles.
+const NON_ARTICLE_EXT = /\.(mp4|mov|avi|mkv|webm|mp3|wav|m4a|pdf|zip|rar|jpg|jpeg|png|gif|webp|svg)$/i;
 
 // og:image URL patterns that indicate a generic/default share image, not an article-specific hero.
 const GENERIC_IMAGE_HINTS = [
