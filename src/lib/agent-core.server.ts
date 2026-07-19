@@ -291,9 +291,29 @@ async function refineWithClaude(draft: DraftPayload, sourceUrl: string): Promise
   }
 }
 
+// Hosts whose editorial images we trust enough to skip the Gemini vision check.
+const TRUSTED_IMAGE_HOSTS = new Set([
+  "techcrunch.com",
+  "www.techcrunch.com",
+  "wired.com",
+  "www.wired.com",
+]);
+
 // Vision check: does this image plausibly illustrate the article?
-async function isImageRelevant(imageBuf: Buffer, contentType: string, title: string, dek: string): Promise<{ ok: boolean; reason: string }> {
+async function isImageRelevant(
+  imageBuf: Buffer,
+  contentType: string,
+  title: string,
+  dek: string,
+  imageUrl?: string,
+): Promise<{ ok: boolean; reason: string }> {
   try {
+    if (imageUrl) {
+      const host = new URL(imageUrl).hostname.toLowerCase();
+      if (TRUSTED_IMAGE_HOSTS.has(host)) {
+        return { ok: true, reason: `trusted image host: ${host}` };
+      }
+    }
     const b64 = imageBuf.toString("base64");
     const json = await callGemini({
       system:
