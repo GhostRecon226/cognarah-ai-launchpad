@@ -165,7 +165,7 @@ function sniffImageDimensions(buf: Buffer): { width: number; height: number } | 
 // (which is what caused every draft to fail with a 404 on gemini-2.5-flash).
 // Overridable via env so we can swap without a redeploy.
 const GEMINI_TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-flash-latest";
-const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
+const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.0-flash-exp";
 
 // Sentinel error message the worker pool checks so a model 404 aborts the
 // entire run instead of burning every candidate on the same guaranteed failure.
@@ -306,8 +306,13 @@ async function isImageRelevant(imageBuf: Buffer, contentType: string, title: str
       ],
       json: true,
     });
-    const content = geminiText(json);
-    const parsed = JSON.parse(content);
+    const content = geminiText(json).replace(/```(?:json)?\s*|\s*```/gi, "").trim();
+    let parsed: any;
+    try {
+      parsed = JSON.parse(content);
+    } catch {
+      return { ok: true, reason: "parsing failed" };
+    }
     return { ok: !!parsed.relevant, reason: String(parsed.reason ?? "") };
   } catch (e: any) {
     // If the vision check fails, err on the side of using the image (source
