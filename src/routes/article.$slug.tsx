@@ -11,6 +11,22 @@ import type { Article } from "@/lib/types";
 import { SITE_URL } from "@/lib/types";
 import { format } from "date-fns";
 import { ArticleShare } from "@/components/site/article-share";
+import { AdUnit } from "@/components/site/ad-unit";
+import { AD_SLOTS } from "@/lib/adsense";
+
+function splitBodyAfterSecondParagraph(html: string): [string, string] {
+  const re = /<\/p>/gi;
+  let match: RegExpExecArray | null;
+  let count = 0;
+  while ((match = re.exec(html)) !== null) {
+    count += 1;
+    if (count === 2) {
+      const idx = match.index + match[0].length;
+      return [html.slice(0, idx), html.slice(idx)];
+    }
+  }
+  return [html, ""];
+}
 
 async function loadArticle(slug: string): Promise<{ article: Article; related: Article[] }> {
   const { data: article } = await supabase
