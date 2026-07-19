@@ -138,7 +138,7 @@ function HomePage() {
                       <div className="mt-2 flex items-center gap-2 text-xs text-white/55">
                         {s.author?.name && <span>{s.author.name}</span>}
                         {s.author?.name && <span aria-hidden>·</span>}
-                        <time>
+                        <time dateTime={s.published_at ?? s.created_at} suppressHydrationWarning>
                           {formatDistanceToNow(new Date(s.published_at ?? s.created_at), { addSuffix: true })}
                         </time>
                         <span aria-hidden>·</span>
