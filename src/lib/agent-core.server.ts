@@ -703,7 +703,7 @@ export async function runAgentCore(args: RunAgentArgs) {
               if (dims && (dims.width < 600 || dims.height < 400)) {
                 heroDecision = `source rejected: dimensions ${dims.width}x${dims.height} too small`;
               } else {
-                const rel = await isImageRelevant(dl.buf, dl.contentType, draft.title, draft.dek);
+                const rel = await isImageRelevant(dl.buf, dl.contentType, draft.title, draft.dek, ogImg);
                 if (!rel.ok) {
                   heroDecision = `source rejected (vision): ${rel.reason}`;
                 } else {
@@ -784,6 +784,8 @@ export async function runAgentCore(args: RunAgentArgs) {
         const i = nextIdx++;
         if (i >= fresh.length) return;
         await processCandidate(fresh[i]);
+        // Small delay between articles to avoid bursting Gemini with concurrent requests.
+        await sleep(1000);
       }
     }
     await Promise.all(Array.from({ length: Math.min(CONCURRENCY, fresh.length) }, () => worker()));
