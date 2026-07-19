@@ -107,7 +107,7 @@ function HomePage() {
                   <div className="mt-4 flex items-center gap-2 text-xs text-white/60">
                     {lead.author?.name && <span>{lead.author.name}</span>}
                     {lead.author?.name && <span aria-hidden>·</span>}
-                    <time>
+                    <time dateTime={lead.published_at ?? lead.created_at} suppressHydrationWarning>
                       {formatDistanceToNow(new Date(lead.published_at ?? lead.created_at), { addSuffix: true })}
                     </time>
                     <span aria-hidden>·</span>
@@ -138,7 +138,7 @@ function HomePage() {
                       <div className="mt-2 flex items-center gap-2 text-xs text-white/55">
                         {s.author?.name && <span>{s.author.name}</span>}
                         {s.author?.name && <span aria-hidden>·</span>}
-                        <time>
+                        <time dateTime={s.published_at ?? s.created_at} suppressHydrationWarning>
                           {formatDistanceToNow(new Date(s.published_at ?? s.created_at), { addSuffix: true })}
                         </time>
                         <span aria-hidden>·</span>
@@ -243,7 +243,7 @@ function HomePage() {
                 <div className="mt-4 flex items-center gap-2 text-xs text-white/55">
                   {africa.author?.name && <span>{africa.author.name}</span>}
                   {africa.author?.name && <span aria-hidden>·</span>}
-                  <time>
+                  <time dateTime={africa.published_at ?? africa.created_at} suppressHydrationWarning>
                     {formatDistanceToNow(new Date(africa.published_at ?? africa.created_at), { addSuffix: true })}
                   </time>
                 </div>
