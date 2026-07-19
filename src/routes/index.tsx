@@ -107,7 +107,7 @@ function HomePage() {
                   <div className="mt-4 flex items-center gap-2 text-xs text-white/60">
                     {lead.author?.name && <span>{lead.author.name}</span>}
                     {lead.author?.name && <span aria-hidden>·</span>}
-                    <time>
+                    <time dateTime={lead.published_at ?? lead.created_at} suppressHydrationWarning>
                       {formatDistanceToNow(new Date(lead.published_at ?? lead.created_at), { addSuffix: true })}
                     </time>
                     <span aria-hidden>·</span>
