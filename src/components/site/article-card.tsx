@@ -60,7 +60,7 @@ export function ArticleCard({
         <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
           {article.author?.name && <span>{article.author.name}</span>}
           {article.author?.name && <span aria-hidden>·</span>}
-          <time dateTime={date}>
+          <time dateTime={date} suppressHydrationWarning>
             {formatDistanceToNow(new Date(date), { addSuffix: true })}
           </time>
           <span aria-hidden>·</span>
