@@ -1,13 +1,24 @@
 import { createFileRoute, notFound, Link } from "@tanstack/react-router";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { SiteNav } from "@/components/site/nav";
 import { SiteFooter } from "@/components/site/footer";
 import { NewsletterSignup } from "@/components/site/newsletter";
 import { ArticleCard } from "@/components/site/article-card";
+import { Pagination } from "@/components/site/pagination";
+import { PAGE_SIZE_LIST, getRange, totalPages as calcTotalPages } from "@/lib/pagination";
 import type { Article, Author } from "@/lib/types";
 import { SITE_URL } from "@/lib/types";
 
-async function loadAuthor(slug: string): Promise<{ author: Author; articles: Article[] }> {
+const searchSchema = z.object({
+  page: fallback(z.number().int(), 1).default(1),
+});
+
+async function loadAuthor(
+  slug: string,
+  page: number,
+): Promise<{ author: Author; articles: Article[]; page: number; totalPages: number }> {
   const { data: author } = await supabase
     .from("authors")
     .select("*")
@@ -15,23 +26,51 @@ async function loadAuthor(slug: string): Promise<{ author: Author; articles: Art
     .maybeSingle();
   if (!author) throw notFound();
   const au = author as unknown as Author;
-  const { data: articles } = await supabase
+  const safePage = Math.max(1, page);
+  const { from, to } = getRange(safePage, PAGE_SIZE_LIST);
+  const { data: articles, count } = await supabase
     .from("articles")
-    .select("*, author:authors(*), category:categories(*)")
+    .select("*, author:authors(*), category:categories(*)", { count: "exact" })
     .eq("status", "published")
     .eq("author_id", au.id)
-    .order("published_at", { ascending: false });
-  return { author: au, articles: (articles ?? []) as unknown as Article[] };
+    .order("published_at", { ascending: false })
+    .range(from, to);
+  const totalPages = calcTotalPages(count, PAGE_SIZE_LIST);
+  if (safePage > totalPages && (count ?? 0) > 0) throw notFound();
+  return {
+    author: au,
+    articles: (articles ?? []) as unknown as Article[],
+    page: safePage,
+    totalPages,
+  };
 }
 
 export const Route = createFileRoute("/authors/$slug")({
-  loader: ({ params }) => loadAuthor(params.slug),
+  validateSearch: zodValidator(searchSchema),
+  loaderDeps: ({ search }) => ({ page: search.page }),
+  loader: ({ params, deps }) => loadAuthor(params.slug, deps.page),
   head: ({ params, loaderData }) => {
     const au = loaderData?.author;
-    const title = au ? `${au.name}: Author on Cognarah` : "Author: Cognarah";
-    const desc = au?.bio || `Articles by ${au?.name ?? ""} on Cognarah — AI news, startups, funding, tools and analysis.`;
-    const url = `${SITE_URL}/authors/${params.slug}`;
+    const page = loaderData?.page ?? 1;
+    const total = loaderData?.totalPages ?? 1;
+    const baseTitle = au ? `${au.name}: Author on Cognarah` : "Author: Cognarah";
+    const baseDesc =
+      au?.bio || `Articles by ${au?.name ?? ""} on Cognarah — AI news, startups, funding, tools and analysis.`;
+    const title = page > 1 ? `${baseTitle} — Page ${page}` : baseTitle;
+    const desc = page > 1 ? `Page ${page} of ${total}. ${baseDesc}` : baseDesc;
+    const baseUrl = `${SITE_URL}/authors/${params.slug}`;
+    const url = page > 1 ? `${baseUrl}?page=${page}` : baseUrl;
     const sameAs = [au?.twitter, au?.linkedin, au?.website].filter(Boolean) as string[];
+    const links: { rel: string; href: string }[] = [{ rel: "canonical", href: url }];
+    if (page > 1) {
+      links.push({
+        rel: "prev",
+        href: page - 1 === 1 ? baseUrl : `${baseUrl}?page=${page - 1}`,
+      });
+    }
+    if (page < total) {
+      links.push({ rel: "next", href: `${baseUrl}?page=${page + 1}` });
+    }
     return {
       meta: [
         { title },
@@ -46,8 +85,8 @@ export const Route = createFileRoute("/authors/$slug")({
           { name: "twitter:card", content: "summary" },
         ] : []),
       ],
-      links: [{ rel: "canonical", href: url }],
-      scripts: au ? [
+      links,
+      scripts: au && page === 1 ? [
         {
           type: "application/ld+json",
           children: JSON.stringify({
@@ -56,7 +95,7 @@ export const Route = createFileRoute("/authors/$slug")({
             name: au.name,
             description: au.bio || undefined,
             image: au.photo_url || undefined,
-            url,
+            url: baseUrl,
             sameAs: sameAs.length ? sameAs : undefined,
             worksFor: { "@type": "Organization", name: "Cognarah", url: SITE_URL },
           }),
@@ -77,7 +116,9 @@ export const Route = createFileRoute("/authors/$slug")({
 });
 
 function AuthorPage() {
-  const { author, articles } = Route.useLoaderData();
+  const { author, articles, page, totalPages } = Route.useLoaderData();
+  const buildHref = (p: number) =>
+    p === 1 ? `/authors/${author.slug}` : `/authors/${author.slug}?page=${p}`;
   return (
     <div className="flex min-h-screen flex-col">
       <SiteNav />
@@ -110,9 +151,12 @@ function AuthorPage() {
           {articles.length === 0 ? (
             <p className="text-muted-foreground">No published articles yet.</p>
           ) : (
-            <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
-              {articles.map((a: Article) => <ArticleCard key={a.id} article={a} />)}
-            </div>
+            <>
+              <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-3">
+                {articles.map((a: Article) => <ArticleCard key={a.id} article={a} />)}
+              </div>
+              <Pagination currentPage={page} totalPages={totalPages} buildHref={buildHref} />
+            </>
           )}
         </section>
         <NewsletterSignup />
