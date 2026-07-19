@@ -8,6 +8,8 @@ import type { Article } from "@/lib/types";
 import { formatDistanceToNow } from "date-fns";
 import { SITE_URL } from "@/lib/types";
 import { MediaImage } from "@/components/site/media-image";
+import { AdUnit } from "@/components/site/ad-unit";
+import { AD_SLOTS } from "@/lib/adsense";
 
 async function loadHome(): Promise<{ articles: Article[]; africa: Article | null }> {
   const { data: articles } = await supabase
@@ -190,6 +192,9 @@ function HomePage() {
             </ol>
           </section>
         )}
+
+        {/* Homepage banner ad, placed after the ticker and before Africa spotlight */}
+        <AdUnit position="homepage-banner" slot={AD_SLOTS.homepageBanner} />
 
         {/* Africa AI Spotlight band, deep plum, full-width, 60px breathing room above */}
         {africa && (
