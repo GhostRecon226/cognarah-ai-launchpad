@@ -1,7 +1,7 @@
-// Central AdSense config. Swap these placeholder IDs once your AdSense
-// account is approved and you have real ad units.
+// Central AdSense config. AD_SLOTS stay as placeholders until real ad units
+// are created in the AdSense dashboard.
 
-export const ADSENSE_CLIENT = "ca-pub-XXXXXXXXXXXXXXXX";
+export const ADSENSE_CLIENT = "ca-pub-6846746931516022";
 
 export const AD_SLOTS = {
   inArticleTop: "0000000001",
