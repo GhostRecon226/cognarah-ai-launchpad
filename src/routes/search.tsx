@@ -59,7 +59,7 @@ function SearchPage() {
   useEffect(() => {
     if (qInput === q) return;
     const t = setTimeout(() => {
-      navigate({ search: (prev) => ({ ...prev, q: qInput, page: 1 }) });
+      navigate({ search: (prev: { q: string; cat: string; sort: string; page: number }) => ({ ...prev, q: qInput, page: 1 }) });
     }, 250);
     return () => clearTimeout(t);
   }, [qInput, q, navigate]);
@@ -133,7 +133,7 @@ function SearchPage() {
                   id="search-cat"
                   aria-label="Filter by category"
                   value={cat}
-                  onChange={(e) => navigate({ search: (prev) => ({ ...prev, cat: e.target.value, page: 1 }) })}
+                  onChange={(e) => navigate({ search: (prev: { q: string; cat: string; sort: string; page: number }) => ({ ...prev, cat: e.target.value, page: 1 }) })}
                   className="w-full min-w-0 rounded-md border border-white/20 bg-white/5 px-3 py-3 text-white sm:flex-1"
                 >
                   <option value="">All categories</option>
@@ -144,7 +144,7 @@ function SearchPage() {
                   id="search-sort"
                   aria-label="Sort order"
                   value={safeSort}
-                  onChange={(e) => navigate({ search: (prev) => ({ ...prev, sort: e.target.value, page: 1 }) })}
+                  onChange={(e) => navigate({ search: (prev: { q: string; cat: string; sort: string; page: number }) => ({ ...prev, sort: e.target.value, page: 1 }) })}
                   className="w-full min-w-0 rounded-md border border-white/20 bg-white/5 px-3 py-3 text-white sm:w-auto"
                 >
                   <option value="newest">Newest first</option>
