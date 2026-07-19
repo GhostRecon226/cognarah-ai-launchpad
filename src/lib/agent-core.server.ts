@@ -197,7 +197,7 @@ async function callGemini(opts: {
   if (opts.responseModalities) body.generationConfig.responseModalities = opts.responseModalities;
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
-  const maxAttempts = 5;
+  const maxAttempts = 3;
   let delay = 1500;
   let lastErr = "";
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -222,6 +222,10 @@ async function callGemini(opts: {
       await sleep(waitMs);
       delay = Math.min(delay * 2, 30_000);
       continue;
+    }
+    // Make quota errors explicit in logs.
+    if (res.status === 429) {
+      throw new Error(`Gemini Quota Exceeded: ${t.slice(0, 300)}`);
     }
     throw new Error(lastErr);
   }
