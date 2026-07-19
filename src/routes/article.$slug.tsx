@@ -11,6 +11,22 @@ import type { Article } from "@/lib/types";
 import { SITE_URL } from "@/lib/types";
 import { format } from "date-fns";
 import { ArticleShare } from "@/components/site/article-share";
+import { AdUnit } from "@/components/site/ad-unit";
+import { AD_SLOTS } from "@/lib/adsense";
+
+function splitBodyAfterSecondParagraph(html: string): [string, string] {
+  const re = /<\/p>/gi;
+  let match: RegExpExecArray | null;
+  let count = 0;
+  while ((match = re.exec(html)) !== null) {
+    count += 1;
+    if (count === 2) {
+      const idx = match.index + match[0].length;
+      return [html.slice(0, idx), html.slice(idx)];
+    }
+  }
+  return [html, ""];
+}
 
 async function loadArticle(slug: string): Promise<{ article: Article; related: Article[] }> {
   const { data: article } = await supabase
@@ -169,10 +185,27 @@ function ArticlePage() {
               </ul>
             </aside>
           )}
-          <div
-            className="prose-article mt-10"
-            dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.body) }}
-          />
+          {(() => {
+            const [firstPart, restPart] = splitBodyAfterSecondParagraph(sanitizeHtml(article.body));
+            return (
+              <>
+                <div
+                  className="prose-article mt-10"
+                  dangerouslySetInnerHTML={{ __html: firstPart }}
+                />
+                {restPart && (
+                  <>
+                    <AdUnit position="in-article" slot={AD_SLOTS.inArticleTop} />
+                    <div
+                      className="prose-article"
+                      dangerouslySetInnerHTML={{ __html: restPart }}
+                    />
+                  </>
+                )}
+              </>
+            );
+          })()}
+          <AdUnit position="in-article" slot={AD_SLOTS.inArticleBottom} />
           {article.author && (
             <section className="mt-12 rounded-xl border border-border bg-background p-5 sm:p-6">
               <div className="flex flex-wrap items-start gap-4">
