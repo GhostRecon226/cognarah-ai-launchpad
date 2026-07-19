@@ -185,10 +185,27 @@ function ArticlePage() {
               </ul>
             </aside>
           )}
-          <div
-            className="prose-article mt-10"
-            dangerouslySetInnerHTML={{ __html: sanitizeHtml(article.body) }}
-          />
+          {(() => {
+            const [firstPart, restPart] = splitBodyAfterSecondParagraph(sanitizeHtml(article.body));
+            return (
+              <>
+                <div
+                  className="prose-article mt-10"
+                  dangerouslySetInnerHTML={{ __html: firstPart }}
+                />
+                {restPart && (
+                  <>
+                    <AdUnit position="in-article" slot={AD_SLOTS.inArticleTop} />
+                    <div
+                      className="prose-article"
+                      dangerouslySetInnerHTML={{ __html: restPart }}
+                    />
+                  </>
+                )}
+              </>
+            );
+          })()}
+          <AdUnit position="in-article" slot={AD_SLOTS.inArticleBottom} />
           {article.author && (
             <section className="mt-12 rounded-xl border border-border bg-background p-5 sm:p-6">
               <div className="flex flex-wrap items-start gap-4">
