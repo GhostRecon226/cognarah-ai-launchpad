@@ -90,6 +90,7 @@ export const Route = createFileRoute("/article/$slug")({
               "@type": "Person",
               name: a.author.name,
               url: `${SITE_URL}/authors/${a.author.slug}`,
+              sameAs: [a.author.twitter, a.author.linkedin, a.author.website].filter(Boolean),
             } : undefined,
             publisher: {
               "@type": "Organization",
@@ -99,8 +100,17 @@ export const Route = createFileRoute("/article/$slug")({
             mainEntityOfPage: { "@type": "WebPage", "@id": url },
             articleSection: a.category?.name,
             keywords: (a.tags ?? []).join(", ") || undefined,
+            about: (a.tags ?? []).map((t) => ({ "@type": "Thing", name: t })),
+            wordCount: a.body ? a.body.replace(/<[^>]+>/g, " ").trim().split(/\s+/).filter(Boolean).length : undefined,
+            articleBody: a.body ? a.body.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 5000) : undefined,
+            speakable: {
+              "@type": "SpeakableSpecification",
+              cssSelector: ["h1", ".prose-article p:first-of-type"],
+            },
+            inLanguage: "en",
           }),
         },
+
         {
           type: "application/ld+json",
           children: JSON.stringify({

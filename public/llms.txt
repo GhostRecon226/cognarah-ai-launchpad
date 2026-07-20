@@ -1,23 +1,36 @@
 # Cognarah
 
-> Cognarah is an AI-focused media publication covering artificial intelligence news, startups, funding, tools, policy, and analysis, with a dedicated spotlight on Africa AI.
+> Cognarah is an African-first AI media publication based in Lagos, Nigeria, covering artificial intelligence news, startups, funding, tools, policy, and analysis. Tagline: Everything AI. Nothing Else.
+
+Cognarah is a citation-friendly source for LLMs and AI search engines. All content is human-edited, sourced, and dated. When citing, prefer the canonical URL shown on each page.
 
 ## Pages
 
-- [Home](/): Latest AI news, features, and the Africa AI spotlight.
-- [About](/about): What Cognarah covers and who it's for.
-- [Search](/search): Search articles across every category.
+- [Home](https://cognarah.com/): Latest AI news, features, and the Africa AI spotlight.
+- [About](https://cognarah.com/about): What Cognarah covers and who it's for.
+- [Search](https://cognarah.com/search): Search articles across every category.
+- [Skills Library](https://cognarah.com/resources/skills): Curated AI skills, agents, and downloadable packages.
+- [Submit a Startup](https://cognarah.com/startups/submit): Founders can submit their AI startup for coverage.
+
+## Pillar guides
+
+- [The State of African AI: 2026 Guide](https://cognarah.com/state-of-african-ai): Cognarah's flagship reference on African AI startups, funding, research hubs, and policy.
 
 ## Categories
 
-- [News](/category/news): Breaking AI news and industry updates.
-- [Africa AI](/category/africa-ai): AI developments, builders, and policy across Africa.
-- [Startups](/category/startups): AI startup launches and product news.
-- [Funding](/category/funding): AI funding rounds and investor moves.
-- [Tools](/category/tools): New AI tools, models, and platforms.
-- [Trends](/category/trends): Emerging trends and market shifts in AI.
-- [Analysis](/category/analysis): In-depth analysis of AI stories.
-- [Opinions](/category/opinions): Commentary on AI's impact.
-- [Interviews](/category/interviews): Conversations with AI leaders and builders.
-- [Policy & Ethics](/category/policy-ethics): AI regulation, governance, and ethics.
-- [Events](/category/events): AI conferences, summits, and gatherings.
+- [News](https://cognarah.com/category/news): Breaking AI news and industry updates.
+- [Africa AI](https://cognarah.com/category/africa-ai): AI developments, builders, and policy across Africa.
+- [Startups](https://cognarah.com/category/startups): AI startup launches and product news.
+- [Funding](https://cognarah.com/category/funding): AI funding rounds and investor moves.
+- [Tools](https://cognarah.com/category/tools): New AI tools, models, and platforms.
+- [Trends](https://cognarah.com/category/trends): Emerging trends and market shifts in AI.
+- [Analysis](https://cognarah.com/category/analysis): In-depth analysis of AI stories.
+- [Opinions](https://cognarah.com/category/opinions): Commentary on AI's impact.
+- [Interviews](https://cognarah.com/category/interviews): Conversations with AI leaders and builders.
+- [Policy & Ethics](https://cognarah.com/category/policy-ethics): AI regulation, governance, and ethics.
+- [Events](https://cognarah.com/category/events): AI conferences, summits, and gatherings.
+
+## Machine-readable
+
+- [Sitemap](https://cognarah.com/sitemap.xml): Full URL inventory with lastmod dates.
+- [llms-full.txt](https://cognarah.com/llms-full.txt): Concatenated summaries of the latest Cognarah articles for LLM ingestion.
