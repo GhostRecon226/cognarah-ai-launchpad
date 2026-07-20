@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
+import { Route as StateOfAfricanAiRouteImport } from './routes/state-of-african-ai'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as SearchRouteImport } from './routes/search'
@@ -51,6 +52,11 @@ import { Route as AuthenticatedAdminEmailPreviewStartupSubmissionIdRouteImport }
 const UnsubscribeRoute = UnsubscribeRouteImport.update({
   id: '/unsubscribe',
   path: '/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StateOfAfricanAiRoute = StateOfAfricanAiRouteImport.update({
+  id: '/state-of-african-ai',
+  path: '/state-of-african-ai',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
@@ -261,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/search': typeof SearchRoute
   '/setup': typeof SetupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/state-of-african-ai': typeof StateOfAfricanAiRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/authors/$slug': typeof AuthorsSlugRoute
@@ -300,6 +307,7 @@ export interface FileRoutesByTo {
   '/search': typeof SearchRoute
   '/setup': typeof SetupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/state-of-african-ai': typeof StateOfAfricanAiRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/authors/$slug': typeof AuthorsSlugRoute
@@ -341,6 +349,7 @@ export interface FileRoutesById {
   '/search': typeof SearchRoute
   '/setup': typeof SetupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/state-of-african-ai': typeof StateOfAfricanAiRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/authors/$slug': typeof AuthorsSlugRoute
@@ -382,6 +391,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/setup'
     | '/sitemap.xml'
+    | '/state-of-african-ai'
     | '/unsubscribe'
     | '/article/$slug'
     | '/authors/$slug'
@@ -421,6 +431,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/setup'
     | '/sitemap.xml'
+    | '/state-of-african-ai'
     | '/unsubscribe'
     | '/article/$slug'
     | '/authors/$slug'
@@ -461,6 +472,7 @@ export interface FileRouteTypes {
     | '/search'
     | '/setup'
     | '/sitemap.xml'
+    | '/state-of-african-ai'
     | '/unsubscribe'
     | '/article/$slug'
     | '/authors/$slug'
@@ -502,6 +514,7 @@ export interface RootRouteChildren {
   SearchRoute: typeof SearchRoute
   SetupRoute: typeof SetupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  StateOfAfricanAiRoute: typeof StateOfAfricanAiRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   ArticleSlugRoute: typeof ArticleSlugRoute
   AuthorsSlugRoute: typeof AuthorsSlugRoute
@@ -527,6 +540,13 @@ declare module '@tanstack/react-router' {
       path: '/unsubscribe'
       fullPath: '/unsubscribe'
       preLoaderRoute: typeof UnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/state-of-african-ai': {
+      id: '/state-of-african-ai'
+      path: '/state-of-african-ai'
+      fullPath: '/state-of-african-ai'
+      preLoaderRoute: typeof StateOfAfricanAiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -837,6 +857,7 @@ const rootRouteChildren: RootRouteChildren = {
   SearchRoute: SearchRoute,
   SetupRoute: SetupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  StateOfAfricanAiRoute: StateOfAfricanAiRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   ArticleSlugRoute: ArticleSlugRoute,
   AuthorsSlugRoute: AuthorsSlugRoute,
