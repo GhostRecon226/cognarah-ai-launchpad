@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 
 const BASE_URL = "https://cognarah.com";
 
-const STATIC_PATHS = ["/", "/about", "/search", "/startups/submit", "/resources/skills"];
+const STATIC_PATHS = ["/", "/about", "/search", "/startups/submit", "/resources/skills", "/state-of-african-ai"];
 const CATEGORIES = [
   "news", "startups", "funding", "tools", "trends", "opinions",
   "analysis", "interviews", "africa-ai", "policy-ethics", "events",

@@ -10,10 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
+import { Route as StateOfAfricanAiRouteImport } from './routes/state-of-african-ai'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as SetupRouteImport } from './routes/setup'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as LlmsFullDottxtRouteImport } from './routes/llms-full[.]txt'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
@@ -52,6 +54,11 @@ const UnsubscribeRoute = UnsubscribeRouteImport.update({
   path: '/unsubscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StateOfAfricanAiRoute = StateOfAfricanAiRouteImport.update({
+  id: '/state-of-african-ai',
+  path: '/state-of-african-ai',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
   id: '/sitemap.xml',
   path: '/sitemap.xml',
@@ -70,6 +77,11 @@ const SearchRoute = SearchRouteImport.update({
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LlmsFullDottxtRoute = LlmsFullDottxtRouteImport.update({
+  id: '/llms-full.txt',
+  path: '/llms-full.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthRoute = AuthRouteImport.update({
@@ -250,10 +262,12 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/setup': typeof SetupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/state-of-african-ai': typeof StateOfAfricanAiRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/authors/$slug': typeof AuthorsSlugRoute
@@ -288,10 +302,12 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/setup': typeof SetupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/state-of-african-ai': typeof StateOfAfricanAiRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/authors/$slug': typeof AuthorsSlugRoute
@@ -328,10 +344,12 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/about': typeof AboutRoute
   '/auth': typeof AuthRoute
+  '/llms-full.txt': typeof LlmsFullDottxtRoute
   '/reset-password': typeof ResetPasswordRoute
   '/search': typeof SearchRoute
   '/setup': typeof SetupRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
+  '/state-of-african-ai': typeof StateOfAfricanAiRoute
   '/unsubscribe': typeof UnsubscribeRoute
   '/article/$slug': typeof ArticleSlugRoute
   '/authors/$slug': typeof AuthorsSlugRoute
@@ -368,10 +386,12 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/auth'
+    | '/llms-full.txt'
     | '/reset-password'
     | '/search'
     | '/setup'
     | '/sitemap.xml'
+    | '/state-of-african-ai'
     | '/unsubscribe'
     | '/article/$slug'
     | '/authors/$slug'
@@ -406,10 +426,12 @@ export interface FileRouteTypes {
     | '/'
     | '/about'
     | '/auth'
+    | '/llms-full.txt'
     | '/reset-password'
     | '/search'
     | '/setup'
     | '/sitemap.xml'
+    | '/state-of-african-ai'
     | '/unsubscribe'
     | '/article/$slug'
     | '/authors/$slug'
@@ -445,10 +467,12 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/about'
     | '/auth'
+    | '/llms-full.txt'
     | '/reset-password'
     | '/search'
     | '/setup'
     | '/sitemap.xml'
+    | '/state-of-african-ai'
     | '/unsubscribe'
     | '/article/$slug'
     | '/authors/$slug'
@@ -485,10 +509,12 @@ export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AboutRoute: typeof AboutRoute
   AuthRoute: typeof AuthRoute
+  LlmsFullDottxtRoute: typeof LlmsFullDottxtRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SearchRoute: typeof SearchRoute
   SetupRoute: typeof SetupRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
+  StateOfAfricanAiRoute: typeof StateOfAfricanAiRoute
   UnsubscribeRoute: typeof UnsubscribeRoute
   ArticleSlugRoute: typeof ArticleSlugRoute
   AuthorsSlugRoute: typeof AuthorsSlugRoute
@@ -514,6 +540,13 @@ declare module '@tanstack/react-router' {
       path: '/unsubscribe'
       fullPath: '/unsubscribe'
       preLoaderRoute: typeof UnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/state-of-african-ai': {
+      id: '/state-of-african-ai'
+      path: '/state-of-african-ai'
+      fullPath: '/state-of-african-ai'
+      preLoaderRoute: typeof StateOfAfricanAiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/sitemap.xml': {
@@ -542,6 +575,13 @@ declare module '@tanstack/react-router' {
       path: '/reset-password'
       fullPath: '/reset-password'
       preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/llms-full.txt': {
+      id: '/llms-full.txt'
+      path: '/llms-full.txt'
+      fullPath: '/llms-full.txt'
+      preLoaderRoute: typeof LlmsFullDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/auth': {
@@ -812,10 +852,12 @@ const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AboutRoute: AboutRoute,
   AuthRoute: AuthRoute,
+  LlmsFullDottxtRoute: LlmsFullDottxtRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SearchRoute: SearchRoute,
   SetupRoute: SetupRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
+  StateOfAfricanAiRoute: StateOfAfricanAiRoute,
   UnsubscribeRoute: UnsubscribeRoute,
   ArticleSlugRoute: ArticleSlugRoute,
   AuthorsSlugRoute: AuthorsSlugRoute,
@@ -836,13 +878,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
