@@ -27,7 +27,7 @@ export const Route = createFileRoute("/llms-full.txt")({
           "",
         ];
 
-        for (const a of (articles ?? []) as Array<{
+        for (const a of ((articles ?? []) as unknown) as Array<{
           slug: string;
           title: string;
           excerpt: string | null;
