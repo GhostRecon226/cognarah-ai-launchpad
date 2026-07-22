@@ -17,27 +17,46 @@ const ALLOWED_TECH = [
   "Other",
 ];
 
+export type CofounderInput = { name?: string; role?: string; linkedin?: string };
+export type ScreenshotUpload = { base64: string; name: string; type: string };
+
 export type StartupSubmissionInput = {
   company_name: string;
+  tagline?: string;
   website_url: string;
+  company_linkedin?: string;
+  twitter_handle?: string;
+  youtube_url?: string;
   country: string;
   city: string;
   year_founded: number;
   company_stage: string;
   product_description: string;
   problem_solved: string;
+  mission?: string;
+  differentiator?: string;
+  competitors?: string;
+  business_model?: string;
+  pricing_model?: string;
+  markets_served?: string;
   target_audience: string;
   ai_technologies: string[];
   founder_name: string;
   founder_linkedin?: string;
+  cofounders?: CofounderInput[];
+  key_team_members?: string;
   team_size: string;
   user_count?: string;
   revenue_stage: string;
   funding_raised?: string;
   notable_investors?: string;
   partnerships?: string;
+  milestones?: string;
+  awards?: string;
   product_demo?: string;
+  pitch_video_url?: string;
   press_links?: string;
+  roadmap?: string;
   founder_email: string;
   contact_method: string;
   whatsapp_number?: string;
@@ -45,6 +64,7 @@ export type StartupSubmissionInput = {
   logo_file_base64: string;
   logo_file_name: string;
   logo_file_type: string;
+  screenshots?: ScreenshotUpload[];
 };
 
 function req(v: unknown, name: string): string {
