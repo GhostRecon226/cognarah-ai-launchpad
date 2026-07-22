@@ -1,7 +1,11 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { zodValidator, fallback } from "@tanstack/zod-adapter";
+import { z } from "zod";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/admin-shell";
+import { Pagination } from "@/components/site/pagination";
+import { getRange, totalPages as calcTotalPages } from "@/lib/pagination";
 import { useRoles } from "@/lib/admin-roles";
 import { Plus, Trash2 } from "lucide-react";
 import { format } from "date-fns";
@@ -9,7 +13,15 @@ import { toast } from "sonner";
 
 interface Row { id: string; title: string; slug: string; status: string; updated_at: string; view_count: number; category?: { name: string } | null }
 
+const PAGE_SIZE = 20;
+
+const searchSchema = z.object({
+  page: fallback(z.number().int(), 1).default(1),
+  filter: fallback(z.string(), "all").default("all"),
+});
+
 export const Route = createFileRoute("/_authenticated/admin/articles/")({
+  validateSearch: zodValidator(searchSchema),
   head: () => ({ meta: [{ title: "Articles: Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
   component: ArticlesList,
 });
@@ -25,40 +37,52 @@ function ArticlesList() {
 function ArticlesListInner() {
   const { hasAny } = useRoles();
   const canDelete = hasAny(["admin", "editor"]);
+  const { page: rawPage, filter: rawFilter } = Route.useSearch();
+  const navigate = useNavigate({ from: "/admin/articles" });
+  const filter: "all" | "published" | "draft" =
+    rawFilter === "published" || rawFilter === "draft" ? rawFilter : "all";
+  const page = Math.max(1, rawPage);
+
   const [rows, setRows] = useState<Row[]>([]);
-  const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
+  const [count, setCount] = useState(0);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const totalPages = calcTotalPages(count, PAGE_SIZE);
 
   async function load() {
     setLoading(true);
     setLoadError(null);
-    console.log("[admin/articles] loading", { filter });
     try {
-      let q = supabase.from("articles").select("id,title,slug,status,updated_at,view_count,category:categories(name)").order("updated_at", { ascending: false });
+      const { from, to } = getRange(page, PAGE_SIZE);
+      let q = supabase
+        .from("articles")
+        .select("id,title,slug,status,updated_at,view_count,category:categories(name)", { count: "exact" })
+        .order("updated_at", { ascending: false })
+        .range(from, to);
       if (filter !== "all") q = q.eq("status", filter);
-      const { data, error, status, statusText } = await q;
+      const { data, error, count: c } = await q;
       if (error) {
-        console.error("[admin/articles] supabase error", { status, statusText, error });
         const msg = `${error.message}${error.code ? ` (code ${error.code})` : ""}${error.details ? ` – ${error.details}` : ""}${error.hint ? ` – hint: ${error.hint}` : ""}`;
         setLoadError(msg);
         toast.error(`Failed to load articles: ${msg}`);
         setRows([]);
+        setCount(0);
         return;
       }
-      console.log("[admin/articles] loaded", { count: data?.length ?? 0 });
       setRows((data ?? []) as unknown as Row[]);
+      setCount(c ?? 0);
     } catch (e) {
       const msg = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-      console.error("[admin/articles] load threw", e);
       setLoadError(msg);
       toast.error(`Failed to load articles: ${msg}`);
       setRows([]);
+      setCount(0);
     } finally {
       setLoading(false);
     }
   }
-  useEffect(() => { load(); }, [filter]);
+  useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [filter, page]);
 
   async function del(id: string) {
     if (!confirm("Delete this article?")) return;
@@ -66,6 +90,21 @@ function ArticlesListInner() {
     if (error) toast.error(error.message);
     else { toast.success("Deleted"); load(); }
   }
+
+  function setFilter(f: "all" | "published" | "draft") {
+    navigate({ search: { filter: f, page: 1 } });
+  }
+
+  function buildHref(p: number) {
+    const params = new URLSearchParams();
+    if (filter !== "all") params.set("filter", filter);
+    if (p !== 1) params.set("page", String(p));
+    const qs = params.toString();
+    return qs ? `/admin/articles?${qs}` : "/admin/articles";
+  }
+
+  const from = count === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const to = Math.min(count, page * PAGE_SIZE);
 
   return (
     <>
@@ -86,14 +125,19 @@ function ArticlesListInner() {
           <button onClick={load} className="mt-3 rounded-md border border-destructive/40 px-3 py-1.5 text-xs font-medium text-destructive hover:bg-destructive/10">Retry</button>
         </div>
       )}
-      <div className="mt-6 overflow-x-auto rounded-lg border border-border bg-background">
+      {count > 0 && (
+        <div className="mt-4 text-xs text-muted-foreground">
+          Showing {from.toLocaleString()}–{to.toLocaleString()} of {count.toLocaleString()}
+        </div>
+      )}
+      <div className="mt-3 overflow-x-auto rounded-lg border border-border bg-background">
         {loading && <div className="p-4 text-xs text-muted-foreground">Loading…</div>}
         <table className="w-full min-w-[640px]">
           <thead className="bg-secondary text-left text-xs uppercase tracking-wider text-muted-foreground">
             <tr><th className="px-4 py-3">Title</th><th className="px-4 py-3">Category</th><th className="px-4 py-3">Status</th><th className="px-4 py-3 text-right">Views</th><th className="px-4 py-3">Updated</th><th></th></tr>
           </thead>
           <tbody className="divide-y divide-border text-sm">
-            {rows.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">No articles yet.</td></tr>}
+            {rows.length === 0 && !loading && <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">No articles yet.</td></tr>}
             {rows.map((r) => (
               <tr key={r.id} className="hover:bg-secondary/50">
                 <td className="px-4 py-3"><Link to="/admin/articles/$id" params={{ id: r.id }} className="font-medium hover:text-brand">{r.title}</Link></td>
@@ -107,6 +151,7 @@ function ArticlesListInner() {
           </tbody>
         </table>
       </div>
+      <Pagination currentPage={page} totalPages={totalPages} buildHref={buildHref} />
     </>
   );
 }
