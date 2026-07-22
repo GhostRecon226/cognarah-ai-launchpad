@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { FileText, Tags, Users, Pencil, TrendingUp } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   head: () => ({ meta: [{ title: "Dashboard: Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
@@ -96,7 +96,7 @@ function Dashboard() {
                     <td className="px-4 py-3"><Link to="/admin/articles/$id" params={{ id: t.id }} className="font-medium hover:text-brand">{t.title}</Link></td>
                     <td className="px-4 py-3 text-muted-foreground">{t.category?.name ?? "None"}</td>
                     <td className="px-4 py-3 text-right tabular-nums font-medium">{(t.view_count ?? 0).toLocaleString()}</td>
-                    <td className="px-4 py-3 text-muted-foreground">{t.published_at ? format(new Date(t.published_at), "MMM d, yyyy") : "—"}</td>
+                    <td className="px-4 py-3 text-muted-foreground">{t.published_at ? format(new Date(t.published_at), "MMM d, yyyy") : "-"}</td>
                   </tr>
                 ))}
               </tbody>
