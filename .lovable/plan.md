@@ -1,39 +1,116 @@
-Two SYSTEM_PROMPT edits in `src/lib/agent-core.server.ts` (no schema, no code path changes). The Source footer link stays in place so the "Preserve the Source URL" Claude constraint still holds.
 
-## 1. Scope the source attribution to the reported news only
+## Goal
 
-Right now the prompt tells the model to "Always cite the original source" and ends every body with a single `<p><em>Source:</em> <a>...</a></p>` footer. That reads as if the entire piece, including the Africa Angle, came from TechCrunch/etc.
+Make the `/startups/submit` form capture enough information for staff to write a full startup autobiography from the admin backend, and make sure everything a founder types is displayed on the admin detail view.
 
-Rewrite the SOURCING block and the ARTICLE STRUCTURE section so:
+## What the form captures today
 
-- Attribution and inline links belong only to the news reporting (Opening paragraph + Body). Any external fact, number, quote, or claim in those sections must be tied to the source.
-- The Africa Angle section is Cognarah's own analysis. It must not cite, link, or attribute anything to the source publication. If it references outside facts (e.g. a Nigerian bill, a specific African startup), it can name them plainly but must not credit the news source for that context.
-- Insert an explicit divider before the Africa Angle so the reader sees the shift in voice. Add a required subheading in the body HTML: `<h2>The Cognarah Angle</h2>` (or "Cognarah's Take" — pick one and use it consistently) immediately before the Africa Angle paragraph(s).
-- Keep the existing footer link, but reword it so it clearly refers to the news portion only:
-  `<p><em>Reporting sourced from</em> <a href="SOURCE_URL">Publication name</a>. Analysis and Africa Angle are Cognarah's own.</p>`
+Basic (company name, website, country, city, year founded, stage), Product (500-char description, 500-char problem, target audience, AI technologies checklist), Team (founder name, founder LinkedIn, team size), Traction (users, revenue stage, funding, investors, partnerships), Media (logo, one demo link, press links), Contact (email, contact method, WhatsApp).
 
-## 2. Add a controversial / provocative angle
+## Gaps that block a good autobiography
 
-Add a new section to SYSTEM_PROMPT between "AFRICA ANGLE EXAMPLES" and "DRAFT ONLY":
+1. Descriptions are capped at 500 characters, which is too short for a profile piece.
+2. No founding story, mission, vision, or company tagline.
+3. Only one founder field. No co-founders or key team members.
+4. No differentiator / competitors field.
+5. No business model or pricing.
+6. No milestones, awards, or notable achievements.
+7. No social presence beyond founder LinkedIn (no X handle, no company LinkedIn, no YouTube/demo video).
+8. Only one media asset (logo). No product screenshots, no pitch video, no product hero image.
+9. No geographic markets served.
+10. No roadmap / what's next.
 
-- Title: `EDITORIAL EDGE (required)`.
-- Instruct the model to take a clear, defensible stance in the Africa Angle. No fence-sitting, no "time will tell", no both-sides mush.
-- Encourage one provocative question or contrarian observation per piece that challenges the dominant narrative (e.g. "Why should African founders trust a US-regulated model with local user data?", "Is this really a win for Africa, or just cheaper extraction?").
-- Guardrails so it stays credible, not tabloid:
-  - Provocation must be grounded in a fact stated earlier in the article.
-  - No personal attacks, no unverified accusations, no invented quotes.
-  - No defamation of named people or companies.
-  - No inflammatory language about ethnicity, religion, or nationality.
-  - Controversy lives in the Africa Angle and closing line only, never in the Headline or news reporting sections (those stay straight and factual).
+## Plan
 
-Also update the closing-line rule (item 5 in ARTICLE STRUCTURE) so it explicitly leaves the reader with a pointed question or a sharp opinion, not a summary.
+### 1. Expand the form (`src/routes/startups.submit.tsx`)
 
-## 3. Keep Claude's editor pass consistent
+Add these fields, grouped by existing sections. All optional unless noted, all with generous limits so nothing gets truncated.
 
-`refineWithClaude` currently tells Claude to "Preserve the Source URL and 'Source:' footer link exactly." Update that instruction to match the new footer wording ("Reporting sourced from …") and add: "Preserve the `<h2>The Cognarah Angle</h2>` divider and do not move source citations into the Cognarah Angle or closing line."
+- Basic identity
+  - Company tagline (1 line, required, 120 chars)
+  - Company logo already present
+  - Company LinkedIn URL, X / Twitter handle, YouTube URL (optional)
+- Product and mission
+  - Raise `product_description` and `problem_solved` limits from 500 to 1500 chars
+  - Mission statement (required, 500 chars)
+  - Differentiator: "What makes you different from competitors" (required, 1000 chars)
+  - Main competitors (optional, comma-separated)
+  - Business model / how you make money (required, 500 chars)
+  - Pricing model (optional, 300 chars)
+  - Markets served (optional, comma-separated countries/regions)
+- Team
+  - Co-founders (optional, repeatable: name + role + LinkedIn) — capped at 4
+  - Key team members (optional textarea, 1000 chars)
+- Traction
+  - Milestones / notable achievements (optional textarea, 1000 chars)
+  - Awards and recognition (optional textarea, 500 chars)
+- Media
+  - Product screenshots upload (optional, up to 3 images, 2 MB each)
+  - Pitch or demo video URL (optional)
+- Roadmap
+  - What's next in the next 12 months (optional, 800 chars)
 
-## Out of scope
+Keep the "no em dashes" rule; keep required field validation both client and server side.
 
-- No changes to the schema, DB, categories, image pipeline, or Skills agent.
-- No changes to how sources are fetched, deduped, or scored.
-- No new UI. Existing drafts are not rewritten; only new agent runs pick up the new prompt.
+### 2. Persist all new fields (database migration)
+
+Extend `public.startup_submissions` with the new columns:
+
+- `tagline text`
+- `company_linkedin text`
+- `twitter_handle text`
+- `youtube_url text`
+- `mission text`
+- `differentiator text`
+- `competitors text`
+- `business_model text`
+- `pricing_model text`
+- `markets_served text[]`
+- `cofounders jsonb`  (array of `{ name, role, linkedin }`)
+- `key_team_members text`
+- `milestones text`
+- `awards text`
+- `screenshot_urls text[]`
+- `pitch_video_url text`
+- `roadmap text`
+
+All nullable so existing rows keep working. No RLS changes needed (INSERT policy stays open with `consent = true`, admin/editor SELECT/UPDATE stays the same).
+
+### 3. Update the server function (`src/lib/startup-submissions.functions.ts`)
+
+- Extend `StartupSubmissionInput`, the input validator, and the `insert` payload to include the new fields.
+- Sanitize (strip em dashes) and length-check the new text fields.
+- Upload extra screenshot images to the `media` bucket the same way the logo is uploaded, store the resulting URLs in `screenshot_urls`.
+- Include the new fields in the admin notification email payload (tagline, mission, differentiator, business model at minimum).
+
+### 4. Update the admin backend view (`src/routes/_authenticated/admin/startups.tsx`)
+
+Render every new field in the expanded row so staff never has to guess what the founder submitted:
+
+- New "Company" details row: tagline, mission, company LinkedIn, X, YouTube.
+- "Positioning" block: differentiator, competitors, business model, pricing, markets.
+- "Team" block: co-founders list + key team members.
+- "Traction" block additions: milestones, awards.
+- "Media" gallery: logo + screenshot thumbnails + pitch video link.
+- "Roadmap" block.
+
+Also add a small "Copy all details" button that copies a plaintext dump of every field, to make it easy for staff to paste into an editor when writing the profile.
+
+### 5. Update the AI draft prompt
+
+`generateStartupDraft` should feed the new fields (tagline, mission, differentiator, business model, milestones, awards, roadmap, screenshots, competitors, markets) into `buildStartupUserPrompt` so the generated autobiography uses them. Structure stays the same, no facts invented.
+
+### 6. Verify
+
+After the migration and build, do a Playwright test-fill against `/startups/submit` with all fields populated, then query `startup_submissions` to confirm every field landed in the row, and open `/admin/startups` to confirm every value renders.
+
+## Technical notes
+
+- Migration follows the project rules: `ALTER TABLE` only adds columns, no CHECK constraints on mutable data, existing GRANTs and RLS untouched.
+- Screenshots reuse the existing `media` bucket and `/api/public/media/*` route; no new bucket needed.
+- Base64 upload pattern already used for the logo is reused for screenshots (with a max-3 loop).
+- No changes to categories, articles table, or authentication.
+
+## Open question
+
+Do you want the new required fields (tagline, mission, differentiator, business model) enforced as required for new submissions, or all-optional so founders can submit fast and staff can request follow-ups later?
