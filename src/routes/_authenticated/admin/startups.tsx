@@ -355,3 +355,69 @@ function ExternalA({ href, children }: { href: string; children: React.ReactNode
     </a>
   );
 }
+
+function copyDetails(s: Submission) {
+  const yes = (v: unknown) => (v === null || v === undefined || v === "" ? "-" : String(v));
+  const co = s.cofounders && s.cofounders.length > 0
+    ? s.cofounders.map((c) => `  - ${c.name || "Unnamed"}${c.role ? ` (${c.role})` : ""}${c.linkedin ? ` ${c.linkedin}` : ""}`).join("\n")
+    : "-";
+  const parts = [
+    `Company: ${s.company_name}`,
+    `Tagline: ${yes(s.tagline)}`,
+    `Website: ${s.website_url}`,
+    `Company LinkedIn: ${yes(s.company_linkedin)}`,
+    `Twitter/X: ${yes(s.twitter_handle)}`,
+    `YouTube: ${yes(s.youtube_url)}`,
+    `HQ: ${s.city}, ${s.country}`,
+    `Markets served: ${yes(s.markets_served?.join(", "))}`,
+    `Year founded: ${s.year_founded}`,
+    `Company stage: ${s.company_stage}`,
+    `AI technologies: ${s.ai_technologies.join(", ")}`,
+    `Target audience: ${s.target_audience}`,
+    ``,
+    `WHAT THE PRODUCT DOES:\n${s.product_description}`,
+    ``,
+    `PROBLEM SOLVED:\n${s.problem_solved}`,
+    ``,
+    `MISSION:\n${yes(s.mission)}`,
+    ``,
+    `DIFFERENTIATOR:\n${yes(s.differentiator)}`,
+    ``,
+    `COMPETITORS: ${yes(s.competitors)}`,
+    `BUSINESS MODEL: ${yes(s.business_model)}`,
+    `PRICING MODEL: ${yes(s.pricing_model)}`,
+    ``,
+    `TEAM`,
+    `Founder: ${s.founder_name}${s.founder_linkedin ? ` (${s.founder_linkedin})` : ""}`,
+    `Team size: ${s.team_size}`,
+    `Co-founders:\n${co}`,
+    `Key team members: ${yes(s.key_team_members)}`,
+    ``,
+    `TRACTION`,
+    `Users / customers: ${yes(s.user_count)}`,
+    `Revenue stage: ${s.revenue_stage}`,
+    `Funding raised: ${yes(s.funding_raised)}`,
+    `Notable investors: ${yes(s.notable_investors)}`,
+    `Partnerships: ${yes(s.partnerships)}`,
+    `Milestones: ${yes(s.milestones)}`,
+    `Awards: ${yes(s.awards)}`,
+    ``,
+    `MEDIA`,
+    `Logo: ${s.logo_url}`,
+    `Screenshots: ${yes(s.screenshot_urls?.join(", "))}`,
+    `Product demo: ${yes(s.product_demo)}`,
+    `Pitch video: ${yes(s.pitch_video_url)}`,
+    `Press links: ${yes(s.press_links)}`,
+    ``,
+    `ROADMAP: ${yes(s.roadmap)}`,
+    ``,
+    `CONTACT`,
+    `Email: ${s.founder_email}`,
+    `Preferred: ${s.contact_method}${s.contact_method === "WhatsApp" && s.whatsapp_number ? ` (${s.whatsapp_number})` : ""}`,
+  ];
+  const text = parts.join("\n");
+  navigator.clipboard.writeText(text).then(
+    () => toast.success("Details copied to clipboard"),
+    () => toast.error("Copy failed"),
+  );
+}
