@@ -249,32 +249,83 @@ function StartupsPage() {
 
               {isOpen && (
                 <div className="grid grid-cols-1 gap-6 border-t border-border bg-secondary/40 px-4 py-5 md:grid-cols-[160px,1fr]">
-                  <div>
+                  <div className="space-y-3">
                     <MediaImage
                       src={s.logo_url}
                       alt={`${s.company_name} logo`}
                       className="h-40 w-40 rounded-md border border-border object-contain bg-white"
                       fallbackClassName="h-40 w-40 rounded-md"
                     />
+                    <button
+                      type="button"
+                      onClick={() => copyDetails(s)}
+                      className="inline-flex w-40 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
+                    >
+                      <Copy className="h-3.5 w-3.5" /> Copy all details
+                    </button>
+                    {s.screenshot_urls && s.screenshot_urls.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Screenshots</div>
+                        {s.screenshot_urls.map((u, i) => (
+                          <MediaImage
+                            key={i}
+                            src={u}
+                            alt={`Screenshot ${i + 1}`}
+                            className="h-24 w-40 rounded border border-border object-cover bg-white"
+                            fallbackClassName="h-24 w-40 rounded"
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {s.tagline && <Detail label="Tagline" full>{s.tagline}</Detail>}
                     <Detail label="Website"><ExternalA href={s.website_url}>{s.website_url}</ExternalA></Detail>
                     <Detail label="Year founded">{s.year_founded}</Detail>
+                    <Detail label="Headquarters">{s.city}, {s.country}</Detail>
+                    <Detail label="Company stage">{s.company_stage}</Detail>
                     <Detail label="Team size">{s.team_size}</Detail>
                     <Detail label="Revenue stage">{s.revenue_stage}</Detail>
                     <Detail label="Users / customers">{s.user_count || "-"}</Detail>
                     <Detail label="Funding raised">{s.funding_raised || "-"}</Detail>
+                    <Detail label="Business model">{s.business_model || "-"}</Detail>
+                    <Detail label="Pricing model">{s.pricing_model || "-"}</Detail>
                     <Detail label="Notable investors">{s.notable_investors || "-"}</Detail>
-                    <Detail label="Partnerships">{s.partnerships || "-"}</Detail>
+                    <Detail label="Partnerships / clients">{s.partnerships || "-"}</Detail>
+                    <Detail label="Company LinkedIn">{s.company_linkedin ? <ExternalA href={s.company_linkedin}>{s.company_linkedin}</ExternalA> : "-"}</Detail>
+                    <Detail label="Twitter / X">{s.twitter_handle || "-"}</Detail>
+                    <Detail label="YouTube">{s.youtube_url ? <ExternalA href={s.youtube_url}>{s.youtube_url}</ExternalA> : "-"}</Detail>
                     <Detail label="Founder email"><a className="text-brand underline" href={`mailto:${s.founder_email}`}>{s.founder_email}</a></Detail>
                     <Detail label="Preferred contact">{s.contact_method}{s.contact_method === "WhatsApp" && s.whatsapp_number ? ` (${s.whatsapp_number})` : ""}</Detail>
                     <Detail label="Founder LinkedIn">{s.founder_linkedin ? <ExternalA href={s.founder_linkedin}>{s.founder_linkedin}</ExternalA> : "-"}</Detail>
                     <Detail label="Product demo">{s.product_demo ? <ExternalA href={s.product_demo}>{s.product_demo}</ExternalA> : "-"}</Detail>
+                    <Detail label="Pitch video">{s.pitch_video_url ? <ExternalA href={s.pitch_video_url}>{s.pitch_video_url}</ExternalA> : "-"}</Detail>
+                    <Detail label="Markets served" full>{s.markets_served && s.markets_served.length > 0 ? s.markets_served.join(", ") : "-"}</Detail>
                     <Detail label="AI technologies" full>{s.ai_technologies.join(", ") || "-"}</Detail>
                     <Detail label="Target audience" full>{s.target_audience}</Detail>
-                    <Detail label="Product" full>{s.product_description}</Detail>
-                    <Detail label="Problem solved" full>{s.problem_solved}</Detail>
-                    {s.press_links && <Detail label="Press links" full><span className="whitespace-pre-wrap">{s.press_links}</span></Detail>}
+                    <Detail label="What the product does" full><span className="whitespace-pre-wrap">{s.product_description}</span></Detail>
+                    <Detail label="Problem it solves" full><span className="whitespace-pre-wrap">{s.problem_solved}</span></Detail>
+                    {s.mission && <Detail label="Mission" full><span className="whitespace-pre-wrap">{s.mission}</span></Detail>}
+                    {s.differentiator && <Detail label="What makes them different" full><span className="whitespace-pre-wrap">{s.differentiator}</span></Detail>}
+                    {s.competitors && <Detail label="Competitors" full><span className="whitespace-pre-wrap">{s.competitors}</span></Detail>}
+                    {s.cofounders && s.cofounders.length > 0 && (
+                      <Detail label="Co-founders" full>
+                        <ul className="list-disc pl-4 space-y-1">
+                          {s.cofounders.map((c, i) => (
+                            <li key={i}>
+                              <span className="font-medium">{c.name || "Unnamed"}</span>
+                              {c.role ? ` - ${c.role}` : ""}
+                              {c.linkedin ? <> {" "}<ExternalA href={c.linkedin}>LinkedIn</ExternalA></> : null}
+                            </li>
+                          ))}
+                        </ul>
+                      </Detail>
+                    )}
+                    {s.key_team_members && <Detail label="Key team members" full><span className="whitespace-pre-wrap">{s.key_team_members}</span></Detail>}
+                    {s.milestones && <Detail label="Milestones" full><span className="whitespace-pre-wrap">{s.milestones}</span></Detail>}
+                    {s.awards && <Detail label="Awards / recognition" full><span className="whitespace-pre-wrap">{s.awards}</span></Detail>}
+                    {s.roadmap && <Detail label="Roadmap / what's next" full><span className="whitespace-pre-wrap">{s.roadmap}</span></Detail>}
+                    {s.press_links && <Detail label="Press coverage" full><span className="whitespace-pre-wrap">{s.press_links}</span></Detail>}
                     {s.admin_notes && <Detail label="Admin notes" full><span className="whitespace-pre-wrap">{s.admin_notes}</span></Detail>}
                   </div>
                 </div>
