@@ -255,11 +255,14 @@ async function refineWithClaude(draft: DraftPayload, sourceUrl: string): Promise
   const editorInstruction =
     "You are the senior editor. Refine the following draft for tone, structure, flow, and editorial quality per the SYSTEM_PROMPT above. " +
     "STRICT CONSTRAINTS: do NOT change any facts, figures, names, dates, quotes, or <a href=\"...\"> links. " +
-    "Preserve the Source URL and 'Source:' footer link exactly. Keep the same JSON schema. " +
-    "Improve writing only, sharpen headline/dek within their word limits, tighten prose, fix awkward phrasing, ensure required sections exist. " +
+    "Preserve the Source URL and the 'Reporting sourced from' footer link exactly. Preserve the <h2>The Cognarah Angle</h2> divider. " +
+    "Do NOT move source citations or attribution into the Cognarah Angle or the closing line, those sections are Cognarah's own voice. " +
+    "Keep the same JSON schema. " +
+    "Improve writing only, sharpen headline/dek within their word limits, tighten prose, fix awkward phrasing, ensure required sections exist, and keep the editorial edge (a clear stance and one pointed question or contrarian observation in the Cognarah Angle or closing line). " +
     "Return ONLY strict JSON matching the original shape, no markdown, no code fences, no commentary.\n\n" +
-    `Source URL (must be preserved in the Source footer link): ${sourceUrl}\n\n` +
+    `Source URL (must be preserved in the footer link): ${sourceUrl}\n\n` +
     `DRAFT JSON:\n${JSON.stringify(draft)}`;
+
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
