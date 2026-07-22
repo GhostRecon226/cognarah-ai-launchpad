@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { MediaImage } from "@/components/site/media-image";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Check, X, ExternalLink, Sparkles, Eye, Loader2, Mail } from "lucide-react";
+import { ChevronDown, ChevronRight, Check, X, ExternalLink, Sparkles, Eye, Loader2, Mail, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateStartupDraft } from "@/lib/startup-submissions.functions";
 
@@ -16,32 +16,51 @@ export const Route = createFileRoute("/_authenticated/admin/startups")({
 
 type Status = "pending" | "approved" | "rejected" | "published";
 
+interface Cofounder { name?: string; role?: string; linkedin?: string }
+
 interface Submission {
   id: string;
   submitted_at: string;
   status: Status;
   admin_notes: string | null;
   company_name: string;
+  tagline: string | null;
   website_url: string;
+  company_linkedin: string | null;
+  twitter_handle: string | null;
+  youtube_url: string | null;
   country: string;
   city: string;
   year_founded: number;
   company_stage: string;
   product_description: string;
   problem_solved: string;
+  mission: string | null;
+  differentiator: string | null;
+  competitors: string | null;
+  business_model: string | null;
+  pricing_model: string | null;
+  markets_served: string[] | null;
   target_audience: string;
   ai_technologies: string[];
   founder_name: string;
   founder_linkedin: string | null;
+  cofounders: Cofounder[] | null;
+  key_team_members: string | null;
   team_size: string;
   user_count: string | null;
   revenue_stage: string;
   funding_raised: string | null;
   notable_investors: string | null;
   partnerships: string | null;
+  milestones: string | null;
+  awards: string | null;
   logo_url: string;
+  screenshot_urls: string[] | null;
   product_demo: string | null;
+  pitch_video_url: string | null;
   press_links: string | null;
+  roadmap: string | null;
   founder_email: string;
   contact_method: string;
   whatsapp_number: string | null;
@@ -230,32 +249,83 @@ function StartupsPage() {
 
               {isOpen && (
                 <div className="grid grid-cols-1 gap-6 border-t border-border bg-secondary/40 px-4 py-5 md:grid-cols-[160px,1fr]">
-                  <div>
+                  <div className="space-y-3">
                     <MediaImage
                       src={s.logo_url}
                       alt={`${s.company_name} logo`}
                       className="h-40 w-40 rounded-md border border-border object-contain bg-white"
                       fallbackClassName="h-40 w-40 rounded-md"
                     />
+                    <button
+                      type="button"
+                      onClick={() => copyDetails(s)}
+                      className="inline-flex w-40 items-center justify-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-semibold text-foreground hover:bg-secondary"
+                    >
+                      <Copy className="h-3.5 w-3.5" /> Copy all details
+                    </button>
+                    {s.screenshot_urls && s.screenshot_urls.length > 0 && (
+                      <div className="space-y-2">
+                        <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">Screenshots</div>
+                        {s.screenshot_urls.map((u, i) => (
+                          <MediaImage
+                            key={i}
+                            src={u}
+                            alt={`Screenshot ${i + 1}`}
+                            className="h-24 w-40 rounded border border-border object-cover bg-white"
+                            fallbackClassName="h-24 w-40 rounded"
+                          />
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    {s.tagline && <Detail label="Tagline" full>{s.tagline}</Detail>}
                     <Detail label="Website"><ExternalA href={s.website_url}>{s.website_url}</ExternalA></Detail>
                     <Detail label="Year founded">{s.year_founded}</Detail>
+                    <Detail label="Headquarters">{s.city}, {s.country}</Detail>
+                    <Detail label="Company stage">{s.company_stage}</Detail>
                     <Detail label="Team size">{s.team_size}</Detail>
                     <Detail label="Revenue stage">{s.revenue_stage}</Detail>
                     <Detail label="Users / customers">{s.user_count || "-"}</Detail>
                     <Detail label="Funding raised">{s.funding_raised || "-"}</Detail>
+                    <Detail label="Business model">{s.business_model || "-"}</Detail>
+                    <Detail label="Pricing model">{s.pricing_model || "-"}</Detail>
                     <Detail label="Notable investors">{s.notable_investors || "-"}</Detail>
-                    <Detail label="Partnerships">{s.partnerships || "-"}</Detail>
+                    <Detail label="Partnerships / clients">{s.partnerships || "-"}</Detail>
+                    <Detail label="Company LinkedIn">{s.company_linkedin ? <ExternalA href={s.company_linkedin}>{s.company_linkedin}</ExternalA> : "-"}</Detail>
+                    <Detail label="Twitter / X">{s.twitter_handle || "-"}</Detail>
+                    <Detail label="YouTube">{s.youtube_url ? <ExternalA href={s.youtube_url}>{s.youtube_url}</ExternalA> : "-"}</Detail>
                     <Detail label="Founder email"><a className="text-brand underline" href={`mailto:${s.founder_email}`}>{s.founder_email}</a></Detail>
                     <Detail label="Preferred contact">{s.contact_method}{s.contact_method === "WhatsApp" && s.whatsapp_number ? ` (${s.whatsapp_number})` : ""}</Detail>
                     <Detail label="Founder LinkedIn">{s.founder_linkedin ? <ExternalA href={s.founder_linkedin}>{s.founder_linkedin}</ExternalA> : "-"}</Detail>
                     <Detail label="Product demo">{s.product_demo ? <ExternalA href={s.product_demo}>{s.product_demo}</ExternalA> : "-"}</Detail>
+                    <Detail label="Pitch video">{s.pitch_video_url ? <ExternalA href={s.pitch_video_url}>{s.pitch_video_url}</ExternalA> : "-"}</Detail>
+                    <Detail label="Markets served" full>{s.markets_served && s.markets_served.length > 0 ? s.markets_served.join(", ") : "-"}</Detail>
                     <Detail label="AI technologies" full>{s.ai_technologies.join(", ") || "-"}</Detail>
                     <Detail label="Target audience" full>{s.target_audience}</Detail>
-                    <Detail label="Product" full>{s.product_description}</Detail>
-                    <Detail label="Problem solved" full>{s.problem_solved}</Detail>
-                    {s.press_links && <Detail label="Press links" full><span className="whitespace-pre-wrap">{s.press_links}</span></Detail>}
+                    <Detail label="What the product does" full><span className="whitespace-pre-wrap">{s.product_description}</span></Detail>
+                    <Detail label="Problem it solves" full><span className="whitespace-pre-wrap">{s.problem_solved}</span></Detail>
+                    {s.mission && <Detail label="Mission" full><span className="whitespace-pre-wrap">{s.mission}</span></Detail>}
+                    {s.differentiator && <Detail label="What makes them different" full><span className="whitespace-pre-wrap">{s.differentiator}</span></Detail>}
+                    {s.competitors && <Detail label="Competitors" full><span className="whitespace-pre-wrap">{s.competitors}</span></Detail>}
+                    {s.cofounders && s.cofounders.length > 0 && (
+                      <Detail label="Co-founders" full>
+                        <ul className="list-disc pl-4 space-y-1">
+                          {s.cofounders.map((c, i) => (
+                            <li key={i}>
+                              <span className="font-medium">{c.name || "Unnamed"}</span>
+                              {c.role ? ` - ${c.role}` : ""}
+                              {c.linkedin ? <> {" "}<ExternalA href={c.linkedin}>LinkedIn</ExternalA></> : null}
+                            </li>
+                          ))}
+                        </ul>
+                      </Detail>
+                    )}
+                    {s.key_team_members && <Detail label="Key team members" full><span className="whitespace-pre-wrap">{s.key_team_members}</span></Detail>}
+                    {s.milestones && <Detail label="Milestones" full><span className="whitespace-pre-wrap">{s.milestones}</span></Detail>}
+                    {s.awards && <Detail label="Awards / recognition" full><span className="whitespace-pre-wrap">{s.awards}</span></Detail>}
+                    {s.roadmap && <Detail label="Roadmap / what's next" full><span className="whitespace-pre-wrap">{s.roadmap}</span></Detail>}
+                    {s.press_links && <Detail label="Press coverage" full><span className="whitespace-pre-wrap">{s.press_links}</span></Detail>}
                     {s.admin_notes && <Detail label="Admin notes" full><span className="whitespace-pre-wrap">{s.admin_notes}</span></Detail>}
                   </div>
                 </div>
@@ -283,5 +353,71 @@ function ExternalA({ href, children }: { href: string; children: React.ReactNode
       <span className="break-all">{children}</span>
       <ExternalLink className="h-3 w-3 shrink-0" />
     </a>
+  );
+}
+
+function copyDetails(s: Submission) {
+  const yes = (v: unknown) => (v === null || v === undefined || v === "" ? "-" : String(v));
+  const co = s.cofounders && s.cofounders.length > 0
+    ? s.cofounders.map((c) => `  - ${c.name || "Unnamed"}${c.role ? ` (${c.role})` : ""}${c.linkedin ? ` ${c.linkedin}` : ""}`).join("\n")
+    : "-";
+  const parts = [
+    `Company: ${s.company_name}`,
+    `Tagline: ${yes(s.tagline)}`,
+    `Website: ${s.website_url}`,
+    `Company LinkedIn: ${yes(s.company_linkedin)}`,
+    `Twitter/X: ${yes(s.twitter_handle)}`,
+    `YouTube: ${yes(s.youtube_url)}`,
+    `HQ: ${s.city}, ${s.country}`,
+    `Markets served: ${yes(s.markets_served?.join(", "))}`,
+    `Year founded: ${s.year_founded}`,
+    `Company stage: ${s.company_stage}`,
+    `AI technologies: ${s.ai_technologies.join(", ")}`,
+    `Target audience: ${s.target_audience}`,
+    ``,
+    `WHAT THE PRODUCT DOES:\n${s.product_description}`,
+    ``,
+    `PROBLEM SOLVED:\n${s.problem_solved}`,
+    ``,
+    `MISSION:\n${yes(s.mission)}`,
+    ``,
+    `DIFFERENTIATOR:\n${yes(s.differentiator)}`,
+    ``,
+    `COMPETITORS: ${yes(s.competitors)}`,
+    `BUSINESS MODEL: ${yes(s.business_model)}`,
+    `PRICING MODEL: ${yes(s.pricing_model)}`,
+    ``,
+    `TEAM`,
+    `Founder: ${s.founder_name}${s.founder_linkedin ? ` (${s.founder_linkedin})` : ""}`,
+    `Team size: ${s.team_size}`,
+    `Co-founders:\n${co}`,
+    `Key team members: ${yes(s.key_team_members)}`,
+    ``,
+    `TRACTION`,
+    `Users / customers: ${yes(s.user_count)}`,
+    `Revenue stage: ${s.revenue_stage}`,
+    `Funding raised: ${yes(s.funding_raised)}`,
+    `Notable investors: ${yes(s.notable_investors)}`,
+    `Partnerships: ${yes(s.partnerships)}`,
+    `Milestones: ${yes(s.milestones)}`,
+    `Awards: ${yes(s.awards)}`,
+    ``,
+    `MEDIA`,
+    `Logo: ${s.logo_url}`,
+    `Screenshots: ${yes(s.screenshot_urls?.join(", "))}`,
+    `Product demo: ${yes(s.product_demo)}`,
+    `Pitch video: ${yes(s.pitch_video_url)}`,
+    `Press links: ${yes(s.press_links)}`,
+    ``,
+    `ROADMAP: ${yes(s.roadmap)}`,
+    ``,
+    `CONTACT`,
+    `Email: ${s.founder_email}`,
+    `Preferred: ${s.contact_method}${s.contact_method === "WhatsApp" && s.whatsapp_number ? ` (${s.whatsapp_number})` : ""}`,
+  ];
+  const text = parts.join("\n");
+  navigator.clipboard.writeText(text).then(
+    () => toast.success("Details copied to clipboard"),
+    () => toast.error("Copy failed"),
   );
 }

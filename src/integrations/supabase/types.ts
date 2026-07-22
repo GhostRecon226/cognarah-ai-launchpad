@@ -617,100 +617,151 @@ export type Database = {
           admin_notes: string | null
           ai_technologies: string[]
           article_id: string | null
+          awards: string | null
+          business_model: string | null
           city: string
+          cofounders: Json | null
+          company_linkedin: string | null
           company_name: string
           company_stage: string
+          competitors: string | null
           consent: boolean
           contact_method: string
           country: string
+          differentiator: string | null
           founder_email: string
           founder_linkedin: string | null
           founder_name: string
           funding_raised: string | null
           id: string
+          key_team_members: string | null
           logo_url: string
+          markets_served: string[] | null
+          milestones: string | null
+          mission: string | null
           notable_investors: string | null
           partnerships: string | null
+          pitch_video_url: string | null
           press_links: string | null
+          pricing_model: string | null
           problem_solved: string
           product_demo: string | null
           product_description: string
           revenue_stage: string
+          roadmap: string | null
+          screenshot_urls: string[] | null
           status: Database["public"]["Enums"]["startup_submission_status"]
           submitted_at: string
+          tagline: string | null
           target_audience: string
           team_size: string
+          twitter_handle: string | null
           updated_at: string
           user_count: string | null
           website_url: string
           whatsapp_number: string | null
           year_founded: number
+          youtube_url: string | null
         }
         Insert: {
           admin_notes?: string | null
           ai_technologies?: string[]
           article_id?: string | null
+          awards?: string | null
+          business_model?: string | null
           city: string
+          cofounders?: Json | null
+          company_linkedin?: string | null
           company_name: string
           company_stage: string
+          competitors?: string | null
           consent?: boolean
           contact_method: string
           country: string
+          differentiator?: string | null
           founder_email: string
           founder_linkedin?: string | null
           founder_name: string
           funding_raised?: string | null
           id?: string
+          key_team_members?: string | null
           logo_url: string
+          markets_served?: string[] | null
+          milestones?: string | null
+          mission?: string | null
           notable_investors?: string | null
           partnerships?: string | null
+          pitch_video_url?: string | null
           press_links?: string | null
+          pricing_model?: string | null
           problem_solved: string
           product_demo?: string | null
           product_description: string
           revenue_stage: string
+          roadmap?: string | null
+          screenshot_urls?: string[] | null
           status?: Database["public"]["Enums"]["startup_submission_status"]
           submitted_at?: string
+          tagline?: string | null
           target_audience: string
           team_size: string
+          twitter_handle?: string | null
           updated_at?: string
           user_count?: string | null
           website_url: string
           whatsapp_number?: string | null
           year_founded: number
+          youtube_url?: string | null
         }
         Update: {
           admin_notes?: string | null
           ai_technologies?: string[]
           article_id?: string | null
+          awards?: string | null
+          business_model?: string | null
           city?: string
+          cofounders?: Json | null
+          company_linkedin?: string | null
           company_name?: string
           company_stage?: string
+          competitors?: string | null
           consent?: boolean
           contact_method?: string
           country?: string
+          differentiator?: string | null
           founder_email?: string
           founder_linkedin?: string | null
           founder_name?: string
           funding_raised?: string | null
           id?: string
+          key_team_members?: string | null
           logo_url?: string
+          markets_served?: string[] | null
+          milestones?: string | null
+          mission?: string | null
           notable_investors?: string | null
           partnerships?: string | null
+          pitch_video_url?: string | null
           press_links?: string | null
+          pricing_model?: string | null
           problem_solved?: string
           product_demo?: string | null
           product_description?: string
           revenue_stage?: string
+          roadmap?: string | null
+          screenshot_urls?: string[] | null
           status?: Database["public"]["Enums"]["startup_submission_status"]
           submitted_at?: string
+          tagline?: string | null
           target_audience?: string
           team_size?: string
+          twitter_handle?: string | null
           updated_at?: string
           user_count?: string | null
           website_url?: string
           whatsapp_number?: string | null
           year_founded?: number
+          youtube_url?: string | null
         }
         Relationships: [
           {

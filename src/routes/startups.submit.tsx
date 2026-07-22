@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { SiteNav } from "@/components/site/nav";
 import { SiteFooter } from "@/components/site/footer";
 import { SITE_URL } from "@/lib/types";
-import { submitStartup } from "@/lib/startup-submissions.functions";
+import { submitStartup, type CofounderInput, type ScreenshotUpload } from "@/lib/startup-submissions.functions";
 
 export const Route = createFileRoute("/startups/submit")({
   head: () => ({
@@ -58,9 +58,35 @@ function SubmitPage() {
   const [contactMethod, setContactMethod] = useState("Email");
   const [techs, setTechs] = useState<string[]>([]);
   const [logo, setLogo] = useState<File | null>(null);
+  const [screenshots, setScreenshots] = useState<File[]>([]);
+  const [cofounders, setCofounders] = useState<CofounderInput[]>([]);
 
   function toggleTech(t: string) {
     setTechs((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+  }
+
+  function updateCofounder(i: number, key: keyof CofounderInput, val: string) {
+    setCofounders((prev) => prev.map((c, idx) => (idx === i ? { ...c, [key]: val } : c)));
+  }
+
+  function addCofounder() {
+    if (cofounders.length >= 4) return;
+    setCofounders((prev) => [...prev, { name: "", role: "", linkedin: "" }]);
+  }
+
+  function removeCofounder(i: number) {
+    setCofounders((prev) => prev.filter((_, idx) => idx !== i));
+  }
+
+  function onScreenshotsChange(files: FileList | null) {
+    if (!files) return;
+    const arr = Array.from(files).slice(0, 3);
+    const oversize = arr.find((f) => f.size > 2 * 1024 * 1024);
+    if (oversize) {
+      toast.error("Each screenshot must be 2MB or smaller");
+      return;
+    }
+    setScreenshots(arr);
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -84,28 +110,48 @@ function SubmitPage() {
     setSubmitting(true);
     try {
       const logoB64 = await fileToBase64(logo);
+      const shots: ScreenshotUpload[] = [];
+      for (const f of screenshots) {
+        shots.push({ base64: await fileToBase64(f), name: f.name, type: f.type });
+      }
       await submit({
         data: {
           company_name: String(fd.get("company_name") || ""),
+          tagline: String(fd.get("tagline") || ""),
           website_url: String(fd.get("website_url") || ""),
+          company_linkedin: String(fd.get("company_linkedin") || ""),
+          twitter_handle: String(fd.get("twitter_handle") || ""),
+          youtube_url: String(fd.get("youtube_url") || ""),
           country: String(fd.get("country") || ""),
           city: String(fd.get("city") || ""),
           year_founded: Number(fd.get("year_founded") || 0),
           company_stage: String(fd.get("company_stage") || ""),
           product_description: String(fd.get("product_description") || ""),
           problem_solved: String(fd.get("problem_solved") || ""),
+          mission: String(fd.get("mission") || ""),
+          differentiator: String(fd.get("differentiator") || ""),
+          competitors: String(fd.get("competitors") || ""),
+          business_model: String(fd.get("business_model") || ""),
+          pricing_model: String(fd.get("pricing_model") || ""),
+          markets_served: String(fd.get("markets_served") || ""),
           target_audience: String(fd.get("target_audience") || ""),
           ai_technologies: techs,
           founder_name: String(fd.get("founder_name") || ""),
           founder_linkedin: String(fd.get("founder_linkedin") || ""),
+          cofounders: cofounders,
+          key_team_members: String(fd.get("key_team_members") || ""),
           team_size: String(fd.get("team_size") || ""),
           user_count: String(fd.get("user_count") || ""),
           revenue_stage: String(fd.get("revenue_stage") || ""),
           funding_raised: String(fd.get("funding_raised") || ""),
           notable_investors: String(fd.get("notable_investors") || ""),
           partnerships: String(fd.get("partnerships") || ""),
+          milestones: String(fd.get("milestones") || ""),
+          awards: String(fd.get("awards") || ""),
           product_demo: String(fd.get("product_demo") || ""),
+          pitch_video_url: String(fd.get("pitch_video_url") || ""),
           press_links: String(fd.get("press_links") || ""),
+          roadmap: String(fd.get("roadmap") || ""),
           founder_email: String(fd.get("founder_email") || ""),
           contact_method: contactMethod,
           whatsapp_number: String(fd.get("whatsapp_number") || ""),
@@ -113,6 +159,7 @@ function SubmitPage() {
           logo_file_base64: logoB64,
           logo_file_name: logo.name,
           logo_file_type: logo.type,
+          screenshots: shots,
         },
       });
       setSubmitted(true);
@@ -134,8 +181,9 @@ function SubmitPage() {
             Submit Your Startup
           </h1>
           <p className="mt-6 text-base text-white/75 sm:text-lg">
-            Are you building something great with AI? Tell us about your startup. We review every
-            submission and may feature you on Cognarah.
+            Are you building something great with AI? Tell us about your startup. The more detail you
+            share, the better the profile we can craft for you. Fields marked with an asterisk are
+            required; everything else is optional but strongly encouraged.
           </p>
 
           {submitted ? (
@@ -151,6 +199,9 @@ function SubmitPage() {
               <Section title="Basic identity">
                 <Field label="Company name" required>
                   <input name="company_name" required className={inputCls} />
+                </Field>
+                <Field label="One-line tagline" hint="Max 160 characters">
+                  <input name="tagline" maxLength={160} className={inputCls} />
                 </Field>
                 <Field label="Website URL" required hint="We'll add https:// automatically">
                   <input name="website_url" type="text" required placeholder="example.com" className={inputCls} />
@@ -188,27 +239,58 @@ function SubmitPage() {
                     </select>
                   </Field>
                 </div>
+                <Field label="Markets served" hint="Comma separated, e.g. Nigeria, Kenya, Ghana">
+                  <input name="markets_served" className={inputCls} />
+                </Field>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Company LinkedIn">
+                    <input name="company_linkedin" type="url" placeholder="https://linkedin.com/company/..." className={inputCls} />
+                  </Field>
+                  <Field label="Twitter / X handle">
+                    <input name="twitter_handle" placeholder="@yourcompany" className={inputCls} />
+                  </Field>
+                </div>
+                <Field label="YouTube URL">
+                  <input name="youtube_url" type="url" className={inputCls} />
+                </Field>
               </Section>
 
               <Section title="Product and mission">
-                <Field label="What your product does" required hint="Max 500 characters">
+                <Field label="What your product does" required hint="Be detailed. Max 1500 characters.">
                   <textarea
                     name="product_description"
                     required
-                    maxLength={500}
-                    rows={3}
+                    maxLength={1500}
+                    rows={6}
                     className={inputCls}
                   />
                 </Field>
-                <Field label="Problem it solves" required hint="Max 500 characters">
+                <Field label="Problem it solves" required hint="Max 1500 characters">
                   <textarea
                     name="problem_solved"
                     required
-                    maxLength={500}
-                    rows={3}
+                    maxLength={1500}
+                    rows={5}
                     className={inputCls}
                   />
                 </Field>
+                <Field label="Mission statement" hint="Max 500 characters">
+                  <textarea name="mission" maxLength={500} rows={3} className={inputCls} />
+                </Field>
+                <Field label="What makes you different" hint="Your unfair advantage. Max 1000 characters.">
+                  <textarea name="differentiator" maxLength={1000} rows={4} className={inputCls} />
+                </Field>
+                <Field label="Main competitors" hint="Max 500 characters">
+                  <input name="competitors" maxLength={500} className={inputCls} />
+                </Field>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field label="Business model" hint="e.g. B2B SaaS, marketplace, API">
+                    <input name="business_model" maxLength={500} className={inputCls} />
+                  </Field>
+                  <Field label="Pricing model" hint="e.g. subscription, usage-based">
+                    <input name="pricing_model" maxLength={300} className={inputCls} />
+                  </Field>
+                </div>
                 <Field label="Target audience" required>
                   <input name="target_audience" required className={inputCls} />
                 </Field>
@@ -251,9 +333,61 @@ function SubmitPage() {
                     ))}
                   </select>
                 </Field>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-white/90">Co-founders (up to 4)</span>
+                    <button
+                      type="button"
+                      onClick={addCofounder}
+                      disabled={cofounders.length >= 4}
+                      className="rounded-md border border-brand/60 bg-brand/10 px-3 py-1 text-xs font-semibold text-brand hover:bg-brand/20 disabled:opacity-40"
+                    >
+                      Add co-founder
+                    </button>
+                  </div>
+                  {cofounders.length === 0 && (
+                    <p className="text-xs text-white/50">Optional. Add each co-founder's name, role, and LinkedIn.</p>
+                  )}
+                  {cofounders.map((c, i) => (
+                    <div key={i} className="grid grid-cols-1 gap-2 rounded-md border border-white/15 bg-white/5 p-3 sm:grid-cols-3">
+                      <input
+                        placeholder="Name"
+                        value={c.name || ""}
+                        onChange={(e) => updateCofounder(i, "name", e.target.value)}
+                        className={inputCls}
+                      />
+                      <input
+                        placeholder="Role"
+                        value={c.role || ""}
+                        onChange={(e) => updateCofounder(i, "role", e.target.value)}
+                        className={inputCls}
+                      />
+                      <div className="flex gap-2">
+                        <input
+                          placeholder="LinkedIn URL"
+                          value={c.linkedin || ""}
+                          onChange={(e) => updateCofounder(i, "linkedin", e.target.value)}
+                          className={inputCls}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeCofounder(i)}
+                          className="rounded-md border border-red-400/40 bg-red-500/10 px-2 text-xs font-semibold text-red-200 hover:bg-red-500/20"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <Field label="Other key team members" hint="Optional. Names and roles, one per line.">
+                  <textarea name="key_team_members" maxLength={1000} rows={3} className={inputCls} />
+                </Field>
               </Section>
 
-              <Section title="Traction">
+              <Section title="Traction and milestones">
                 <Field label="Current number of users or customers">
                   <input name="user_count" className={inputCls} />
                 </Field>
@@ -278,6 +412,15 @@ function SubmitPage() {
                 <Field label="Key partnerships or clients">
                   <input name="partnerships" className={inputCls} />
                 </Field>
+                <Field label="Milestones so far" hint="Launches, revenue, user count, expansions. Max 1000 characters.">
+                  <textarea name="milestones" maxLength={1000} rows={4} className={inputCls} />
+                </Field>
+                <Field label="Awards or recognition" hint="Max 500 characters">
+                  <textarea name="awards" maxLength={500} rows={2} className={inputCls} />
+                </Field>
+                <Field label="Roadmap and what's next" hint="Max 800 characters">
+                  <textarea name="roadmap" maxLength={800} rows={4} className={inputCls} />
+                </Field>
               </Section>
 
               <Section title="Media">
@@ -290,8 +433,23 @@ function SubmitPage() {
                     className="block w-full text-sm text-white/80 file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-2 file:text-sm file:font-semibold file:text-navy hover:file:bg-brand/90"
                   />
                 </Field>
-                <Field label="Product screenshot or demo link">
+                <Field label="Product screenshots" hint="Up to 3 images. PNG or JPG, max 2MB each.">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) => onScreenshotsChange(e.target.files)}
+                    className="block w-full text-sm text-white/80 file:mr-3 file:rounded-md file:border-0 file:bg-brand file:px-3 file:py-2 file:text-sm file:font-semibold file:text-navy hover:file:bg-brand/90"
+                  />
+                  {screenshots.length > 0 && (
+                    <p className="mt-1 text-xs text-white/60">{screenshots.length} file(s) selected</p>
+                  )}
+                </Field>
+                <Field label="Product demo link">
                   <input name="product_demo" className={inputCls} />
+                </Field>
+                <Field label="Pitch video URL">
+                  <input name="pitch_video_url" type="url" className={inputCls} />
                 </Field>
                 <Field label="Press coverage links">
                   <textarea name="press_links" rows={3} className={inputCls} />

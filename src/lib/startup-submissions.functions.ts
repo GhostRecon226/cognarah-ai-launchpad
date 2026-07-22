@@ -17,27 +17,46 @@ const ALLOWED_TECH = [
   "Other",
 ];
 
+export type CofounderInput = { name?: string; role?: string; linkedin?: string };
+export type ScreenshotUpload = { base64: string; name: string; type: string };
+
 export type StartupSubmissionInput = {
   company_name: string;
+  tagline?: string;
   website_url: string;
+  company_linkedin?: string;
+  twitter_handle?: string;
+  youtube_url?: string;
   country: string;
   city: string;
   year_founded: number;
   company_stage: string;
   product_description: string;
   problem_solved: string;
+  mission?: string;
+  differentiator?: string;
+  competitors?: string;
+  business_model?: string;
+  pricing_model?: string;
+  markets_served?: string;
   target_audience: string;
   ai_technologies: string[];
   founder_name: string;
   founder_linkedin?: string;
+  cofounders?: CofounderInput[];
+  key_team_members?: string;
   team_size: string;
   user_count?: string;
   revenue_stage: string;
   funding_raised?: string;
   notable_investors?: string;
   partnerships?: string;
+  milestones?: string;
+  awards?: string;
   product_demo?: string;
+  pitch_video_url?: string;
   press_links?: string;
+  roadmap?: string;
   founder_email: string;
   contact_method: string;
   whatsapp_number?: string;
@@ -45,6 +64,7 @@ export type StartupSubmissionInput = {
   logo_file_base64: string;
   logo_file_name: string;
   logo_file_type: string;
+  screenshots?: ScreenshotUpload[];
 };
 
 function req(v: unknown, name: string): string {
@@ -88,15 +108,45 @@ export const submitStartup = createServerFn({ method: "POST" })
     }
     const techs = Array.isArray(data.ai_technologies) ? data.ai_technologies.filter((t) => ALLOWED_TECH.includes(t)) : [];
     if (techs.length === 0) throw new Error("Select at least one AI technology");
-    if ((data.product_description || "").length > 500) throw new Error("Product description too long");
-    if ((data.problem_solved || "").length > 500) throw new Error("Problem description too long");
+    if ((data.product_description || "").length > 1500) throw new Error("Product description too long");
+    if ((data.problem_solved || "").length > 1500) throw new Error("Problem description too long");
+    if ((data.tagline || "").length > 160) throw new Error("Tagline too long");
+    if ((data.mission || "").length > 500) throw new Error("Mission statement too long");
+    if ((data.differentiator || "").length > 1000) throw new Error("Differentiator too long");
+    if ((data.competitors || "").length > 500) throw new Error("Competitors field too long");
+    if ((data.business_model || "").length > 500) throw new Error("Business model too long");
+    if ((data.pricing_model || "").length > 300) throw new Error("Pricing model too long");
+    if ((data.markets_served || "").length > 500) throw new Error("Markets served too long");
+    if ((data.key_team_members || "").length > 1000) throw new Error("Key team members too long");
+    if ((data.milestones || "").length > 1000) throw new Error("Milestones too long");
+    if ((data.awards || "").length > 500) throw new Error("Awards too long");
+    if ((data.roadmap || "").length > 800) throw new Error("Roadmap too long");
     if (!data.logo_file_base64 || !data.logo_file_name) throw new Error("Logo is required");
     if (!/^image\//.test(data.logo_file_type || "")) throw new Error("Logo must be an image");
+
+    const cofounders = Array.isArray(data.cofounders)
+      ? data.cofounders
+          .map((c) => ({
+            name: (c?.name || "").trim(),
+            role: (c?.role || "").trim(),
+            linkedin: (c?.linkedin || "").trim(),
+          }))
+          .filter((c) => c.name || c.role || c.linkedin)
+          .slice(0, 4)
+      : [];
+
+    const screenshots = Array.isArray(data.screenshots) ? data.screenshots.slice(0, 3) : [];
+    for (const s of screenshots) {
+      if (!s?.base64 || !s?.name) throw new Error("Screenshot upload malformed");
+      if (!/^image\//.test(s?.type || "")) throw new Error("Screenshots must be images");
+    }
 
     return {
       ...data,
       year_founded: year,
       ai_technologies: techs,
+      cofounders,
+      screenshots,
       company_name: req(data.company_name, "Company name"),
       website_url: normalizeWebsiteUrl(data.website_url),
       country: req(data.country, "Country"),
@@ -127,29 +177,67 @@ export const submitStartup = createServerFn({ method: "POST" })
 
     const logo_url = `/api/public/media/${path}`;
 
+    // Upload optional product screenshots (up to 3).
+    const screenshot_urls: string[] = [];
+    for (const s of data.screenshots ?? []) {
+      const sb64 = s.base64.includes(",") ? s.base64.split(",").pop()! : s.base64;
+      const sBytes = Buffer.from(sb64, "base64");
+      if (sBytes.length > 2 * 1024 * 1024) throw new Error("Screenshot exceeds 2MB");
+      const sSafe = s.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const sPath = `startup-screenshots/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${sSafe}`;
+      const { error: sErr } = await supabaseAdmin.storage
+        .from("media")
+        .upload(sPath, sBytes, { contentType: s.type, upsert: false });
+      if (sErr) throw new Error(`Screenshot upload failed: ${sErr.message}`);
+      screenshot_urls.push(`/api/public/media/${sPath}`);
+    }
+
+    const markets_served = (data.markets_served || "")
+      .split(",")
+      .map((m) => m.trim())
+      .filter(Boolean)
+      .slice(0, 20);
+
     const row = stripEmDashesInObject(
       {
       company_name: data.company_name,
+      tagline: data.tagline || null,
       website_url: data.website_url,
+      company_linkedin: data.company_linkedin || null,
+      twitter_handle: data.twitter_handle || null,
+      youtube_url: data.youtube_url || null,
       country: data.country,
       city: data.city,
       year_founded: data.year_founded,
       company_stage: data.company_stage,
       product_description: data.product_description,
       problem_solved: data.problem_solved,
+      mission: data.mission || null,
+      differentiator: data.differentiator || null,
+      competitors: data.competitors || null,
+      business_model: data.business_model || null,
+      pricing_model: data.pricing_model || null,
+      markets_served: markets_served.length > 0 ? markets_served : null,
       target_audience: data.target_audience,
       ai_technologies: data.ai_technologies,
       founder_name: data.founder_name,
       founder_linkedin: data.founder_linkedin || null,
+      cofounders: data.cofounders && data.cofounders.length > 0 ? data.cofounders : null,
+      key_team_members: data.key_team_members || null,
       team_size: data.team_size,
       user_count: data.user_count || null,
       revenue_stage: data.revenue_stage,
       funding_raised: data.funding_raised || null,
       notable_investors: data.notable_investors || null,
       partnerships: data.partnerships || null,
+      milestones: data.milestones || null,
+      awards: data.awards || null,
       logo_url,
+      screenshot_urls: screenshot_urls.length > 0 ? screenshot_urls : null,
       product_demo: data.product_demo || null,
+      pitch_video_url: data.pitch_video_url || null,
       press_links: data.press_links || null,
+      roadmap: data.roadmap || null,
       founder_email: data.founder_email,
       contact_method: data.contact_method,
       whatsapp_number: data.contact_method === "WhatsApp" ? data.whatsapp_number || null : null,
@@ -157,16 +245,26 @@ export const submitStartup = createServerFn({ method: "POST" })
       },
       [
         "company_name",
+        "tagline",
         "website_url",
         "country",
         "city",
         "product_description",
         "problem_solved",
+        "mission",
+        "differentiator",
+        "competitors",
+        "business_model",
+        "pricing_model",
         "target_audience",
         "founder_name",
+        "key_team_members",
         "notable_investors",
         "partnerships",
+        "milestones",
+        "awards",
         "press_links",
+        "roadmap",
       ],
     );
 
@@ -185,12 +283,16 @@ export const submitStartup = createServerFn({ method: "POST" })
         idempotencyKey: `startup-submission-${inserted.id}`,
         templateData: {
           companyName: row.company_name,
+          tagline: row.tagline,
           founderName: row.founder_name,
           country: row.country,
           city: row.city,
           companyStage: row.company_stage,
           productDescription: row.product_description,
           problemSolved: row.problem_solved,
+          mission: row.mission,
+          differentiator: row.differentiator,
+          businessModel: row.business_model,
           founderEmail: row.founder_email,
           contactMethod: row.contact_method,
           whatsappNumber: row.whatsapp_number,
@@ -204,6 +306,7 @@ export const submitStartup = createServerFn({ method: "POST" })
 
     return { ok: true };
   });
+
 
 // ---------------- Generate startup profile draft ----------------
 
@@ -244,27 +347,52 @@ const AFRICAN_COUNTRIES = new Set([
 
 function buildStartupUserPrompt(s: Record<string, unknown>): string {
   const isAfrican = AFRICAN_COUNTRIES.has(String(s.country || "").trim().toLowerCase());
+  const cofounders = Array.isArray(s.cofounders)
+    ? (s.cofounders as Array<{ name?: string; role?: string; linkedin?: string }>)
+        .map((c) => [c?.name, c?.role, c?.linkedin].filter(Boolean).join(" - "))
+        .filter(Boolean)
+        .join("; ")
+    : "";
+  const markets = Array.isArray(s.markets_served) ? (s.markets_served as string[]).join(", ") : "";
   const lines = [
     `Company name: ${s.company_name}`,
+    `Tagline: ${s.tagline || "not provided"}`,
     `Website: ${s.website_url}`,
+    `Company LinkedIn: ${s.company_linkedin || "not provided"}`,
+    `Twitter/X: ${s.twitter_handle || "not provided"}`,
+    `YouTube: ${s.youtube_url || "not provided"}`,
     `Headquarters: ${s.city}, ${s.country}${isAfrican ? " (African startup — lead Africa Angle with local context)" : " (non-African startup — connect to African market opportunities)"}`,
+    `Markets served: ${markets || "not disclosed"}`,
     `Year founded: ${s.year_founded}`,
     `Company stage: ${s.company_stage}`,
     `Product: ${s.product_description}`,
     `Problem solved: ${s.problem_solved}`,
+    `Mission: ${s.mission || "not provided"}`,
+    `What makes them different: ${s.differentiator || "not provided"}`,
+    `Competitors: ${s.competitors || "not disclosed"}`,
+    `Business model: ${s.business_model || "not disclosed"}`,
+    `Pricing model: ${s.pricing_model || "not disclosed"}`,
     `Target audience: ${s.target_audience}`,
     `AI technology used: ${Array.isArray(s.ai_technologies) ? (s.ai_technologies as string[]).join(", ") : ""}`,
     `Founder: ${s.founder_name}${s.founder_linkedin ? ` (LinkedIn: ${s.founder_linkedin})` : ""}`,
+    `Co-founders: ${cofounders || "not provided"}`,
+    `Key team members: ${s.key_team_members || "not provided"}`,
     `Team size: ${s.team_size}`,
     `Users / customers: ${s.user_count || "not disclosed"}`,
     `Revenue stage: ${s.revenue_stage}`,
     `Funding raised: ${s.funding_raised || "not disclosed"}`,
     `Notable investors: ${s.notable_investors || "not disclosed"}`,
     `Partnerships / clients: ${s.partnerships || "not disclosed"}`,
+    `Milestones: ${s.milestones || "not provided"}`,
+    `Awards / recognition: ${s.awards || "not provided"}`,
+    `Roadmap / what's next: ${s.roadmap || "not provided"}`,
+    `Product demo: ${s.product_demo || "none provided"}`,
+    `Pitch video: ${s.pitch_video_url || "none provided"}`,
     `Press coverage: ${s.press_links || "none provided"}`,
   ];
   return `Write the startup profile using ONLY these submitted facts:\n\n${lines.join("\n")}\n\nReturn strict JSON per the schema. End the body with the Source footer linking to ${s.website_url}.`;
 }
+
 
 async function geminiDraftStartup(s: Record<string, unknown>): Promise<StartupDraft> {
   const key = process.env.LOVABLE_API_KEY;
