@@ -347,27 +347,52 @@ const AFRICAN_COUNTRIES = new Set([
 
 function buildStartupUserPrompt(s: Record<string, unknown>): string {
   const isAfrican = AFRICAN_COUNTRIES.has(String(s.country || "").trim().toLowerCase());
+  const cofounders = Array.isArray(s.cofounders)
+    ? (s.cofounders as Array<{ name?: string; role?: string; linkedin?: string }>)
+        .map((c) => [c?.name, c?.role, c?.linkedin].filter(Boolean).join(" - "))
+        .filter(Boolean)
+        .join("; ")
+    : "";
+  const markets = Array.isArray(s.markets_served) ? (s.markets_served as string[]).join(", ") : "";
   const lines = [
     `Company name: ${s.company_name}`,
+    `Tagline: ${s.tagline || "not provided"}`,
     `Website: ${s.website_url}`,
+    `Company LinkedIn: ${s.company_linkedin || "not provided"}`,
+    `Twitter/X: ${s.twitter_handle || "not provided"}`,
+    `YouTube: ${s.youtube_url || "not provided"}`,
     `Headquarters: ${s.city}, ${s.country}${isAfrican ? " (African startup — lead Africa Angle with local context)" : " (non-African startup — connect to African market opportunities)"}`,
+    `Markets served: ${markets || "not disclosed"}`,
     `Year founded: ${s.year_founded}`,
     `Company stage: ${s.company_stage}`,
     `Product: ${s.product_description}`,
     `Problem solved: ${s.problem_solved}`,
+    `Mission: ${s.mission || "not provided"}`,
+    `What makes them different: ${s.differentiator || "not provided"}`,
+    `Competitors: ${s.competitors || "not disclosed"}`,
+    `Business model: ${s.business_model || "not disclosed"}`,
+    `Pricing model: ${s.pricing_model || "not disclosed"}`,
     `Target audience: ${s.target_audience}`,
     `AI technology used: ${Array.isArray(s.ai_technologies) ? (s.ai_technologies as string[]).join(", ") : ""}`,
     `Founder: ${s.founder_name}${s.founder_linkedin ? ` (LinkedIn: ${s.founder_linkedin})` : ""}`,
+    `Co-founders: ${cofounders || "not provided"}`,
+    `Key team members: ${s.key_team_members || "not provided"}`,
     `Team size: ${s.team_size}`,
     `Users / customers: ${s.user_count || "not disclosed"}`,
     `Revenue stage: ${s.revenue_stage}`,
     `Funding raised: ${s.funding_raised || "not disclosed"}`,
     `Notable investors: ${s.notable_investors || "not disclosed"}`,
     `Partnerships / clients: ${s.partnerships || "not disclosed"}`,
+    `Milestones: ${s.milestones || "not provided"}`,
+    `Awards / recognition: ${s.awards || "not provided"}`,
+    `Roadmap / what's next: ${s.roadmap || "not provided"}`,
+    `Product demo: ${s.product_demo || "none provided"}`,
+    `Pitch video: ${s.pitch_video_url || "none provided"}`,
     `Press coverage: ${s.press_links || "none provided"}`,
   ];
   return `Write the startup profile using ONLY these submitted facts:\n\n${lines.join("\n")}\n\nReturn strict JSON per the schema. End the body with the Source footer linking to ${s.website_url}.`;
 }
+
 
 async function geminiDraftStartup(s: Record<string, unknown>): Promise<StartupDraft> {
   const key = process.env.LOVABLE_API_KEY;
