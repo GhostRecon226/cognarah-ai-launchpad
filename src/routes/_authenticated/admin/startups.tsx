@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { MediaImage } from "@/components/site/media-image";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Check, X, ExternalLink, Sparkles, Eye, Loader2, Mail } from "lucide-react";
+import { ChevronDown, ChevronRight, Check, X, ExternalLink, Sparkles, Eye, Loader2, Mail, Copy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { generateStartupDraft } from "@/lib/startup-submissions.functions";
 
@@ -16,32 +16,51 @@ export const Route = createFileRoute("/_authenticated/admin/startups")({
 
 type Status = "pending" | "approved" | "rejected" | "published";
 
+interface Cofounder { name?: string; role?: string; linkedin?: string }
+
 interface Submission {
   id: string;
   submitted_at: string;
   status: Status;
   admin_notes: string | null;
   company_name: string;
+  tagline: string | null;
   website_url: string;
+  company_linkedin: string | null;
+  twitter_handle: string | null;
+  youtube_url: string | null;
   country: string;
   city: string;
   year_founded: number;
   company_stage: string;
   product_description: string;
   problem_solved: string;
+  mission: string | null;
+  differentiator: string | null;
+  competitors: string | null;
+  business_model: string | null;
+  pricing_model: string | null;
+  markets_served: string[] | null;
   target_audience: string;
   ai_technologies: string[];
   founder_name: string;
   founder_linkedin: string | null;
+  cofounders: Cofounder[] | null;
+  key_team_members: string | null;
   team_size: string;
   user_count: string | null;
   revenue_stage: string;
   funding_raised: string | null;
   notable_investors: string | null;
   partnerships: string | null;
+  milestones: string | null;
+  awards: string | null;
   logo_url: string;
+  screenshot_urls: string[] | null;
   product_demo: string | null;
+  pitch_video_url: string | null;
   press_links: string | null;
+  roadmap: string | null;
   founder_email: string;
   contact_method: string;
   whatsapp_number: string | null;
