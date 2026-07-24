@@ -165,7 +165,7 @@ function sniffImageDimensions(buf: Buffer): { width: number; height: number } | 
 // (which is what caused every draft to fail with a 404 on gemini-2.5-flash).
 // Overridable via env so we can swap without a redeploy.
 const GEMINI_TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-flash-latest";
-const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.0-flash-exp";
+const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
 
 // Sentinel error message the worker pool checks so a model 404 aborts the
 // entire run instead of burning every candidate on the same guaranteed failure.
