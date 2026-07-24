@@ -13,6 +13,8 @@ interface RunAgentArgs {
   count: number;
   focus: string | null;
   categoryId: string | null;
+  /** When set, reuse this pre-created agent_runs row instead of inserting a new one. */
+  existingRunId?: string | null;
 }
 
 interface DraftPayload {
