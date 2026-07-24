@@ -124,6 +124,9 @@ export const listAgentRuns = createServerFn({ method: "GET" })
   });
 
 // ================== RUN THE AGENT ==================
+// Detached: insert a pending "running" row, schedule the real work via
+// ctx.waitUntil (see src/lib/background.server.ts) so it survives the admin
+// closing the tab, and return the run id immediately for client polling.
 export const runAgent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
@@ -135,15 +138,53 @@ export const runAgent = createServerFn({ method: "POST" })
   )
   .handler(async ({ context, data }) => {
     await requireStaff(context);
+
+    // Pre-create the run row so the UI has an id to poll immediately.
+    const { data: runRow, error: runErr } = await context.supabase
+      .from("agent_runs")
+      .insert({
+        triggered_by: context.userId,
+        trigger: "manual",
+        status: "running",
+        requested_count: data.count,
+        focus: data.focus ?? null,
+      })
+      .select("id")
+      .single();
+    if (runErr) throw new Error(runErr.message);
+    const runId = runRow.id as string;
+
     const { runAgentCore } = await import("./agent-core.server");
-    return runAgentCore({
-      supabase: context.supabase,
-      triggeredBy: context.userId,
-      trigger: "manual",
-      count: data.count,
-      focus: data.focus ?? null,
-      categoryId: data.category_id ?? null,
-    });
+    const { runInBackground } = await import("./background.server");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    // Use the service-role client for background work: the user's request-scoped
+    // supabase client is torn down as soon as we return the HTTP response.
+    runInBackground(
+      runAgentCore({
+        supabase: supabaseAdmin,
+        triggeredBy: context.userId,
+        trigger: "manual",
+        count: data.count,
+        focus: data.focus ?? null,
+        categoryId: data.category_id ?? null,
+        existingRunId: runId,
+      }).catch(async (err: any) => {
+        console.error("[runAgent background]", err);
+        try {
+          await supabaseAdmin
+            .from("agent_runs")
+            .update({
+              status: "error",
+              error: String(err?.message || err),
+              finished_at: new Date().toISOString(),
+            })
+            .eq("id", runId);
+        } catch { /* best-effort */ }
+      }),
+    );
+
+    return { run_id: runId, status: "started", drafts_created: 0 };
   });
 
 // ================== RUN SKILLS AGENT ==================

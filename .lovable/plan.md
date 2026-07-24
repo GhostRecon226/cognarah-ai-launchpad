@@ -1,116 +1,85 @@
 
-## Goal
+## What's actually happening
 
-Make the `/startups/submit` form capture enough information for staff to write a full startup autobiography from the admin backend, and make sure everything a founder types is displayed on the admin detail view.
+Two independent bugs, both real:
 
-## What the form captures today
+### 1. Hero regeneration always fails with `GEMINI_MODEL_UNAVAILABLE`
 
-Basic (company name, website, country, city, year founded, stage), Product (500-char description, 500-char problem, target audience, AI technologies checklist), Team (founder name, founder LinkedIn, team size), Traction (users, revenue stage, funding, investors, partnerships), Media (logo, one demo link, press links), Contact (email, contact method, WhatsApp).
+In `src/lib/agent-core.server.ts` line 168:
 
-## Gaps that block a good autobiography
+```ts
+const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.0-flash-exp";
+```
 
-1. Descriptions are capped at 500 characters, which is too short for a profile piece.
-2. No founding story, mission, vision, or company tagline.
-3. Only one founder field. No co-founders or key team members.
-4. No differentiator / competitors field.
-5. No business model or pricing.
-6. No milestones, awards, or notable achievements.
-7. No social presence beyond founder LinkedIn (no X handle, no company LinkedIn, no YouTube/demo video).
-8. Only one media asset (logo). No product screenshots, no pitch video, no product hero image.
-9. No geographic markets served.
-10. No roadmap / what's next.
+`gemini-2.0-flash-exp` no longer exists on Google's `v1beta` API, so every call to `generateAiImage` (agent runs AND the "Regenerate hero" button) fails with the exact 404 you're seeing. The image‑capable Gemini model that returns inline PNG data on that endpoint is **`gemini-2.5-flash-image`** (Nano Banana). This one‑line default is wrong for every code path that generates images.
 
-## Plan
+### 2. Navigating away from `/admin/agent` kills the run mid‑flight
 
-### 1. Expand the form (`src/routes/startups.submit.tsx`)
+`runAgent` in `src/lib/agent.functions.ts` is a normal `createServerFn` — the admin UI does `await _runAgent(...)`, which is a `fetch()` from the browser. On Cloudflare Workers, when the client disconnects (tab closed, route change), the runtime terminates the request context. Everything still in progress — remaining candidates, hero image generation, Supabase inserts — is aborted. That's why you end up with partial articles and missing heroes when you leave the page.
 
-Add these fields, grouped by existing sections. All optional unless noted, all with generous limits so nothing gets truncated.
+The scheduled cron path (`/api/public/hooks/agent-run`) has the same problem in principle, but it always runs to completion because there is no client to disconnect.
 
-- Basic identity
-  - Company tagline (1 line, required, 120 chars)
-  - Company logo already present
-  - Company LinkedIn URL, X / Twitter handle, YouTube URL (optional)
-- Product and mission
-  - Raise `product_description` and `problem_solved` limits from 500 to 1500 chars
-  - Mission statement (required, 500 chars)
-  - Differentiator: "What makes you different from competitors" (required, 1000 chars)
-  - Main competitors (optional, comma-separated)
-  - Business model / how you make money (required, 500 chars)
-  - Pricing model (optional, 300 chars)
-  - Markets served (optional, comma-separated countries/regions)
-- Team
-  - Co-founders (optional, repeatable: name + role + LinkedIn) — capped at 4
-  - Key team members (optional textarea, 1000 chars)
-- Traction
-  - Milestones / notable achievements (optional textarea, 1000 chars)
-  - Awards and recognition (optional textarea, 500 chars)
-- Media
-  - Product screenshots upload (optional, up to 3 images, 2 MB each)
-  - Pitch or demo video URL (optional)
-- Roadmap
-  - What's next in the next 12 months (optional, 800 chars)
+## The fix
 
-Keep the "no em dashes" rule; keep required field validation both client and server side.
+### Step 1 — swap the image model (immediate hero fix)
 
-### 2. Persist all new fields (database migration)
+In `src/lib/agent-core.server.ts`:
 
-Extend `public.startup_submissions` with the new columns:
+```ts
+const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
+```
 
-- `tagline text`
-- `company_linkedin text`
-- `twitter_handle text`
-- `youtube_url text`
-- `mission text`
-- `differentiator text`
-- `competitors text`
-- `business_model text`
-- `pricing_model text`
-- `markets_served text[]`
-- `cofounders jsonb`  (array of `{ name, role, linkedin }`)
-- `key_team_members text`
-- `milestones text`
-- `awards text`
-- `screenshot_urls text[]`
-- `pitch_video_url text`
-- `roadmap text`
+That alone unblocks:
+- "Regenerate hero" from the article editor
+- Hero image generation inside every future agent run
 
-All nullable so existing rows keep working. No RLS changes needed (INSERT policy stays open with `consent = true`, admin/editor SELECT/UPDATE stays the same).
+No other code change is needed for the model — `callGemini` already sends `responseModalities: ["IMAGE","TEXT"]` and extracts inline image data, which is exactly what `gemini-2.5-flash-image` returns.
 
-### 3. Update the server function (`src/lib/startup-submissions.functions.ts`)
+### Step 2 — make manual runs survive tab close / navigation
 
-- Extend `StartupSubmissionInput`, the input validator, and the `insert` payload to include the new fields.
-- Sanitize (strip em dashes) and length-check the new text fields.
-- Upload extra screenshot images to the `media` bucket the same way the logo is uploaded, store the resulting URLs in `screenshot_urls`.
-- Include the new fields in the admin notification email payload (tagline, mission, differentiator, business model at minimum).
+Detach the actual work from the browser request using Cloudflare's `ctx.waitUntil`, which is designed for this: it tells the runtime "keep this Worker alive until the promise settles, even after the HTTP response has returned."
 
-### 4. Update the admin backend view (`src/routes/_authenticated/admin/startups.tsx`)
+Wire it in three small pieces:
 
-Render every new field in the expanded row so staff never has to guess what the founder submitted:
+1. **`src/server.ts`** — the wrapper already receives `ctx`. Stash it on a per‑request `AsyncLocalStorage` (or a simple `globalThis` slot per invocation) so downstream code can reach it.
 
-- New "Company" details row: tagline, mission, company LinkedIn, X, YouTube.
-- "Positioning" block: differentiator, competitors, business model, pricing, markets.
-- "Team" block: co-founders list + key team members.
-- "Traction" block additions: milestones, awards.
-- "Media" gallery: logo + screenshot thumbnails + pitch video link.
-- "Roadmap" block.
+2. **New helper `src/lib/background.server.ts`** — exports `runInBackground(promise)`:
+   - If a Cloudflare `ctx.waitUntil` is available, register the promise there.
+   - Otherwise (local dev / Node), fall back to a plain fire‑and‑forget with `.catch(console.error)`.
 
-Also add a small "Copy all details" button that copies a plaintext dump of every field, to make it easy for staff to paste into an editor when writing the profile.
+3. **`src/lib/agent.functions.ts` → `runAgent`** — change the handler to:
+   - Insert a `pending` row into `agent_runs` (so the UI immediately gets a `run_id`).
+   - Call `runInBackground(runAgentCore({ ..., existingRunId }))`.
+   - Return `{ run_id, status: "started" }` right away.
 
-### 5. Update the AI draft prompt
+   `runAgentCore` needs a tiny tweak to accept an optional pre‑created `run_id` and update that row instead of inserting a new one.
 
-`generateStartupDraft` should feed the new fields (tagline, mission, differentiator, business model, milestones, awards, roadmap, screenshots, competitors, markets) into `buildStartupUserPrompt` so the generated autobiography uses them. Structure stays the same, no facts invented.
+4. **`src/routes/_authenticated/admin/agent.tsx`** — after `_runAgent(...)` returns, don't block on completion. Poll `agent_runs` by id (or re‑fetch the run list) every few seconds and update the UI when `status` flips to `success`/`error`. The existing runs table is already the natural place to show this.
 
-### 6. Verify
+Net effect: closing the tab, navigating to another admin page, or refreshing no longer aborts the run. The Worker keeps generating drafts, hero images, and writes to Supabase in the background.
 
-After the migration and build, do a Playwright test-fill against `/startups/submit` with all fields populated, then query `startup_submissions` to confirm every field landed in the row, and open `/admin/startups` to confirm every value renders.
+### Step 3 — belt‑and‑braces reaper (already exists, keep it)
 
-## Technical notes
+The 15‑minute stuck‑run reaper in `runAgentCore` stays as‑is. It's the safety net if a background run ever crashes without updating its row.
 
-- Migration follows the project rules: `ALTER TABLE` only adds columns, no CHECK constraints on mutable data, existing GRANTs and RLS untouched.
-- Screenshots reuse the existing `media` bucket and `/api/public/media/*` route; no new bucket needed.
-- Base64 upload pattern already used for the logo is reused for screenshots (with a max-3 loop).
-- No changes to categories, articles table, or authentication.
+## Technical details
 
-## Open question
+- Files touched:
+  - `src/lib/agent-core.server.ts` — one‑line model default swap; accept optional existing `runId` in `runAgentCore`.
+  - `src/server.ts` — capture Cloudflare `ctx` per request into async‑local storage.
+  - `src/lib/background.server.ts` — new tiny helper exporting `runInBackground`.
+  - `src/lib/agent.functions.ts` — `runAgent` returns immediately after scheduling.
+  - `src/routes/_authenticated/admin/agent.tsx` — client polls run status instead of awaiting completion.
+- No schema changes required. `agent_runs` already has `status`, `drafts_created`, `log`, `error`, `finished_at`.
+- No new env vars. `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` continue to be used as today.
+- Scheduled cron path (`/api/public/hooks/agent-run`) is unchanged.
 
-Do you want the new required fields (tagline, mission, differentiator, business model) enforced as required for new submissions, or all-optional so founders can submit fast and staff can request follow-ups later?
+## Out of scope
+
+- I'm not migrating to a queue table, a separate worker service, or Supabase pg_cron for manual runs. `ctx.waitUntil` is the right primitive on Cloudflare and it keeps the change small.
+- No prompt / editorial / schema changes — this is purely a reliability fix.
+
+## What you'll see after
+
+- Clicking "Regenerate hero" produces an image instead of the 404 toast.
+- Clicking "Run now" on `/admin/agent`, then immediately closing the tab or navigating away, still results in the full number of drafts (with hero images) appearing in the articles list a few minutes later — same as when the cron fires it.

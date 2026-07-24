@@ -95,6 +95,14 @@ function AgentInner() {
   }
   useEffect(() => { loadAll(); }, []);
 
+  // Poll while any run is still in progress so the UI updates after tab-close/nav restore.
+  useEffect(() => {
+    const anyRunning = runs.some((r) => r.status === "running");
+    if (!anyRunning) return;
+    const id = setInterval(() => { loadAll(); }, 8000);
+    return () => clearInterval(id);
+  }, [runs]);
+
   async function saveSettings() {
     if (!settings) return;
     try {
@@ -108,13 +116,14 @@ function AgentInner() {
 
   async function doRun() {
     setRunning(true);
-    toast.info(`Agent running, generating up to ${count} draft(s)…`);
     try {
       const res: any = await _runAgent({ data: { count, focus: focus || null } });
-      toast.success(`${res.drafts_created} draft(s) created. Review in Articles.`);
+      toast.success(
+        `Run started (id ${String(res?.run_id ?? "").slice(0, 8)}). It continues in the background even if you leave this page. Drafts will appear in Articles.`,
+      );
       loadAll();
     } catch (e: any) {
-      toast.error(e?.message || "Run failed");
+      toast.error(e?.message || "Run failed to start");
       loadAll();
     } finally {
       setRunning(false);

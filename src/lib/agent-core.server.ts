@@ -13,6 +13,8 @@ interface RunAgentArgs {
   count: number;
   focus: string | null;
   categoryId: string | null;
+  /** When set, reuse this pre-created agent_runs row instead of inserting a new one. */
+  existingRunId?: string | null;
 }
 
 interface DraftPayload {
@@ -165,7 +167,7 @@ function sniffImageDimensions(buf: Buffer): { width: number; height: number } | 
 // (which is what caused every draft to fail with a 404 on gemini-2.5-flash).
 // Overridable via env so we can swap without a redeploy.
 const GEMINI_TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-flash-latest";
-const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.0-flash-exp";
+const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
 
 // Sentinel error message the worker pool checks so a model 404 aborts the
 // entire run instead of burning every candidate on the same guaranteed failure.
@@ -494,20 +496,30 @@ export async function runAgentCore(args: RunAgentArgs) {
       .lt("started_at", cutoff);
   } catch { /* best-effort cleanup */ }
 
-  // 1. Create run row
-  const { data: runRow, error: runErr } = await supabase
-    .from("agent_runs")
-    .insert({
-      triggered_by: args.triggeredBy,
-      trigger: args.trigger,
-      status: "running",
-      requested_count: args.count,
-      focus: args.focus,
-    })
-    .select("id")
-    .single();
-  if (runErr) throw new Error(runErr.message);
-  const runId = runRow.id as string;
+  // 1. Create run row (or reuse a pre-created one so background runs share the id the client already has).
+  let runId: string;
+  if (args.existingRunId) {
+    runId = args.existingRunId;
+    // Make sure the row reflects that work has started (was inserted as "running" by caller, but be defensive).
+    await supabase
+      .from("agent_runs")
+      .update({ status: "running", started_at: new Date().toISOString() })
+      .eq("id", runId);
+  } else {
+    const { data: runRow, error: runErr } = await supabase
+      .from("agent_runs")
+      .insert({
+        triggered_by: args.triggeredBy,
+        trigger: args.trigger,
+        status: "running",
+        requested_count: args.count,
+        focus: args.focus,
+      })
+      .select("id")
+      .single();
+    if (runErr) throw new Error(runErr.message);
+    runId = runRow.id as string;
+  }
   const runStartedAt = Date.now();
   const RUN_MAX_MS = 10 * 60 * 1000; // hard 10 min wall-clock ceiling
   let modelUnavailable = false;
