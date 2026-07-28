@@ -1,0 +1,1 @@
+UPDATE public.agent_runs SET status='error', error='Stalled: background dispatch not delivered (pre-fix)', finished_at=now() WHERE status='running' AND finished_at IS NULL AND started_at < now() - interval '20 minutes';
