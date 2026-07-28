@@ -155,10 +155,16 @@ function AgentInner() {
     } catch (e: any) { toast.error(e?.message); }
   }
 
+  const manualRuns = runs.filter((r) => r.trigger === "manual" || r.trigger === "manual-skills");
+  const activeRun = manualRuns.find((r) => r.status === "running") ?? manualRuns[0] ?? null;
+
   return (
     <div className="grid gap-6 lg:grid-cols-3">
+      {activeRun && <RunStatusPanel run={activeRun} onRefresh={loadAll} />}
+
       {/* Run panel with mode toggle */}
       <section className="rounded-lg border border-border bg-background p-5 lg:col-span-2">
+
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-brand" />
