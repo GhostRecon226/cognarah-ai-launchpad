@@ -361,3 +361,101 @@ function AgentInner() {
     </div>
   );
 }
+
+function RunStatusPanel({ run, onRefresh }: { run: Run; onRefresh: () => void }) {
+  const isSkills = run.trigger.includes("skills");
+  const isRunning = run.status === "running";
+  const isSuccess = run.status === "success";
+  const isError = run.status === "error";
+
+  const started = new Date(run.started_at);
+  const finished = run.finished_at ? new Date(run.finished_at) : null;
+  const [, force] = useState(0);
+  useEffect(() => {
+    if (!isRunning) return;
+    const id = setInterval(() => force((n) => n + 1), 1000);
+    return () => clearInterval(id);
+  }, [isRunning]);
+
+  const elapsedMs = (finished ?? new Date()).getTime() - started.getTime();
+  const elapsed = formatDistanceToNowStrict(started, { addSuffix: false });
+
+  const requested = run.requested_count || 1;
+  const created = run.drafts_created || 0;
+  const pct = Math.min(100, isSuccess ? 100 : Math.round((created / requested) * 100));
+
+  const logTail = (run.log || "")
+    .split("\n")
+    .filter(Boolean)
+    .slice(-4)
+    .join("\n");
+
+  const tone = isRunning
+    ? { bar: "bg-amber-500", chip: "bg-amber-100 text-amber-800", border: "border-amber-300" }
+    : isSuccess
+    ? { bar: "bg-emerald-500", chip: "bg-emerald-100 text-emerald-800", border: "border-emerald-300" }
+    : isError
+    ? { bar: "bg-rose-500", chip: "bg-rose-100 text-rose-800", border: "border-rose-300" }
+    : { bar: "bg-muted", chip: "bg-muted text-muted-foreground", border: "border-border" };
+
+  const Icon = isRunning ? Loader2 : isSuccess ? CheckCircle2 : isError ? XCircle : Activity;
+
+  return (
+    <section className={`rounded-lg border ${tone.border} bg-background p-5 lg:col-span-3`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex items-start gap-3">
+          <Icon className={`h-6 w-6 ${isRunning ? "animate-spin text-amber-600" : isSuccess ? "text-emerald-600" : isError ? "text-rose-600" : "text-muted-foreground"}`} />
+          <div>
+            <h2 className="text-lg font-semibold">
+              {isRunning ? "Run in progress" : isSuccess ? "Last run succeeded" : isError ? "Last run failed" : "Last run"}
+            </h2>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              {isSkills ? "Skills" : "News"} · started {format(started, "MMM d, HH:mm:ss")} · {isRunning ? `${elapsed} elapsed` : `took ${Math.max(1, Math.round(elapsedMs / 1000))}s`}
+              {run.focus ? ` · focus: ${run.focus}` : ""}
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className={`inline-block rounded px-2 py-0.5 text-xs font-medium uppercase tracking-wide ${tone.chip}`}>{run.status}</span>
+          <button onClick={onRefresh} className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground">
+            <RefreshCw className="h-3 w-3" /> Refresh
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+          <span>Drafts created</span>
+          <span className="font-mono">{created} / {requested}</span>
+        </div>
+        <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
+          <div
+            className={`h-full transition-all duration-500 ${tone.bar} ${isRunning ? "animate-pulse" : ""}`}
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      </div>
+
+      {isError && run.error && (
+        <div className="mt-4 rounded border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+          <div className="font-semibold">Failure reason</div>
+          <div className="mt-1 whitespace-pre-wrap break-words">{run.error}</div>
+        </div>
+      )}
+
+      {isSuccess && (
+        <div className="mt-4 rounded border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
+          Saved {created} draft{created === 1 ? "" : "s"}. Review them under {isSkills ? "Skills" : "Articles"} before publishing.
+        </div>
+      )}
+
+      {logTail && (
+        <div className="mt-4">
+          <div className="mb-1 text-xs font-medium text-muted-foreground">Latest activity</div>
+          <pre className="max-h-32 overflow-auto rounded bg-secondary/50 p-2 text-[11px] leading-snug text-muted-foreground whitespace-pre-wrap">{logTail}</pre>
+        </div>
+      )}
+    </section>
+  );
+}
+
