@@ -667,6 +667,7 @@ export async function runAgentCore(args: RunAgentArgs) {
         await acquireScrapeSlot();
         if (modelUnavailable || created >= target || Date.now() - runStartedAt > RUN_MAX_MS) return;
         logLine(`Scraping: ${cand.url}`);
+        await heartbeat(`scraping ${cand.url}`);
         const scraped: any = await fc.scrape(cand.url, {
           formats: ["markdown"],
           onlyMainContent: true,
