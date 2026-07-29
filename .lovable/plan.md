@@ -1,42 +1,57 @@
-## Problem
+# AI News Agent: drafts never appear after "Run started"
 
-Every manual agent run since the `ctx.waitUntil` refactor is stuck at `status=running` with an empty `log`, meaning `runAgentCore` never got past its first line. On Lovable's Cloudflare-style runtime, `ctx.waitUntil(runAgentCore(...))` isn't reliably keeping the isolate alive to run a multi-minute in-process pipeline — the isolate suspends after the response returns and the promise never progresses. Only the run row (written before `runInBackground`) makes it to the DB.
+## What I found
 
-## Fix
+`agent_runs` shows every manual run since 2026‑07‑28 15:52 UTC is still `status='running'` with `drafts_created=0`, `error=null`, `finished_at=null`. The last successful run was 15:41 UTC on 2026‑07‑28, right before the "dispatch to `/api/public/hooks/agent-run`" refactor landed.
 
-Stop trying to run the entire pipeline inside the original request's isolate. Instead, dispatch the work to a fresh worker invocation via the existing public hook, so each run gets its own request lifetime and CPU budget.
+Signals that point at the dispatch path:
 
-### 1. `src/routes/api/public/hooks/agent-run.ts`
-- Accept an optional JSON body: `{ run_id?, count?, focus?, category_id?, triggered_by? }`.
-- When `run_id` is provided, pass it through as `existingRunId` to `runAgentCore` and use the supplied `count`/`focus`/`triggered_by` instead of the scheduled defaults (trigger stays `"manual"` in that case).
-- Preserve existing scheduled behavior when the body is empty.
-- Same `AGENT_CRON_SECRET` auth as today.
+- Worker logs for the last hour show zero requests to `/api/public/hooks/agent-run` (searched by both `agent` and `agent-run`). The hook is never hit.
+- AI Gateway shows zero LLM/image calls in that same window — the pipeline never gets far enough to call Gemini or Claude.
+- `agent_runs` rows are created (so `runAgent` runs, inserts the row, and returns `{status:"started"}`), but the sibling POST it fires with `runInBackground(fetch(...))` never lands.
 
-### 2. `src/lib/agent.functions.ts` — `runAgent`
-- Still pre-create the `agent_runs` row and return `run_id` immediately.
-- Replace the in-process `runInBackground(runAgentCore(...))` with a self-fetch:
-  - Build the URL from `PUBLIC_SITE_URL` / `SITE_URL` (fallback to `request.url` origin captured via a lightweight helper) plus `/api/public/hooks/agent-run`.
-  - POST JSON `{ run_id, count, focus, category_id, triggered_by: userId }` with header `x-agent-cron-secret: AGENT_CRON_SECRET`.
-  - Wrap the `fetch(...)` in `runInBackground(...)` so `ctx.waitUntil` keeps the parent request alive just long enough to dispatch the subrequest; the subrequest itself is a fresh worker invocation and owns its own lifetime.
-  - On dispatch failure, mark the run row `status=error` with a clear message so the UI stops polling forever.
-- If `AGENT_CRON_SECRET` is missing, mark the run `error` immediately with an actionable message ("Set AGENT_CRON_SECRET to enable background agent runs").
+Why the sibling POST disappears: on the Cloudflare-style worker runtime, once the outer server-function response returns, any in-flight `fetch()` is aborted unless it was registered with `ctx.waitUntil`. `runInBackground` does try to call `ctx.waitUntil`, but it reads `globalThis.__lovableRequestWaitUntil`, which is set by `src/server.ts` at the top-level `fetch` and cleared in its `finally`. In practice we're seeing the fetch get cancelled before it hits the network — no hook logs, no LLM calls, run row frozen at `running`.
 
-### 3. `src/lib/background.server.ts`
-- No changes; still used to attach the dispatch fetch to `ctx.waitUntil`.
+The dispatch-to-a-sibling-request pattern doesn't buy us anything either: whether we call `runAgentCore` in-process or via a self-fetch, both need `ctx.waitUntil` to outlive the response. The self-fetch just adds a second failure point.
 
-### 4. `src/lib/agent-core.server.ts`
-- No functional change. Confirm the existing 10-minute hard limit and 15-minute stuck-run reaper stay in place so any future stalls self-heal.
+## Plan
 
-### 5. Clean up currently-stuck rows
-- One-time SQL: mark the four `running` rows with no `finished_at` and older than 20 minutes as `error` with message "Stalled: background dispatch not delivered (pre-fix)" so the admin UI shows them as failed instead of spinning.
+Diagnosis-first, then a fix that removes the extra hop.
 
-## Secrets
+### 1. Revert `runAgent` to in-process execution with proper waitUntil
 
-Requires `AGENT_CRON_SECRET` (already used by the cron hook). If it isn't set in this environment, I'll prompt to add it before shipping — without it, the self-fetch would 401.
+In `src/lib/agent.functions.ts`:
 
-## Verification
+- Pre-create the `agent_runs` row exactly as today (so the UI has an id).
+- Instead of POSTing to `/api/public/hooks/agent-run`, call `runAgentCore` directly with `existingRunId: runId`, `trigger: "manual"`, `triggeredBy: context.userId`.
+- Wrap that call in `runInBackground(...)` so `ctx.waitUntil` keeps the worker alive.
+- Keep the `markError` fallback so any synchronous throw before the background work starts still updates the row.
+- Return `{ run_id, status: "started" }` immediately as today.
 
-1. Trigger a manual run from `/admin/agent`, close the tab immediately.
-2. Reopen a minute later: run should progress (`log` fills, `drafts_created` climbs) and finish with `status=success`.
-3. Trigger a run, wait for it to finish while staying on the page: same result, UI stops polling.
-4. Confirm the scheduled cron path still works (empty-body POST to the hook).
+This removes the sibling-fetch that's currently being aborted. The `/api/public/hooks/agent-run` route stays in place for the scheduled cron path — it already works there because pg_cron's request is the top-level fetch, not a subrequest of a returning response.
+
+### 2. Make `runInBackground` observable
+
+In `src/lib/background.server.ts`, log one line whenever it's called saying whether `ctx.waitUntil` was actually available. That way the next time a run stalls we can tell from worker logs whether the runtime accepted the promise or fell through to the fire-and-forget branch. No behavior change.
+
+### 3. Heartbeat + reaper so a stall self-heals and is visible
+
+In `src/lib/agent-core.server.ts` `runAgentCore`:
+
+- Add a `last_heartbeat_at` column update (timestamptz) at each stage boundary: after settings load, after search, after each article scrape, after Gemini call, after Claude call, after each draft insert. Requires a migration adding `agent_runs.last_heartbeat_at timestamptz` (nullable, defaults to `started_at` on insert).
+- Extend the existing 15‑minute reaper so it marks any `running` row with `last_heartbeat_at` older than 5 minutes (or `started_at` older than 15 minutes when heartbeat is null) as `error` with reason `"stalled: no heartbeat"`. Run it opportunistically at the start of `runAgentCore` and at the start of `listAgentRuns` so the admin UI listing kicks it too.
+
+### 4. Clean up the frozen rows
+
+One-off SQL in a migration: mark the seven currently-stuck `running` rows as `error` with reason `"stalled: dispatch never reached hook (pre-fix)"` and `finished_at = now()` so the admin UI stops showing perpetual spinners.
+
+### 5. Verify
+
+After deploy: trigger a manual run from `/admin/agent`, then check `agent_runs` for that id — expect `last_heartbeat_at` advancing, `drafts_created` incrementing, and terminal `status='success'`. Also confirm worker logs show the new "waitUntil registered" line from step 2.
+
+## Technical notes
+
+- Files touched: `src/lib/agent.functions.ts` (rewrite `runAgent` handler body), `src/lib/background.server.ts` (add log), `src/lib/agent-core.server.ts` (heartbeat writes + reaper query), one Supabase migration (add column + backfill + mark stuck rows).
+- `src/routes/api/public/hooks/agent-run.ts` is unchanged; scheduled pg_cron keeps using it.
+- No prompt / model / editorial changes. This is purely a runtime-reliability fix.
+- `AGENT_CRON_SECRET` and `PUBLIC_SITE_URL` are no longer required for manual runs after this change (still used by the scheduled hook).
