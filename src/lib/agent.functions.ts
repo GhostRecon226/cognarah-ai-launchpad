@@ -124,10 +124,12 @@ export const listAgentRuns = createServerFn({ method: "GET" })
   });
 
 // ================== RUN THE AGENT ==================
-// Dispatch the run to /api/public/hooks/agent-run so it executes in a fresh
-// worker invocation with its own request lifetime. In-process ctx.waitUntil
-// on Cloudflare-style runtimes doesn't reliably keep a multi-minute pipeline
-// alive after the response returns, so we push the work to a sibling request.
+// Manual runs execute in-process. We pre-create the agent_runs row (so the UI
+// has an id to poll immediately), then hand the pipeline to runInBackground,
+// which registers it with ctx.waitUntil so the worker stays alive past the
+// HTTP response. The previous "dispatch to /api/public/hooks/agent-run"
+// approach silently failed because the sibling fetch was aborted the moment
+// the outer response returned.
 export const runAgent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
@@ -140,7 +142,6 @@ export const runAgent = createServerFn({ method: "POST" })
   .handler(async ({ context, data }) => {
     await requireStaff(context);
 
-    const secret = process.env.AGENT_CRON_SECRET;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
     // Pre-create the run row so the UI has an id to poll immediately.
@@ -152,6 +153,7 @@ export const runAgent = createServerFn({ method: "POST" })
         status: "running",
         requested_count: data.count,
         focus: data.focus ?? null,
+        last_heartbeat_at: new Date().toISOString(),
       })
       .select("id")
       .single();
@@ -167,43 +169,27 @@ export const runAgent = createServerFn({ method: "POST" })
       } catch { /* best-effort */ }
     }
 
-    if (!secret) {
-      await markError("AGENT_CRON_SECRET is not set; cannot dispatch background run");
-      throw new Error("AGENT_CRON_SECRET is not set on the server");
-    }
-
-    const base =
-      process.env.PUBLIC_SITE_URL ||
-      process.env.SITE_URL ||
-      "https://cognarah.com";
-    const url = base.replace(/\/$/, "") + "/api/public/hooks/agent-run";
-
-    const dispatch = fetch(url, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-agent-cron-secret": secret,
-      },
-      body: JSON.stringify({
-        run_id: runId,
-        count: data.count,
-        focus: data.focus ?? null,
-        category_id: data.category_id ?? null,
-        triggered_by: context.userId,
-      }),
-    }).then(async (res) => {
-      // Only treat a failed *dispatch* as an error. The hook itself may take
-      // many minutes; when it succeeds it updates the run row directly.
-      if (!res.ok && res.status !== 200) {
-        const text = await res.text().catch(() => "");
-        await markError(`Dispatch failed: HTTP ${res.status} ${text.slice(0, 200)}`);
-      }
-    }).catch(async (err) => {
-      await markError(`Dispatch failed: ${String(err?.message || err)}`);
-    });
-
     const { runInBackground } = await import("./background.server");
-    runInBackground(dispatch);
+    const { runAgentCore } = await import("./agent-core.server");
+
+    const work = (async () => {
+      try {
+        await runAgentCore({
+          supabase: supabaseAdmin,
+          triggeredBy: context.userId,
+          trigger: "manual",
+          count: data.count,
+          focus: data.focus ?? null,
+          categoryId: data.category_id ?? null,
+          existingRunId: runId,
+        });
+      } catch (err: any) {
+        console.error("[runAgent background]", err);
+        await markError(String(err?.message || err));
+      }
+    })();
+
+    runInBackground(work);
 
     return { run_id: runId, status: "started", drafts_created: 0 };
   });

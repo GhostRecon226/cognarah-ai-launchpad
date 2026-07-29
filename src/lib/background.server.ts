@@ -20,9 +20,13 @@ export function runInBackground(work: Promise<unknown>): void {
     console.error("[runInBackground] task failed:", err);
   });
   const ctx = globalThis.__lovableRequestWaitUntil;
-  if (ctx && typeof ctx.waitUntil === "function") {
+  const hasWaitUntil = !!(ctx && typeof ctx.waitUntil === "function");
+  console.log(
+    `[runInBackground] waitUntil ${hasWaitUntil ? "registered (worker will stay alive)" : "unavailable (fire-and-forget fallback)"}`,
+  );
+  if (hasWaitUntil) {
     try {
-      ctx.waitUntil(wrapped);
+      ctx!.waitUntil!(wrapped);
       return;
     } catch (err) {
       console.error("[runInBackground] waitUntil rejected the promise:", err);

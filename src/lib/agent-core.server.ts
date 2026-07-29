@@ -483,17 +483,31 @@ export async function runAgentCore(args: RunAgentArgs) {
   const logLine = (m: string) => { log.push(`[${new Date().toISOString()}] ${m}`); };
 
   // 0. Reap stuck runs from previous crashes so the UI stops spinning on them.
+  //    A run is considered stalled when either its heartbeat is older than 5
+  //    minutes (mid-pipeline hang) or it was started > 15 minutes ago with no
+  //    heartbeat progress at all (never got past setup).
   try {
-    const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const heartbeatCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const startCutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
     await supabase
       .from("agent_runs")
       .update({
         status: "error",
-        error: "Stale run reaped (crashed or timed out)",
+        error: "Stalled: no heartbeat",
         finished_at: new Date().toISOString(),
       })
       .eq("status", "running")
-      .lt("started_at", cutoff);
+      .lt("last_heartbeat_at", heartbeatCutoff);
+    await supabase
+      .from("agent_runs")
+      .update({
+        status: "error",
+        error: "Stalled: no heartbeat (never started)",
+        finished_at: new Date().toISOString(),
+      })
+      .eq("status", "running")
+      .is("last_heartbeat_at", null)
+      .lt("started_at", startCutoff);
   } catch { /* best-effort cleanup */ }
 
   // 1. Create run row (or reuse a pre-created one so background runs share the id the client already has).
@@ -503,7 +517,7 @@ export async function runAgentCore(args: RunAgentArgs) {
     // Make sure the row reflects that work has started (was inserted as "running" by caller, but be defensive).
     await supabase
       .from("agent_runs")
-      .update({ status: "running", started_at: new Date().toISOString() })
+      .update({ status: "running", started_at: new Date().toISOString(), last_heartbeat_at: new Date().toISOString() })
       .eq("id", runId);
   } else {
     const { data: runRow, error: runErr } = await supabase
@@ -514,6 +528,7 @@ export async function runAgentCore(args: RunAgentArgs) {
         status: "running",
         requested_count: args.count,
         focus: args.focus,
+        last_heartbeat_at: new Date().toISOString(),
       })
       .select("id")
       .single();
@@ -524,6 +539,17 @@ export async function runAgentCore(args: RunAgentArgs) {
   const RUN_MAX_MS = 10 * 60 * 1000; // hard 10 min wall-clock ceiling
   let modelUnavailable = false;
   let modelUnavailableMsg = "";
+
+  const heartbeat = async (stage: string) => {
+    logLine(`heartbeat: ${stage}`);
+    try {
+      await supabase
+        .from("agent_runs")
+        .update({ last_heartbeat_at: new Date().toISOString() })
+        .eq("id", runId);
+    } catch { /* best-effort */ }
+  };
+
 
   try {
     // 2. Load sources + settings (time window + query presets)
@@ -540,6 +566,7 @@ export async function runAgentCore(args: RunAgentArgs) {
       ? settingsRow.query_presets.filter((q: unknown): q is string => typeof q === "string" && q.trim().length > 0)
       : [];
     logLine(`Using time window ${tbs}; ${presets.length} custom query preset(s)`);
+    await heartbeat("settings loaded");
 
     // 3. Build search queries
     const focusPart = args.focus?.trim() || "artificial intelligence";
@@ -586,6 +613,7 @@ export async function runAgentCore(args: RunAgentArgs) {
       await runSearch(q);
     }
     logLine(`Found ${candidates.length} raw candidates`);
+    await heartbeat(`search complete (${candidates.length} candidates)`);
 
 
     // 4b. URL-shape filter (drop tag/category/section pages).
@@ -639,6 +667,7 @@ export async function runAgentCore(args: RunAgentArgs) {
         await acquireScrapeSlot();
         if (modelUnavailable || created >= target || Date.now() - runStartedAt > RUN_MAX_MS) return;
         logLine(`Scraping: ${cand.url}`);
+        await heartbeat(`scraping ${cand.url}`);
         const scraped: any = await fc.scrape(cand.url, {
           formats: ["markdown"],
           onlyMainContent: true,
@@ -681,7 +710,7 @@ export async function runAgentCore(args: RunAgentArgs) {
           try { parsed = JSON.parse(content); } catch { logLine(`Attempt ${attempts}: non-JSON response`); lastReason = "non-JSON response"; continue; }
           const v = validateDraft(parsed);
           lastWords = v.words;
-          if (v.ok) { draft = parsed; logLine(`Draft accepted: ${v.words} words (attempt ${attempts})`); break; }
+          if (v.ok) { draft = parsed; logLine(`Draft accepted: ${v.words} words (attempt ${attempts})`); await heartbeat("gemini draft accepted"); break; }
           lastReason = v.reason;
           logLine(`Attempt ${attempts} failed validation: ${v.reason}`);
         }
@@ -694,6 +723,7 @@ export async function runAgentCore(args: RunAgentArgs) {
         } else {
           logLine("Claude editor pass skipped/failed, using Gemini draft");
         }
+        await heartbeat("claude pass complete");
 
         const stripDashes = (s: string | undefined | null) =>
           typeof s === "string" ? stripEmDashes(s) : s;
@@ -791,6 +821,7 @@ export async function runAgentCore(args: RunAgentArgs) {
         });
         created++;
         logLine(`Created draft (attempts=${attempts}): ${draft.title}`);
+        await heartbeat(`draft created (${created}/${target})`);
       } catch (e: any) {
         const msg = String(e?.message || e);
         if (msg.includes(GEMINI_MODEL_UNAVAILABLE)) {
