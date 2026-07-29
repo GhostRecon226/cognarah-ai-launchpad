@@ -821,6 +821,7 @@ export async function runAgentCore(args: RunAgentArgs) {
         });
         created++;
         logLine(`Created draft (attempts=${attempts}): ${draft.title}`);
+        await heartbeat(`draft created (${created}/${target})`);
       } catch (e: any) {
         const msg = String(e?.message || e);
         if (msg.includes(GEMINI_MODEL_UNAVAILABLE)) {
