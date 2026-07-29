@@ -613,6 +613,7 @@ export async function runAgentCore(args: RunAgentArgs) {
       await runSearch(q);
     }
     logLine(`Found ${candidates.length} raw candidates`);
+    await heartbeat(`search complete (${candidates.length} candidates)`);
 
 
     // 4b. URL-shape filter (drop tag/category/section pages).
