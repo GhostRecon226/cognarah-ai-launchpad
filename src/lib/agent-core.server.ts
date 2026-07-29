@@ -710,7 +710,7 @@ export async function runAgentCore(args: RunAgentArgs) {
           try { parsed = JSON.parse(content); } catch { logLine(`Attempt ${attempts}: non-JSON response`); lastReason = "non-JSON response"; continue; }
           const v = validateDraft(parsed);
           lastWords = v.words;
-          if (v.ok) { draft = parsed; logLine(`Draft accepted: ${v.words} words (attempt ${attempts})`); break; }
+          if (v.ok) { draft = parsed; logLine(`Draft accepted: ${v.words} words (attempt ${attempts})`); await heartbeat("gemini draft accepted"); break; }
           lastReason = v.reason;
           logLine(`Attempt ${attempts} failed validation: ${v.reason}`);
         }
