@@ -1,42 +1,85 @@
-## Problem
 
-Every manual agent run since the `ctx.waitUntil` refactor is stuck at `status=running` with an empty `log`, meaning `runAgentCore` never got past its first line. On Lovable's Cloudflare-style runtime, `ctx.waitUntil(runAgentCore(...))` isn't reliably keeping the isolate alive to run a multi-minute in-process pipeline — the isolate suspends after the response returns and the promise never progresses. Only the run row (written before `runInBackground`) makes it to the DB.
+## What's actually happening
 
-## Fix
+Two independent bugs, both real:
 
-Stop trying to run the entire pipeline inside the original request's isolate. Instead, dispatch the work to a fresh worker invocation via the existing public hook, so each run gets its own request lifetime and CPU budget.
+### 1. Hero regeneration always fails with `GEMINI_MODEL_UNAVAILABLE`
 
-### 1. `src/routes/api/public/hooks/agent-run.ts`
-- Accept an optional JSON body: `{ run_id?, count?, focus?, category_id?, triggered_by? }`.
-- When `run_id` is provided, pass it through as `existingRunId` to `runAgentCore` and use the supplied `count`/`focus`/`triggered_by` instead of the scheduled defaults (trigger stays `"manual"` in that case).
-- Preserve existing scheduled behavior when the body is empty.
-- Same `AGENT_CRON_SECRET` auth as today.
+In `src/lib/agent-core.server.ts` line 168:
 
-### 2. `src/lib/agent.functions.ts` — `runAgent`
-- Still pre-create the `agent_runs` row and return `run_id` immediately.
-- Replace the in-process `runInBackground(runAgentCore(...))` with a self-fetch:
-  - Build the URL from `PUBLIC_SITE_URL` / `SITE_URL` (fallback to `request.url` origin captured via a lightweight helper) plus `/api/public/hooks/agent-run`.
-  - POST JSON `{ run_id, count, focus, category_id, triggered_by: userId }` with header `x-agent-cron-secret: AGENT_CRON_SECRET`.
-  - Wrap the `fetch(...)` in `runInBackground(...)` so `ctx.waitUntil` keeps the parent request alive just long enough to dispatch the subrequest; the subrequest itself is a fresh worker invocation and owns its own lifetime.
-  - On dispatch failure, mark the run row `status=error` with a clear message so the UI stops polling forever.
-- If `AGENT_CRON_SECRET` is missing, mark the run `error` immediately with an actionable message ("Set AGENT_CRON_SECRET to enable background agent runs").
+```ts
+const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.0-flash-exp";
+```
 
-### 3. `src/lib/background.server.ts`
-- No changes; still used to attach the dispatch fetch to `ctx.waitUntil`.
+`gemini-2.0-flash-exp` no longer exists on Google's `v1beta` API, so every call to `generateAiImage` (agent runs AND the "Regenerate hero" button) fails with the exact 404 you're seeing. The image‑capable Gemini model that returns inline PNG data on that endpoint is **`gemini-2.5-flash-image`** (Nano Banana). This one‑line default is wrong for every code path that generates images.
 
-### 4. `src/lib/agent-core.server.ts`
-- No functional change. Confirm the existing 10-minute hard limit and 15-minute stuck-run reaper stay in place so any future stalls self-heal.
+### 2. Navigating away from `/admin/agent` kills the run mid‑flight
 
-### 5. Clean up currently-stuck rows
-- One-time SQL: mark the four `running` rows with no `finished_at` and older than 20 minutes as `error` with message "Stalled: background dispatch not delivered (pre-fix)" so the admin UI shows them as failed instead of spinning.
+`runAgent` in `src/lib/agent.functions.ts` is a normal `createServerFn` — the admin UI does `await _runAgent(...)`, which is a `fetch()` from the browser. On Cloudflare Workers, when the client disconnects (tab closed, route change), the runtime terminates the request context. Everything still in progress — remaining candidates, hero image generation, Supabase inserts — is aborted. That's why you end up with partial articles and missing heroes when you leave the page.
 
-## Secrets
+The scheduled cron path (`/api/public/hooks/agent-run`) has the same problem in principle, but it always runs to completion because there is no client to disconnect.
 
-Requires `AGENT_CRON_SECRET` (already used by the cron hook). If it isn't set in this environment, I'll prompt to add it before shipping — without it, the self-fetch would 401.
+## The fix
 
-## Verification
+### Step 1 — swap the image model (immediate hero fix)
 
-1. Trigger a manual run from `/admin/agent`, close the tab immediately.
-2. Reopen a minute later: run should progress (`log` fills, `drafts_created` climbs) and finish with `status=success`.
-3. Trigger a run, wait for it to finish while staying on the page: same result, UI stops polling.
-4. Confirm the scheduled cron path still works (empty-body POST to the hook).
+In `src/lib/agent-core.server.ts`:
+
+```ts
+const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
+```
+
+That alone unblocks:
+- "Regenerate hero" from the article editor
+- Hero image generation inside every future agent run
+
+No other code change is needed for the model — `callGemini` already sends `responseModalities: ["IMAGE","TEXT"]` and extracts inline image data, which is exactly what `gemini-2.5-flash-image` returns.
+
+### Step 2 — make manual runs survive tab close / navigation
+
+Detach the actual work from the browser request using Cloudflare's `ctx.waitUntil`, which is designed for this: it tells the runtime "keep this Worker alive until the promise settles, even after the HTTP response has returned."
+
+Wire it in three small pieces:
+
+1. **`src/server.ts`** — the wrapper already receives `ctx`. Stash it on a per‑request `AsyncLocalStorage` (or a simple `globalThis` slot per invocation) so downstream code can reach it.
+
+2. **New helper `src/lib/background.server.ts`** — exports `runInBackground(promise)`:
+   - If a Cloudflare `ctx.waitUntil` is available, register the promise there.
+   - Otherwise (local dev / Node), fall back to a plain fire‑and‑forget with `.catch(console.error)`.
+
+3. **`src/lib/agent.functions.ts` → `runAgent`** — change the handler to:
+   - Insert a `pending` row into `agent_runs` (so the UI immediately gets a `run_id`).
+   - Call `runInBackground(runAgentCore({ ..., existingRunId }))`.
+   - Return `{ run_id, status: "started" }` right away.
+
+   `runAgentCore` needs a tiny tweak to accept an optional pre‑created `run_id` and update that row instead of inserting a new one.
+
+4. **`src/routes/_authenticated/admin/agent.tsx`** — after `_runAgent(...)` returns, don't block on completion. Poll `agent_runs` by id (or re‑fetch the run list) every few seconds and update the UI when `status` flips to `success`/`error`. The existing runs table is already the natural place to show this.
+
+Net effect: closing the tab, navigating to another admin page, or refreshing no longer aborts the run. The Worker keeps generating drafts, hero images, and writes to Supabase in the background.
+
+### Step 3 — belt‑and‑braces reaper (already exists, keep it)
+
+The 15‑minute stuck‑run reaper in `runAgentCore` stays as‑is. It's the safety net if a background run ever crashes without updating its row.
+
+## Technical details
+
+- Files touched:
+  - `src/lib/agent-core.server.ts` — one‑line model default swap; accept optional existing `runId` in `runAgentCore`.
+  - `src/server.ts` — capture Cloudflare `ctx` per request into async‑local storage.
+  - `src/lib/background.server.ts` — new tiny helper exporting `runInBackground`.
+  - `src/lib/agent.functions.ts` — `runAgent` returns immediately after scheduling.
+  - `src/routes/_authenticated/admin/agent.tsx` — client polls run status instead of awaiting completion.
+- No schema changes required. `agent_runs` already has `status`, `drafts_created`, `log`, `error`, `finished_at`.
+- No new env vars. `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` continue to be used as today.
+- Scheduled cron path (`/api/public/hooks/agent-run`) is unchanged.
+
+## Out of scope
+
+- I'm not migrating to a queue table, a separate worker service, or Supabase pg_cron for manual runs. `ctx.waitUntil` is the right primitive on Cloudflare and it keeps the change small.
+- No prompt / editorial / schema changes — this is purely a reliability fix.
+
+## What you'll see after
+
+- Clicking "Regenerate hero" produces an image instead of the 404 toast.
+- Clicking "Run now" on `/admin/agent`, then immediately closing the tab or navigating away, still results in the full number of drafts (with hero images) appearing in the articles list a few minutes later — same as when the cron fires it.
