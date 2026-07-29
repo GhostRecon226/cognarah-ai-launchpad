@@ -723,6 +723,7 @@ export async function runAgentCore(args: RunAgentArgs) {
         } else {
           logLine("Claude editor pass skipped/failed, using Gemini draft");
         }
+        await heartbeat("claude pass complete");
 
         const stripDashes = (s: string | undefined | null) =>
           typeof s === "string" ? stripEmDashes(s) : s;
