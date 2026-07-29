@@ -22,6 +22,7 @@ export type Database = {
           finished_at: string | null
           focus: string | null
           id: string
+          last_heartbeat_at: string | null
           log: string | null
           manual_review_count: number
           requested_count: number
@@ -37,6 +38,7 @@ export type Database = {
           finished_at?: string | null
           focus?: string | null
           id?: string
+          last_heartbeat_at?: string | null
           log?: string | null
           manual_review_count?: number
           requested_count?: number
@@ -52,6 +54,7 @@ export type Database = {
           finished_at?: string | null
           focus?: string | null
           id?: string
+          last_heartbeat_at?: string | null
           log?: string | null
           manual_review_count?: number
           requested_count?: number
