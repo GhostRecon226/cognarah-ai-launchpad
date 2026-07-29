@@ -566,6 +566,7 @@ export async function runAgentCore(args: RunAgentArgs) {
       ? settingsRow.query_presets.filter((q: unknown): q is string => typeof q === "string" && q.trim().length > 0)
       : [];
     logLine(`Using time window ${tbs}; ${presets.length} custom query preset(s)`);
+    await heartbeat("settings loaded");
 
     // 3. Build search queries
     const focusPart = args.focus?.trim() || "artificial intelligence";
