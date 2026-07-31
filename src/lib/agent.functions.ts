@@ -127,12 +127,8 @@ export const listAgentRuns = createServerFn({ method: "GET" })
   });
 
 // ================== RUN THE AGENT ==================
-// Manual runs execute in-process. We pre-create the agent_runs row (so the UI
-// has an id to poll immediately), then hand the pipeline to runInBackground,
-// which registers it with ctx.waitUntil so the worker stays alive past the
-// HTTP response. The previous "dispatch to /api/public/hooks/agent-run"
-// approach silently failed because the sibling fetch was aborted the moment
-// the outer response returned.
+// Manual runs execute in-process and keep the request open until the pipeline
+// finishes. The run row is created first so failures can always be recorded.
 export const runAgent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
