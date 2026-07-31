@@ -299,3 +299,19 @@ export const regenerateArticleHero = createServerFn({ method: "POST" })
     return { ok: true, hero_image: heroPath, reason: lastReason };
   });
 
+
+// ================== RESET STUCK RUNS ==================
+export const resetStuckRuns = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    await requireStaff(context);
+    const cutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
+    const { data, error } = await context.supabase
+      .from("agent_runs")
+      .update({ status: "error", error: "Stalled: Manually Reset", finished_at: new Date().toISOString() })
+      .eq("status", "running")
+      .or(`last_heartbeat_at.lt.${cutoff},and(last_heartbeat_at.is.null,started_at.lt.${cutoff})`)
+      .select("id");
+    if (error) throw new Error(error.message);
+    return { reset: (data ?? []).length };
+  });

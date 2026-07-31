@@ -5,7 +5,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { toast } from "sonner";
 import { format, formatDistanceToNowStrict } from "date-fns";
-import { Sparkles, Play, Plus, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2, Activity } from "lucide-react";
+import { Sparkles, Play, Plus, Trash2, RefreshCw, CheckCircle2, XCircle, Loader2, Activity, RotateCcw } from "lucide-react";
 import {
   getAgentSettings,
   updateAgentSettings,
@@ -16,6 +16,7 @@ import {
   listAgentRuns,
   runAgent,
   runSkillsAgent,
+  resetStuckRuns,
 } from "@/lib/agent.functions";
 
 export const Route = createFileRoute("/_authenticated/admin/agent")({
@@ -58,6 +59,7 @@ function AgentInner() {
   const _listRuns = useServerFn(listAgentRuns);
   const _runAgent = useServerFn(runAgent);
   const _runSkillsAgent = useServerFn(runSkillsAgent);
+  const _resetStuckRuns = useServerFn(resetStuckRuns);
 
   const [settings, setSettings] = useState<Settings | null>(null);
   const [sources, setSources] = useState<Source[]>([]);
@@ -102,6 +104,21 @@ function AgentInner() {
     const id = setInterval(() => { loadAll(); }, 8000);
     return () => clearInterval(id);
   }, [runs]);
+
+  const [resetting, setResetting] = useState(false);
+  async function doResetStuckRuns() {
+    setResetting(true);
+    try {
+      const res: any = await _resetStuckRuns({});
+      const n = res?.reset ?? 0;
+      toast.success(n > 0 ? `Reset ${n} stalled run${n === 1 ? "" : "s"}.` : "No stalled runs found (runs must be idle for 15 minutes).");
+      await loadAll();
+    } catch (e: any) {
+      toast.error(e?.message || "Reset failed");
+    } finally {
+      setResetting(false);
+    }
+  }
 
   async function saveSettings() {
     if (!settings) return;
@@ -160,7 +177,7 @@ function AgentInner() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
-      {activeRun && <RunStatusPanel run={activeRun} onRefresh={loadAll} />}
+      {activeRun && <RunStatusPanel run={activeRun} onRefresh={loadAll} onReset={doResetStuckRuns} resetting={resetting} />}
 
       {/* Run panel with mode toggle */}
       <section className="rounded-lg border border-border bg-background p-5 lg:col-span-2">
@@ -362,7 +379,7 @@ function AgentInner() {
   );
 }
 
-function RunStatusPanel({ run, onRefresh }: { run: Run; onRefresh: () => void }) {
+function RunStatusPanel({ run, onRefresh, onReset, resetting }: { run: Run; onRefresh: () => void; onReset: () => void; resetting: boolean }) {
   const isSkills = run.trigger.includes("skills");
   const isRunning = run.status === "running";
   const isSuccess = run.status === "success";
@@ -420,6 +437,16 @@ function RunStatusPanel({ run, onRefresh }: { run: Run; onRefresh: () => void })
           <button onClick={onRefresh} className="inline-flex items-center gap-1 rounded border border-border px-2 py-1 text-xs text-muted-foreground hover:text-foreground">
             <RefreshCw className="h-3 w-3" /> Refresh
           </button>
+          {isRunning && (
+            <button
+              onClick={onReset}
+              disabled={resetting}
+              title="Marks runs stalled for more than 15 minutes as failed"
+              className="inline-flex items-center gap-1 rounded border border-rose-300 px-2 py-1 text-xs font-medium text-rose-700 hover:bg-rose-50 disabled:opacity-60"
+            >
+              <RotateCcw className={`h-3 w-3 ${resetting ? "animate-spin" : ""}`} /> {resetting ? "Resetting…" : "Reset Agent"}
+            </button>
+          )}
         </div>
       </div>
 
