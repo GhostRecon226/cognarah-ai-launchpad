@@ -127,12 +127,8 @@ export const listAgentRuns = createServerFn({ method: "GET" })
   });
 
 // ================== RUN THE AGENT ==================
-// Manual runs execute in-process. We pre-create the agent_runs row (so the UI
-// has an id to poll immediately), then hand the pipeline to runInBackground,
-// which registers it with ctx.waitUntil so the worker stays alive past the
-// HTTP response. The previous "dispatch to /api/public/hooks/agent-run"
-// approach silently failed because the sibling fetch was aborted the moment
-// the outer response returned.
+// Manual runs execute in-process and keep the request open until the pipeline
+// finishes. The run row is created first so failures can always be recorded.
 export const runAgent = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((d: unknown) =>
@@ -172,29 +168,26 @@ export const runAgent = createServerFn({ method: "POST" })
       } catch { /* best-effort */ }
     }
 
-    const { runInBackground } = await import("./background.server");
     const { runAgentCore } = await import("./agent-core.server");
 
-    const work = (async () => {
-      try {
-        await runAgentCore({
-          supabase: supabaseAdmin,
-          triggeredBy: context.userId,
-          trigger: "manual",
-          count: data.count,
-          focus: data.focus ?? null,
-          categoryId: data.category_id ?? null,
-          existingRunId: runId,
-        });
-      } catch (err: any) {
-        console.error("[runAgent background]", err);
-        await markError(String(err?.message || err));
-      }
-    })();
+    try {
+      const result = await runAgentCore({
+        supabase: supabaseAdmin,
+        triggeredBy: context.userId,
+        trigger: "manual",
+        count: data.count,
+        focus: data.focus ?? null,
+        categoryId: data.category_id ?? null,
+        existingRunId: runId,
+      });
 
-    runInBackground(work);
-
-    return { run_id: runId, status: "started", drafts_created: 0 };
+      return { ...result, run_id: runId, status: "completed" };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[runAgent]", err);
+      await markError(message);
+      throw err;
+    }
   });
 
 
