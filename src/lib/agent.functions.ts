@@ -310,7 +310,7 @@ export const resetStuckRuns = createServerFn({ method: "POST" })
       .from("agent_runs")
       .update({ status: "error", error: "Stalled: Manually Reset", finished_at: new Date().toISOString() })
       .eq("status", "running")
-      .lt("last_heartbeat_at", cutoff)
+      .or(`last_heartbeat_at.lt.${cutoff},and(last_heartbeat_at.is.null,started_at.lt.${cutoff})`)
       .select("id");
     if (error) throw new Error(error.message);
     return { reset: (data ?? []).length };
