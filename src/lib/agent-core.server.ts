@@ -477,15 +477,13 @@ const SYSTEM_PROMPT =
   `{"title":"...","dek":"...","body_html":"<p>...</p><h2>The Cognarah Angle</h2><p>...</p><p><em>Reporting sourced from</em> <a href=\"SOURCE_URL\">Publication</a>. Analysis and Cognarah Angle are Cognarah's own.</p>","tags":["...","..."],"seo_title":"...","meta_description":"...","category_slug":"one of: ${CATEGORY_HINTS.join(", ")}"}`;
 
 
-export async function runAgentCore(args: RunAgentArgs) {
-  const { supabase } = args;
-  const log: string[] = [];
-  const logLine = (m: string) => { log.push(`[${new Date().toISOString()}] ${m}`); };
-
-  // 0. Reap stuck runs from previous crashes so the UI stops spinning on them.
-  //    A run is considered stalled when either its heartbeat is older than 5
-  //    minutes (mid-pipeline hang) or it was started > 15 minutes ago with no
-  //    heartbeat progress at all (never got past setup).
+/**
+ * Reaper: mark stalled agent runs as failed so the UI stops spinning on them.
+ * A run is stalled when its heartbeat is older than 5 minutes (mid-pipeline
+ * hang) or it started > 15 minutes ago with no heartbeat at all.
+ * Best-effort: never throws.
+ */
+export async function reapStuckRuns(supabase: any): Promise<void> {
   try {
     const heartbeatCutoff = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const startCutoff = new Date(Date.now() - 15 * 60 * 1000).toISOString();
@@ -509,6 +507,15 @@ export async function runAgentCore(args: RunAgentArgs) {
       .is("last_heartbeat_at", null)
       .lt("started_at", startCutoff);
   } catch { /* best-effort cleanup */ }
+}
+
+export async function runAgentCore(args: RunAgentArgs) {
+  const { supabase } = args;
+  const log: string[] = [];
+  const logLine = (m: string) => { log.push(`[${new Date().toISOString()}] ${m}`); };
+
+  // 0. Reap stuck runs from previous crashes.
+  await reapStuckRuns(supabase);
 
   // 1. Create run row (or reuse a pre-created one so background runs share the id the client already has).
   let runId: string;
@@ -549,6 +556,16 @@ export async function runAgentCore(args: RunAgentArgs) {
         .eq("id", runId);
     } catch { /* best-effort */ }
   };
+
+  // Write an initial log entry immediately so a run that dies early still
+  // leaves a trace in the database.
+  logLine(`Started: trigger=${args.trigger}, requested=${args.count}${args.focus ? `, focus=${args.focus}` : ""}`);
+  try {
+    await supabase
+      .from("agent_runs")
+      .update({ log: log.join("\n"), last_heartbeat_at: new Date().toISOString() })
+      .eq("id", runId);
+  } catch { /* best-effort */ }
 
 
   try {

@@ -114,6 +114,9 @@ export const listAgentRuns = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     await requireStaff(context);
+    // Clean up dead runs whenever the dashboard is viewed.
+    const { reapStuckRuns } = await import("./agent-core.server");
+    await reapStuckRuns(context.supabase);
     const { data, error } = await context.supabase
       .from("agent_runs")
       .select("*")
