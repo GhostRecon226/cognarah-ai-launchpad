@@ -172,29 +172,26 @@ export const runAgent = createServerFn({ method: "POST" })
       } catch { /* best-effort */ }
     }
 
-    const { runInBackground } = await import("./background.server");
     const { runAgentCore } = await import("./agent-core.server");
 
-    const work = (async () => {
-      try {
-        await runAgentCore({
-          supabase: supabaseAdmin,
-          triggeredBy: context.userId,
-          trigger: "manual",
-          count: data.count,
-          focus: data.focus ?? null,
-          categoryId: data.category_id ?? null,
-          existingRunId: runId,
-        });
-      } catch (err: any) {
-        console.error("[runAgent background]", err);
-        await markError(String(err?.message || err));
-      }
-    })();
+    try {
+      const result = await runAgentCore({
+        supabase: supabaseAdmin,
+        triggeredBy: context.userId,
+        trigger: "manual",
+        count: data.count,
+        focus: data.focus ?? null,
+        categoryId: data.category_id ?? null,
+        existingRunId: runId,
+      });
 
-    runInBackground(work);
-
-    return { run_id: runId, status: "started", drafts_created: 0 };
+      return { ...result, run_id: runId, status: "completed" };
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      console.error("[runAgent]", err);
+      await markError(message);
+      throw err;
+    }
   });
 
 
