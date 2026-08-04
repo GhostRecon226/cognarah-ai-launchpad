@@ -19,6 +19,11 @@ declare global {
 export function AdUnit({ slot, position, className }: AdUnitProps) {
   const isMobile = useIsMobile();
   const pushed = useRef(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (pushed.current) return;
