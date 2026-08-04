@@ -67,13 +67,15 @@ export function AdUnit({ slot, position, className }: AdUnitProps) {
       <p className="mb-1 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
         Advertisement
       </p>
-      <ins
-        className="adsbygoogle"
-        style={insStyle}
-        data-ad-client={ADSENSE_CLIENT}
-        data-ad-slot={slot}
-        {...dataAttrs}
-      />
+      {mounted && (
+        <ins
+          className="adsbygoogle"
+          style={insStyle}
+          data-ad-client={ADSENSE_CLIENT}
+          data-ad-slot={slot}
+          {...dataAttrs}
+        />
+      )}
     </aside>
   );
 }
