@@ -12,6 +12,7 @@ import {
   backfillNewsworthiness,
 } from "@/lib/promotion.functions";
 import { SITE_URL } from "@/lib/types";
+import { PAGE_SIZE_LIST, totalPages as calcTotalPages } from "@/lib/pagination";
 import { format, formatDistanceToNow } from "date-fns";
 import { Megaphone, Sparkles, Copy, Check, Link2, Trash2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
