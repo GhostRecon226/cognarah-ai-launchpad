@@ -12,8 +12,9 @@ import {
   backfillNewsworthiness,
 } from "@/lib/promotion.functions";
 import { SITE_URL } from "@/lib/types";
+import { PAGE_SIZE_LIST, totalPages as calcTotalPages } from "@/lib/pagination";
 import { format, formatDistanceToNow } from "date-fns";
-import { Megaphone, Sparkles, Copy, Check, Link2, Trash2, ExternalLink } from "lucide-react";
+import { Megaphone, Sparkles, Copy, Check, Link2, Trash2, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/promotion")({
@@ -294,6 +295,23 @@ function PromotionPage() {
     return all;
   }, [data, filter]);
 
+  const [page, setPage] = useState(1);
+  const pageCount = calcTotalPages(rows.length, PAGE_SIZE_LIST);
+  const currentPage = Math.min(page, pageCount);
+  const start = (currentPage - 1) * PAGE_SIZE_LIST;
+  const pageRows = rows.slice(start, start + PAGE_SIZE_LIST);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filter]);
+
+  const goTo = (p: number) => {
+    setPage(Math.min(Math.max(1, p), pageCount));
+    setOpenId(null);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+
   return (
     <AdminShell title="Promotion queue" requiredRoles={["admin", "editor"]}>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -336,8 +354,14 @@ function PromotionPage() {
         </div>
       )}
 
-      <div className="mt-6 space-y-3">
-        {rows.map((r) => (
+      {rows.length > 0 && (
+        <p className="mt-6 text-xs text-muted-foreground">
+          Showing {start + 1} to {Math.min(start + PAGE_SIZE_LIST, rows.length)} of {rows.length} articles
+        </p>
+      )}
+
+      <div className="mt-3 space-y-3">
+        {pageRows.map((r) => (
           <div key={r.id} className="overflow-hidden rounded-lg border border-border bg-background">
             <div className="flex flex-wrap items-start justify-between gap-3 p-4">
               <div className="min-w-0 flex-1">
@@ -383,6 +407,42 @@ function PromotionPage() {
           </div>
         ))}
       </div>
+
+      {pageCount > 1 && (
+        <nav aria-label="Pagination" className="mt-8 flex flex-wrap items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => goTo(currentPage - 1)}
+            disabled={currentPage <= 1}
+            aria-label="Previous page"
+            className="inline-flex h-10 min-w-10 items-center justify-center rounded-md border border-border px-3 text-sm font-medium transition hover:bg-secondary disabled:pointer-events-none disabled:opacity-40"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          {Array.from({ length: pageCount }, (_, i) => i + 1).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => goTo(p)}
+              aria-current={p === currentPage ? "page" : undefined}
+              className={`inline-flex h-10 min-w-10 items-center justify-center rounded-md border border-border px-3 text-sm font-medium transition hover:bg-secondary ${
+                p === currentPage ? "bg-foreground text-background hover:bg-foreground" : ""
+              }`}
+            >
+              {p}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => goTo(currentPage + 1)}
+            disabled={currentPage >= pageCount}
+            aria-label="Next page"
+            className="inline-flex h-10 min-w-10 items-center justify-center rounded-md border border-border px-3 text-sm font-medium transition hover:bg-secondary disabled:pointer-events-none disabled:opacity-40"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </nav>
+      )}
     </AdminShell>
   );
 }
