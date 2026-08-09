@@ -295,6 +295,23 @@ function PromotionPage() {
     return all;
   }, [data, filter]);
 
+  const [page, setPage] = useState(1);
+  const pageCount = calcTotalPages(rows.length, PAGE_SIZE_LIST);
+  const currentPage = Math.min(page, pageCount);
+  const start = (currentPage - 1) * PAGE_SIZE_LIST;
+  const pageRows = rows.slice(start, start + PAGE_SIZE_LIST);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filter]);
+
+  const goTo = (p: number) => {
+    setPage(Math.min(Math.max(1, p), pageCount));
+    setOpenId(null);
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+
   return (
     <AdminShell title="Promotion queue" requiredRoles={["admin", "editor"]}>
       <div className="flex flex-wrap items-center justify-between gap-3">
