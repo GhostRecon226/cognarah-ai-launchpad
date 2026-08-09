@@ -181,6 +181,11 @@ export type Database = {
       }
       articles: {
         Row: {
+          africa_angle_type: string | null
+          africa_angle_used: boolean | null
+          africa_evidence: string[]
+          africa_relevance_reason: string | null
+          africa_relevance_score: number | null
           agent_run_id: string | null
           author_id: string | null
           author_user_id: string | null
@@ -206,6 +211,11 @@ export type Database = {
           view_count: number
         }
         Insert: {
+          africa_angle_type?: string | null
+          africa_angle_used?: boolean | null
+          africa_evidence?: string[]
+          africa_relevance_reason?: string | null
+          africa_relevance_score?: number | null
           agent_run_id?: string | null
           author_id?: string | null
           author_user_id?: string | null
@@ -231,6 +241,11 @@ export type Database = {
           view_count?: number
         }
         Update: {
+          africa_angle_type?: string | null
+          africa_angle_used?: boolean | null
+          africa_evidence?: string[]
+          africa_relevance_reason?: string | null
+          africa_relevance_score?: number | null
           agent_run_id?: string | null
           author_id?: string | null
           author_user_id?: string | null

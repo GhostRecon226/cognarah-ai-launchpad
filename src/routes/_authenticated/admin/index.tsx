@@ -54,7 +54,7 @@ function Dashboard() {
       <div className="mt-8 rounded-lg border border-border bg-background">
         <div className="flex items-center justify-between border-b border-border p-4">
           <h2 className="font-semibold">Recent activity</h2>
-          <Link to="/admin/articles/new" className="rounded-md bg-navy px-3 py-1.5 text-sm font-medium text-white hover:bg-navy/90">New article</Link>
+          <Link to="/admin/articles/$id" params={{ id: "new" }} className="rounded-md bg-navy px-3 py-1.5 text-sm font-medium text-white hover:bg-navy/90">New article</Link>
         </div>
         <ul className="divide-y divide-border">
           {recent.length === 0 && <li className="p-6 text-sm text-muted-foreground">No articles yet.</li>}

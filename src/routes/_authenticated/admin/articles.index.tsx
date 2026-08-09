@@ -38,7 +38,7 @@ function ArticlesListInner() {
   const { hasAny } = useRoles();
   const canDelete = hasAny(["admin", "editor"]);
   const { page: rawPage, filter: rawFilter } = Route.useSearch();
-  const navigate = useNavigate({ from: "/admin/articles" });
+  const navigate = useNavigate({ from: "/admin/articles/" });
   const filter: "all" | "published" | "draft" =
     rawFilter === "published" || rawFilter === "draft" ? rawFilter : "all";
   const page = Math.max(1, rawPage);
@@ -114,7 +114,7 @@ function ArticlesListInner() {
             <button key={f} onClick={() => setFilter(f)} className={`rounded px-3 py-1.5 text-sm capitalize ${filter === f ? "bg-navy text-white" : "text-muted-foreground"}`}>{f}</button>
           ))}
         </div>
-        <Link to="/admin/articles/new" className="inline-flex items-center justify-center gap-1.5 rounded-md bg-navy px-4 py-2 text-sm font-medium text-white hover:bg-navy/90">
+        <Link to="/admin/articles/$id" params={{ id: "new" }} className="inline-flex items-center justify-center gap-1.5 rounded-md bg-navy px-4 py-2 text-sm font-medium text-white hover:bg-navy/90">
           <Plus className="h-4 w-4" /> New article
         </Link>
       </div>
