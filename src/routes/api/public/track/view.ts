@@ -78,8 +78,14 @@ export const Route = createFileRoute("/api/public/track/view")({
             .maybeSingle();
           if (!article) return Response.json({ ok: true, skipped: "unknown article" });
 
+          // Campaign identity is part of the fingerprint so a campaign-tagged
+          // visit is still recorded when the same person already read the
+          // article untagged earlier the same day.
+          const campaignKey = [parsed.utm_source, parsed.utm_medium, parsed.utm_campaign, parsed.utm_content]
+            .map((v) => (v ?? "").toLowerCase().trim())
+            .join("|");
           const visitorHash = createHash("sha256")
-            .update(`${salt}|${day}|${ip}|${ua}|${article.id}`)
+            .update(`${salt}|${day}|${ip}|${ua}|${article.id}|${campaignKey}`)
             .digest("hex");
 
           const host = hostOf(parsed.referrer);

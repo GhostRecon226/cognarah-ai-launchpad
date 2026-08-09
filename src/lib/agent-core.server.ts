@@ -656,7 +656,7 @@ const NEWSWORTHINESS_SYSTEM =
 interface Newsworthiness { score: number; reason: string; story_key: string }
 
 /** Score a scraped story 0-100. On failure returns a neutral score so the run continues. */
-async function assessNewsworthiness(
+export async function assessNewsworthiness(
   title: string,
   sourceUrl: string,
   markdown: string,
