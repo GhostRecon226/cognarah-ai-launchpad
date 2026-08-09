@@ -354,8 +354,14 @@ function PromotionPage() {
         </div>
       )}
 
-      <div className="mt-6 space-y-3">
-        {rows.map((r) => (
+      {rows.length > 0 && (
+        <p className="mt-6 text-xs text-muted-foreground">
+          Showing {start + 1} to {Math.min(start + PAGE_SIZE_LIST, rows.length)} of {rows.length} articles
+        </p>
+      )}
+
+      <div className="mt-3 space-y-3">
+        {pageRows.map((r) => (
           <div key={r.id} className="overflow-hidden rounded-lg border border-border bg-background">
             <div className="flex flex-wrap items-start justify-between gap-3 p-4">
               <div className="min-w-0 flex-1">
