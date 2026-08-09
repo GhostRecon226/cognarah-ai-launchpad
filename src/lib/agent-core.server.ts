@@ -427,6 +427,160 @@ function validateDraft(d: DraftPayload): { ok: true; words: number } | { ok: fal
   return { ok: true, words: wc };
 }
 
+// ===========================================================================
+// Conditional African relevance. Cognarah is African-first, not Africa-forced:
+// a story only gets an African angle when there is specific, evidence-backed
+// relevance. Scored 0-5 before drafting; 3+ triggers one targeted research
+// search and is downgraded again if that research finds nothing usable.
+// ===========================================================================
+
+export interface AfricaAssessment {
+  score: number; // 0-5
+  reason: string;
+  evidence: string[];
+  angle_used: boolean;
+  angle_type: string | null;
+  research_notes?: string;
+}
+
+const AFRICA_ANGLE_TYPES = [
+  "developers", "startups", "policy", "infrastructure", "funding", "language",
+  "enterprise", "workforce", "availability", "pricing", "direct_africa_story",
+];
+
+const AFRICA_SIGNALS =
+  "product or service availability in African countries; pricing and affordability; API access; payment accessibility; " +
+  "cloud availability; compute and GPU infrastructure; data centres; connectivity requirements; African language support; " +
+  "local datasets; AI regulation and policy; data protection; African developers, startups and founders; venture funding; " +
+  "enterprise adoption; banking and fintech; healthcare; agriculture; education; government services; telecoms; " +
+  "employment and workforce impact; BPO and outsourcing; AI skills and talent; research institutions and universities; " +
+  "cybersecurity; African competitors; existing African customers or partners; expansion into African markets";
+
+const AFRICA_ASSESS_SYSTEM =
+  "You are Cognarah's editorial relevance assessor. Cognarah is African-first, not Africa-forced.\n" +
+  "Ask ONLY: 'Does this development have a specific, meaningful and evidence-supported implication for Africa or an African market?'\n" +
+  "NEVER ask 'How can this story be connected to Africa?'. Artificial or speculative connections are a failure.\n\n" +
+  "Score 0: no identifiable African connection.\n" +
+  "Score 1: an African connection can be imagined but there is no meaningful evidence.\n" +
+  "Score 2: reasonable indirect implication, not significant enough for dedicated analysis.\n" +
+  "Score 3: specific, supportable implication for an identifiable African group.\n" +
+  "Score 4: significant implications for African markets, ecosystems, policy, infrastructure, investment, talent or adoption.\n" +
+  "Score 5: Africa, an African country, organisation, founder, startup, government or market is a primary subject of the story.\n\n" +
+  `Relevance signals to weigh (these are signals, NOT instructions to force a connection): ${AFRICA_SIGNALS}.\n\n` +
+  "EVIDENCE RULE: a score of 3 or higher MUST rest on at least one identifiable factual basis present in or directly implied by the source text " +
+  "(official availability, regional pricing, an African customer, partner, startup, investor, government policy, regulation, infrastructure deployment, " +
+  "African language support, local adoption data, credible research, or reliable reporting linking the development to Africa). " +
+  "If you cannot name such a basis, lower the score. Never fabricate statistics, partnerships, adoption claims, quotes or use cases.\n\n" +
+  "Return ONLY strict JSON, no markdown:\n" +
+  `{"score":0,"reason":"one sentence","evidence":["..."],"angle_type":"one of: ${AFRICA_ANGLE_TYPES.join(", ")} or null"}`;
+
+/** Score a scraped story's African relevance. Falls back to score 0 on any failure. */
+async function assessAfricaRelevance(
+  title: string,
+  sourceUrl: string,
+  markdown: string,
+): Promise<AfricaAssessment> {
+  const fallback: AfricaAssessment = {
+    score: 0, reason: "assessment unavailable", evidence: [], angle_used: false, angle_type: null,
+  };
+  try {
+    const res: any = await callGemini({
+      system: AFRICA_ASSESS_SYSTEM,
+      userParts: [{ text: `Source URL: ${sourceUrl}\nTitle: ${title}\n\nSource content:\n${markdown.slice(0, 8000)}` }],
+      json: true,
+    });
+    const raw = geminiText(res).trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    const parsed = JSON.parse(raw) as { score?: unknown; reason?: unknown; evidence?: unknown; angle_type?: unknown };
+    let score = Math.max(0, Math.min(5, Math.round(Number(parsed.score) || 0)));
+    const evidence = Array.isArray(parsed.evidence)
+      ? parsed.evidence.map((e) => String(e)).filter((e) => e.trim().length > 3).slice(0, 6)
+      : [];
+    const reason = typeof parsed.reason === "string" ? parsed.reason.slice(0, 500) : "";
+    // Evidence gate: no named factual basis means no dedicated African analysis.
+    if (score >= 3 && evidence.length === 0) score = 2;
+    const angleTypeRaw = typeof parsed.angle_type === "string" ? parsed.angle_type.trim() : "";
+    const angle_type = AFRICA_ANGLE_TYPES.includes(angleTypeRaw) ? angleTypeRaw : null;
+    return { score, reason, evidence, angle_used: score >= 2, angle_type };
+  } catch {
+    return fallback;
+  }
+}
+
+/** One targeted search into the African dimension of a story scoring 3+. */
+async function researchAfricaAngle(
+  fc: any,
+  title: string,
+  assessment: AfricaAssessment,
+): Promise<string> {
+  try {
+    const focusBits = [assessment.angle_type, ...assessment.evidence.slice(0, 2)].filter(Boolean).join(" ");
+    const query = `${title} Africa ${focusBits}`.slice(0, 220);
+    const searchRes: any = await fc.search(query, { limit: 5 });
+    const results: any[] = searchRes?.web ?? searchRes?.data ?? [];
+    const notes = results
+      .map((r: any) => {
+        const desc = String(r?.description ?? "").trim();
+        return desc ? `- ${String(r?.title ?? "").trim()}: ${desc} (${r?.url ?? ""})` : "";
+      })
+      .filter(Boolean)
+      .slice(0, 5)
+      .join("\n");
+    return notes;
+  } catch {
+    return "";
+  }
+}
+
+/** Per-story drafting instructions derived from the relevance score. */
+function africaStructureInstruction(a: AfricaAssessment): string {
+  const common =
+    "AFRICAN RELEVANCE POLICY FOR THIS STORY (overrides any general Africa guidance):\n" +
+    `Assessed africa_relevance_score = ${a.score}. Reason: ${a.reason || "n/a"}.\n` +
+    (a.evidence.length ? `Supporting evidence: ${a.evidence.join("; ")}.\n` : "") +
+    (a.research_notes ? `Targeted African research findings (use only what is supportable):\n${a.research_notes}\n` : "") +
+    "Never fabricate statistics, adoption data, partnerships, quotes or African use cases. " +
+    "Never write generic continent-wide claims such as 'this could transform businesses across Africa' or 'a major opportunity for African startups' unless the article states the specific evidence that makes it true. " +
+    "Africa is not one homogeneous market: name specific countries, industries, companies or user groups where relevant.\n";
+
+  if (a.score <= 1) {
+    return common +
+      "STRUCTURE: Global story, explanation, significance, key takeaway. " +
+      "Do NOT mention Africa at all. Do NOT write an African context or implications section. " +
+      "The <h2>The Cognarah Angle</h2> section is still required, but it is Cognarah's own analysis of the story's significance, NOT an African angle. It must not reference Africa.\n";
+  }
+  if (a.score === 2) {
+    return common +
+      "STRUCTURE: Global story, explanation, significance, key takeaway. " +
+      "You may include at most ONE brief contextual sentence about African relevance inside the Cognarah Angle, and only if genuinely useful. " +
+      "Do NOT create a dedicated African section and do NOT exaggerate the significance.\n";
+  }
+  if (a.score >= 5) {
+    return common +
+      "STRUCTURE: Africa is central to this story. Integrate the African context naturally throughout the whole article. " +
+      "Do NOT isolate the African material into an artificial final section.\n";
+  }
+  return common +
+    "STRUCTURE: Global story, explanation, significance, then a dedicated evidence-supported African section, then the key takeaway. " +
+    "The African section must have its own <h3> heading written specifically for this story, for example 'What This Means for African Developers', 'Availability in Africa', 'Impact on African Fintech' or 'Implications for African Regulators'. " +
+    "Do NOT use the default heading 'What This Means for Africa'. " +
+    "Explain specifically who is affected, how and why, and ground every claim in the evidence above.\n";
+}
+
+/** Matching constraint handed to the Claude editor pass. */
+function africaEditorConstraint(a: AfricaAssessment): string {
+  if (a.score <= 1) {
+    return "AFRICAN RELEVANCE: this story has no meaningful African dimension. Do NOT add any African commentary, and remove any generic African claims if present. The Cognarah Angle stays as Cognarah's own analysis without an Africa angle. ";
+  }
+  if (a.score === 2) {
+    return "AFRICAN RELEVANCE: limited and indirect. Keep at most one brief contextual African sentence. Do NOT expand it into a section or add generic continent-wide claims. ";
+  }
+  if (a.score >= 5) {
+    return "AFRICAN RELEVANCE: Africa is central to this story. Keep the African context woven through the article rather than isolated at the end. ";
+  }
+  return "AFRICAN RELEVANCE: keep the dedicated, evidence-supported African section and its story-specific heading. Do NOT add unsupported claims and do NOT replace the heading with a generic 'What This Means for Africa'. ";
+}
+
+
 const SYSTEM_PROMPT =
   "You are the AI drafting agent for Cognarah, an African-first AI media publication based in Lagos, Nigeria. Your tagline is 'Everything AI. Nothing Else.'\n\n" +
   "Cognarah covers artificial intelligence news, startups, funding rounds, tools, trends, policy, ethics, and events. The target audience spans African tech professionals, founders, investors, policymakers, and curious beginners globally.\n\n" +
