@@ -12,6 +12,7 @@ import { SITE_URL } from "@/lib/types";
 import { format } from "date-fns";
 import { ArticleShare } from "@/components/site/article-share";
 import { AdUnit } from "@/components/site/ad-unit";
+import { ViewTracker } from "@/components/site/view-tracker";
 import { AD_SLOTS } from "@/lib/adsense";
 
 function splitBodyAfterSecondParagraph(html: string): [string, string] {
@@ -143,6 +144,7 @@ function ArticlePage() {
   const url = `${SITE_URL}/article/${article.slug}`;
   return (
     <div className="flex min-h-screen flex-col">
+      <ViewTracker slug={article.slug} />
       <SiteNav />
       <main className="flex-1">
         <article className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-12 lg:py-16">
