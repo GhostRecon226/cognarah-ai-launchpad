@@ -995,6 +995,29 @@ export async function runAgentCore(args: RunAgentArgs) {
           return;
         }
 
+        // Newsworthiness filter: drop opinion pieces, listicles and promo posts early.
+        await heartbeat("scoring newsworthiness");
+        const news = await assessNewsworthiness(cand.title ?? meta.title ?? "", cand.url, md);
+        logLine(`Newsworthiness: ${news.score}/100${news.reason ? ` (${news.reason})` : ""}`);
+        if (news.score < NEWSWORTHINESS_MIN) {
+          logLine(`Skipped: below newsworthiness threshold (${news.score} < ${NEWSWORTHINESS_MIN})`);
+          return;
+        }
+
+        // Duplicate story protection against the last 21 days of coverage.
+        const dup = await checkDuplicateStory(supabase, cand.title ?? meta.title ?? "", news.story_key);
+        if (dup.duplicate) {
+          logLine(`Skipped: duplicate story${dup.of ? ` of "${dup.of}"` : ""}${dup.reason ? ` (${dup.reason})` : ""}`);
+          // Remember the URL so the same source is not re-fetched next run.
+          try {
+            await supabase.from("agent_seen_sources").insert({
+              url_hash: hashUrl(cand.url), url: cand.url, run_id: runId,
+            });
+          } catch { /* best-effort */ }
+          return;
+        }
+
+
         // African relevance assessment happens after verification and before drafting.
         await heartbeat("assessing african relevance");
         const africa = await assessAfricaRelevance(cand.title ?? meta.title ?? "", cand.url, md);
