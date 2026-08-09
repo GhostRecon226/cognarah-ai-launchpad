@@ -278,6 +278,15 @@ function PromotionPage() {
     refetchOnWindowFocus: false,
   });
 
+  const backfill = useMutation({
+    mutationFn: (args: { data: { limit: number } }) => runBackfill(args),
+    onSuccess: (res: any) => {
+      toast.success(res?.scored ? `Scored ${res.scored} article${res.scored === 1 ? "" : "s"}` : "Nothing left to score");
+      refetch();
+    },
+    onError: (e: any) => toast.error(e?.message || "Backfill failed"),
+  });
+
   const rows = useMemo(() => {
     const all = data ?? [];
     if (filter === "never") return all.filter((r) => r.promotions_count === 0);
