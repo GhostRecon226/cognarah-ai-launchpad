@@ -42,6 +42,7 @@ import { Route as AuthenticatedAdminArticlesIndexRouteImport } from './routes/_a
 import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
+import { Route as ApiPublicTrackViewRouteImport } from './routes/api/public/track/view'
 import { Route as ApiPublicSkillsFilesSplatRouteImport } from './routes/api/public/skills-files.$'
 import { Route as ApiPublicMediaSplatRouteImport } from './routes/api/public/media.$'
 import { Route as ApiPublicHooksResubmitSitemapRouteImport } from './routes/api/public/hooks/resubmit-sitemap'
@@ -223,6 +224,11 @@ const LovableEmailQueueProcessRoute =
     path: '/lovable/email/queue/process',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicTrackViewRoute = ApiPublicTrackViewRouteImport.update({
+  id: '/api/public/track/view',
+  path: '/api/public/track/view',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicSkillsFilesSplatRoute =
   ApiPublicSkillsFilesSplatRouteImport.update({
     id: '/api/public/skills-files/$',
@@ -292,6 +298,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/api/public/skills-files/$': typeof ApiPublicSkillsFilesSplatRoute
+  '/api/public/track/view': typeof ApiPublicTrackViewRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -332,6 +339,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/api/public/skills-files/$': typeof ApiPublicSkillsFilesSplatRoute
+  '/api/public/track/view': typeof ApiPublicTrackViewRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -374,6 +382,7 @@ export interface FileRoutesById {
   '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/api/public/skills-files/$': typeof ApiPublicSkillsFilesSplatRoute
+  '/api/public/track/view': typeof ApiPublicTrackViewRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
   '/lovable/email/transactional/send': typeof LovableEmailTransactionalSendRoute
@@ -416,6 +425,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
     | '/api/public/skills-files/$'
+    | '/api/public/track/view'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -456,6 +466,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
     | '/api/public/skills-files/$'
+    | '/api/public/track/view'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -497,6 +508,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
     | '/api/public/skills-files/$'
+    | '/api/public/track/view'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
     | '/lovable/email/transactional/send'
@@ -528,6 +540,7 @@ export interface RootRouteChildren {
   ApiPublicHooksResubmitSitemapRoute: typeof ApiPublicHooksResubmitSitemapRoute
   ApiPublicMediaSplatRoute: typeof ApiPublicMediaSplatRoute
   ApiPublicSkillsFilesSplatRoute: typeof ApiPublicSkillsFilesSplatRoute
+  ApiPublicTrackViewRoute: typeof ApiPublicTrackViewRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
   LovableEmailTransactionalSendRoute: typeof LovableEmailTransactionalSendRoute
@@ -766,6 +779,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/track/view': {
+      id: '/api/public/track/view'
+      path: '/api/public/track/view'
+      fullPath: '/api/public/track/view'
+      preLoaderRoute: typeof ApiPublicTrackViewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/skills-files/$': {
       id: '/api/public/skills-files/$'
       path: '/api/public/skills-files/$'
@@ -871,6 +891,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksResubmitSitemapRoute: ApiPublicHooksResubmitSitemapRoute,
   ApiPublicMediaSplatRoute: ApiPublicMediaSplatRoute,
   ApiPublicSkillsFilesSplatRoute: ApiPublicSkillsFilesSplatRoute,
+  ApiPublicTrackViewRoute: ApiPublicTrackViewRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
   LovableEmailTransactionalSendRoute: LovableEmailTransactionalSendRoute,
@@ -878,13 +899,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}
