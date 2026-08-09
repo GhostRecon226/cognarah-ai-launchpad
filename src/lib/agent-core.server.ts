@@ -1009,6 +1009,12 @@ export async function runAgentCore(args: RunAgentArgs) {
             is_featured: false,
             agent_run_id: runId,
             source_urls: [cand.url],
+            africa_relevance_score: africa.score,
+            africa_relevance_reason: africa.reason || null,
+            africa_evidence: africa.evidence,
+            africa_angle_used: africa.angle_used,
+            africa_angle_type: africa.angle_type,
+
           })
           .select("id")
           .single();
