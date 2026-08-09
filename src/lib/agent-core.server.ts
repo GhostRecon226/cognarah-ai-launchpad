@@ -1164,6 +1164,13 @@ export async function runAgentCore(args: RunAgentArgs) {
             africa_evidence: africa.evidence,
             africa_angle_used: africa.angle_used,
             africa_angle_type: africa.angle_type,
+            newsworthiness_score: news.score,
+            newsworthiness_reason: news.reason || null,
+            promotion_score: promotion.score,
+            promotion_reason: promotion.reason,
+            promotion_signals: promotion.signals,
+            promotion_generated_at: new Date().toISOString(),
+
 
           })
           .select("id")
