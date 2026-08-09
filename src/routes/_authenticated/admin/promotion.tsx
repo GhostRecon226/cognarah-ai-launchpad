@@ -14,7 +14,7 @@ import {
 import { SITE_URL } from "@/lib/types";
 import { PAGE_SIZE_LIST, totalPages as calcTotalPages } from "@/lib/pagination";
 import { format, formatDistanceToNow } from "date-fns";
-import { Megaphone, Sparkles, Copy, Check, Link2, Trash2, ExternalLink } from "lucide-react";
+import { Megaphone, Sparkles, Copy, Check, Link2, Trash2, ExternalLink, ChevronLeft, ChevronRight } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin/promotion")({
