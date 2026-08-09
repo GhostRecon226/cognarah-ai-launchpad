@@ -251,7 +251,11 @@ function geminiInlineImage(json: any): string | null {
 // Stage 2 editor: Claude refines the Gemini draft for tone/structure/quality.
 // MUST NOT change facts, quotes, or links. Returns null on any failure so the
 // caller can fall back to the Gemini draft.
-async function refineWithClaude(draft: DraftPayload, sourceUrl: string): Promise<DraftPayload | null> {
+async function refineWithClaude(
+  draft: DraftPayload,
+  sourceUrl: string,
+  africa?: AfricaAssessment,
+): Promise<DraftPayload | null> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return null;
   const editorInstruction =
@@ -261,9 +265,11 @@ async function refineWithClaude(draft: DraftPayload, sourceUrl: string): Promise
     "Do NOT move source citations or attribution into the Cognarah Angle or the closing line, those sections are Cognarah's own voice. " +
     "Keep the same JSON schema. " +
     "Improve writing only, sharpen headline/dek within their word limits, tighten prose, fix awkward phrasing, ensure required sections exist, and keep the editorial edge (a clear stance and one pointed question or contrarian observation in the Cognarah Angle or closing line). " +
+    (africa ? africaEditorConstraint(africa) : "") +
     "Return ONLY strict JSON matching the original shape, no markdown, no code fences, no commentary.\n\n" +
     `Source URL (must be preserved in the footer link): ${sourceUrl}\n\n` +
     `DRAFT JSON:\n${JSON.stringify(draft)}`;
+
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
