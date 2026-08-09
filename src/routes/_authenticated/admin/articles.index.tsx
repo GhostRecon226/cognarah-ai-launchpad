@@ -38,7 +38,7 @@ function ArticlesListInner() {
   const { hasAny } = useRoles();
   const canDelete = hasAny(["admin", "editor"]);
   const { page: rawPage, filter: rawFilter } = Route.useSearch();
-  const navigate = useNavigate({ from: "/admin/articles" });
+  const navigate = useNavigate({ from: "/admin/articles/" });
   const filter: "all" | "published" | "draft" =
     rawFilter === "published" || rawFilter === "draft" ? rawFilter : "all";
   const page = Math.max(1, rawPage);
