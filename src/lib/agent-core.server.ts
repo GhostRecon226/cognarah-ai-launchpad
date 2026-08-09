@@ -917,7 +917,7 @@ export async function runAgentCore(args: RunAgentArgs) {
         }
         if (!draft) { logLine("Skipped: could not produce valid draft after 2 attempts"); return; }
 
-        const refined = await refineWithClaude(draft, cand.url);
+        const refined = await refineWithClaude(draft, cand.url, africa);
         if (refined) {
           draft = refined;
           logLine("Claude editor pass applied");
