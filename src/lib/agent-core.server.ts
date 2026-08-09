@@ -1139,7 +1139,27 @@ export async function runAgentCore(args: RunAgentArgs) {
           || catBySlug.get("latest")
           || (cats ?? [])[0];
 
+        // Promotion score for the distribution queue, computed at draft time.
+        const { computePromotionScore } = await import("./editorial.server");
+        const promotion = computePromotionScore({
+          title: draft.title,
+          published_at: null,
+          status: "draft",
+          view_count: 0,
+          tracked_views_7d: 0,
+          newsworthiness_score: news.score,
+          africa_relevance_score: africa.score,
+          is_featured: false,
+          hero_image: heroPath,
+          body: draft.body_html,
+          key_takeaways: [],
+          tags: draft.tags ?? [],
+          promotions_count: 0,
+          last_promoted_at: null,
+        });
+
         if (created >= target) return;
+
         const { data: insertedArticle, error: insErr } = await supabase
           .from("articles")
           .insert({
