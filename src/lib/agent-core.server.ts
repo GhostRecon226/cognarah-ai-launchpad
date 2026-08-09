@@ -868,8 +868,27 @@ export async function runAgentCore(args: RunAgentArgs) {
           return;
         }
 
+        // African relevance assessment happens after verification and before drafting.
+        await heartbeat("assessing african relevance");
+        const africa = await assessAfricaRelevance(cand.title ?? meta.title ?? "", cand.url, md);
+        logLine(`Africa relevance: ${africa.score}/5${africa.reason ? ` (${africa.reason})` : ""}`);
+        if (africa.score >= 3) {
+          const notes = await researchAfricaAngle(fc, cand.title ?? meta.title ?? "", africa);
+          if (notes) {
+            africa.research_notes = notes;
+            logLine("Targeted African research completed");
+          } else {
+            // No supporting research found: downgrade rather than speculate.
+            africa.score = 2;
+            africa.angle_type = null;
+            logLine("No African research evidence found, downgraded score to 2");
+          }
+        }
+        africa.angle_used = africa.score >= 2;
+        const africaInstruction = africaStructureInstruction(africa);
+
         const buildUserPrompt = (nudge?: string) =>
-          `Focus: ${focusPart}\nSource URL: ${cand.url}\nSource title: ${cand.title ?? meta.title ?? ""}\n\nSource content:\n${md.slice(0, 12000)}` +
+          `Focus: ${focusPart}\nSource URL: ${cand.url}\nSource title: ${cand.title ?? meta.title ?? ""}\n\n${africaInstruction}\nSource content:\n${md.slice(0, 12000)}` +
           (nudge ? `\n\nEDITOR NOTE: ${nudge}` : "");
 
         let draft: DraftPayload | null = null;
@@ -880,12 +899,13 @@ export async function runAgentCore(args: RunAgentArgs) {
           attempts++;
           const nudge = i === 0
             ? undefined
-            : `Your previous draft was ${lastWords} words and failed with: ${lastReason}. Rewrite to AT LEAST 500 words by expanding the Africa Angle paragraph and adding verifiable context drawn from the source. Do not invent facts. Ensure a specific actor+action headline and a dek containing at least one concrete fact (name, number, or date).`;
+            : `Your previous draft was ${lastWords} words and failed with: ${lastReason}. Rewrite to AT LEAST 500 words by deepening the analysis and adding verifiable context drawn from the source. Do not invent facts and do not add an African angle beyond what the AFRICAN RELEVANCE POLICY allows. Ensure a specific actor+action headline and a dek containing at least one concrete fact (name, number, or date).`;
           const aiRes: any = await callGemini({
             system: SYSTEM_PROMPT,
             userParts: [{ text: buildUserPrompt(nudge) }],
             json: true,
           });
+
           const content: string = geminiText(aiRes);
           let parsed: DraftPayload;
           try { parsed = JSON.parse(content); } catch { logLine(`Attempt ${attempts}: non-JSON response`); lastReason = "non-JSON response"; continue; }
