@@ -615,7 +615,7 @@ const SYSTEM_PROMPT =
   "- Stories more than 48 hours old.\n" +
   "- Anything already covered by Cognarah in a previous draft.\n" +
   "- Generic 'AI is changing everything' takes with no specific news peg.\n" +
-  "- Western-only perspectives with zero relevance to African readers.\n\n" +
+  "- Purely speculative framing with no news peg.\n\n" +
   "HEADLINE EXAMPLES\n" +
   "- Bad: 'Artificial Intelligence Is Transforming the Way We Work Forever'. Good: 'OpenAI Launches GPT-5 With Real-Time Voice and Vision Capabilities'.\n" +
   "- Bad: 'This New AI Tool Could Change Everything for African Businesses'. Good: 'Nigerian Startup Lendsqr Adds AI Credit Scoring for Underbanked Users'.\n\n" +
