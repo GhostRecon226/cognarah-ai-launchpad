@@ -640,6 +640,133 @@ const SYSTEM_PROMPT =
   "OUTPUT FORMAT: Return ONLY strict JSON (no markdown, no code fences) matching this shape. Map fields as follows: `title` = Headline, `dek` = the opening paragraph (20-40 words summarizing who/what/why), `body_html` = the full Body followed by the <h2>The Cognarah Angle</h2> subheading, the Cognarah Angle paragraphs, the closing line, and the source footer, `category_slug` = Category. The body must be clean HTML using only: p, h2, h3, ul, ol, li, strong, em, blockquote, a. End the body with: <p><em>Reporting sourced from</em> <a href=\"SOURCE_URL\">Publication name</a>. Analysis and Cognarah Angle are Cognarah's own.</p>.\n" +
   `{"title":"...","dek":"...","body_html":"<p>...</p><h2>The Cognarah Angle</h2><p>...</p><p><em>Reporting sourced from</em> <a href=\"SOURCE_URL\">Publication</a>. Analysis and Cognarah Angle are Cognarah's own.</p>","tags":["...","..."],"seo_title":"...","meta_description":"...","category_slug":"one of: ${CATEGORY_HINTS.join(", ")}"}`;
 
+// ============ NEWSWORTHINESS FILTER ============
+
+const NEWSWORTHINESS_MIN = 45;
+
+const NEWSWORTHINESS_SYSTEM =
+  "You are Cognarah's news desk editor. Score how newsworthy a story is for an African-first AI publication, from 0 to 100.\n\n" +
+  "Score high (70-100): a genuine development that changes something. New model or product launch, funding round, acquisition, regulation, policy decision, research breakthrough, major partnership, outage or incident, verifiable adoption data, an African AI company or government doing something concrete.\n" +
+  "Score medium (45-69): real but incremental. Feature updates, minor releases, executive commentary with substance, credible market reports.\n" +
+  "Score low (0-44): opinion columns with no new facts, listicles, how-to and tutorial content, sponsored or promotional posts, product reviews, recycled coverage of an old event, vague trend pieces, event announcements with no substance, press release rewrites with no verifiable detail.\n\n" +
+  "Penalise stories with no named actor, no date, no numbers, or no verifiable claim.\n" +
+  "Return ONLY strict JSON, no markdown:\n" +
+  '{"score":0,"reason":"one sentence","story_key":"short canonical description of the underlying event, max 12 words"}';
+
+interface Newsworthiness { score: number; reason: string; story_key: string }
+
+/** Score a scraped story 0-100. On failure returns a neutral score so the run continues. */
+async function assessNewsworthiness(
+  title: string,
+  sourceUrl: string,
+  markdown: string,
+): Promise<Newsworthiness> {
+  try {
+    const res: any = await callGemini({
+      system: NEWSWORTHINESS_SYSTEM,
+      userParts: [{ text: `Source URL: ${sourceUrl}\nTitle: ${title}\n\nSource content:\n${markdown.slice(0, 8000)}` }],
+      json: true,
+    });
+    const raw = geminiText(res).trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    const parsed = JSON.parse(raw) as { score?: unknown; reason?: unknown; story_key?: unknown };
+    const score = Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
+    return {
+      score,
+      reason: typeof parsed.reason === "string" ? parsed.reason.slice(0, 400) : "",
+      story_key: typeof parsed.story_key === "string" ? parsed.story_key.slice(0, 160) : title.slice(0, 160),
+    };
+  } catch {
+    return { score: 60, reason: "newsworthiness assessment unavailable", story_key: title.slice(0, 160) };
+  }
+}
+
+// ============ DUPLICATE STORY PROTECTION ============
+
+const STOPWORDS = new Set([
+  "the", "a", "an", "and", "or", "of", "for", "to", "in", "on", "with", "by", "at", "from",
+  "its", "it", "as", "is", "are", "was", "were", "be", "has", "have", "had", "that", "this",
+  "new", "says", "said", "after", "over", "into", "amid", "will", "can", "how", "why", "what",
+  "ai", "artificial", "intelligence",
+]);
+
+function keyTokens(text: string): Set<string> {
+  return new Set(
+    (text || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter((w) => w.length > 2 && !STOPWORDS.has(w)),
+  );
+}
+
+function tokenOverlap(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 || b.size === 0) return 0;
+  let shared = 0;
+  for (const t of a) if (b.has(t)) shared += 1;
+  return shared / Math.min(a.size, b.size);
+}
+
+const DUPLICATE_SYSTEM =
+  "You decide whether two headlines describe the SAME underlying news event.\n" +
+  "Same event means the same actor doing the same thing at the same time, even if the wording differs.\n" +
+  "A follow-up with genuinely new facts is NOT the same event. A different company doing something similar is NOT the same event.\n" +
+  'Return ONLY strict JSON: {"duplicate":true,"of":"the matching existing headline","reason":"one short sentence"}';
+
+interface DuplicateCheck { duplicate: boolean; of?: string; reason?: string }
+
+/**
+ * Two-stage duplicate protection: cheap token overlap against recent articles,
+ * then a Gemini semantic confirmation on the closest matches only.
+ */
+async function checkDuplicateStory(
+  supabase: any,
+  candidateTitle: string,
+  storyKey: string,
+): Promise<DuplicateCheck> {
+  try {
+    const since = new Date(Date.now() - 21 * 86400000).toISOString();
+    const { data: recent } = await supabase
+      .from("articles")
+      .select("title, created_at")
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(120);
+    const existing: string[] = (recent ?? []).map((r: any) => String(r.title ?? "")).filter(Boolean);
+    if (existing.length === 0) return { duplicate: false };
+
+    const candTokens = keyTokens(`${candidateTitle} ${storyKey}`);
+    const scored = existing
+      .map((t) => ({ title: t, overlap: tokenOverlap(candTokens, keyTokens(t)) }))
+      .sort((a, b) => b.overlap - a.overlap);
+
+    // Near-identical headlines: reject without spending a model call.
+    if (scored[0] && scored[0].overlap >= 0.8) {
+      return { duplicate: true, of: scored[0].title, reason: "near identical headline already covered" };
+    }
+
+    const near = scored.filter((s) => s.overlap >= 0.35).slice(0, 6);
+    if (near.length === 0) return { duplicate: false };
+
+    const res: any = await callGemini({
+      system: DUPLICATE_SYSTEM,
+      userParts: [{
+        text: `Candidate story: ${candidateTitle}\nCandidate event: ${storyKey}\n\nExisting Cognarah headlines from the last 21 days:\n${near.map((n) => `- ${n.title}`).join("\n")}`,
+      }],
+      json: true,
+    });
+    const raw = geminiText(res).trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    const parsed = JSON.parse(raw) as DuplicateCheck;
+    return {
+      duplicate: parsed.duplicate === true,
+      of: typeof parsed.of === "string" ? parsed.of.slice(0, 200) : undefined,
+      reason: typeof parsed.reason === "string" ? parsed.reason.slice(0, 200) : undefined,
+    };
+  } catch {
+    // Never block a run because the duplicate check failed.
+    return { duplicate: false };
+  }
+}
+
 
 /**
  * Reaper: mark stalled agent runs as failed so the UI stops spinning on them.
@@ -868,6 +995,29 @@ export async function runAgentCore(args: RunAgentArgs) {
           return;
         }
 
+        // Newsworthiness filter: drop opinion pieces, listicles and promo posts early.
+        await heartbeat("scoring newsworthiness");
+        const news = await assessNewsworthiness(cand.title ?? meta.title ?? "", cand.url, md);
+        logLine(`Newsworthiness: ${news.score}/100${news.reason ? ` (${news.reason})` : ""}`);
+        if (news.score < NEWSWORTHINESS_MIN) {
+          logLine(`Skipped: below newsworthiness threshold (${news.score} < ${NEWSWORTHINESS_MIN})`);
+          return;
+        }
+
+        // Duplicate story protection against the last 21 days of coverage.
+        const dup = await checkDuplicateStory(supabase, cand.title ?? meta.title ?? "", news.story_key);
+        if (dup.duplicate) {
+          logLine(`Skipped: duplicate story${dup.of ? ` of "${dup.of}"` : ""}${dup.reason ? ` (${dup.reason})` : ""}`);
+          // Remember the URL so the same source is not re-fetched next run.
+          try {
+            await supabase.from("agent_seen_sources").insert({
+              url_hash: hashUrl(cand.url), url: cand.url, run_id: runId,
+            });
+          } catch { /* best-effort */ }
+          return;
+        }
+
+
         // African relevance assessment happens after verification and before drafting.
         await heartbeat("assessing african relevance");
         const africa = await assessAfricaRelevance(cand.title ?? meta.title ?? "", cand.url, md);
@@ -989,7 +1139,27 @@ export async function runAgentCore(args: RunAgentArgs) {
           || catBySlug.get("latest")
           || (cats ?? [])[0];
 
+        // Promotion score for the distribution queue, computed at draft time.
+        const { computePromotionScore } = await import("./editorial.server");
+        const promotion = computePromotionScore({
+          title: draft.title,
+          published_at: null,
+          status: "draft",
+          view_count: 0,
+          tracked_views_7d: 0,
+          newsworthiness_score: news.score,
+          africa_relevance_score: africa.score,
+          is_featured: false,
+          hero_image: heroPath,
+          body: draft.body_html,
+          key_takeaways: [],
+          tags: draft.tags ?? [],
+          promotions_count: 0,
+          last_promoted_at: null,
+        });
+
         if (created >= target) return;
+
         const { data: insertedArticle, error: insErr } = await supabase
           .from("articles")
           .insert({
@@ -1014,6 +1184,13 @@ export async function runAgentCore(args: RunAgentArgs) {
             africa_evidence: africa.evidence,
             africa_angle_used: africa.angle_used,
             africa_angle_type: africa.angle_type,
+            newsworthiness_score: news.score,
+            newsworthiness_reason: news.reason || null,
+            promotion_score: promotion.score,
+            promotion_reason: promotion.reason,
+            promotion_signals: promotion.signals,
+            promotion_generated_at: new Date().toISOString(),
+
 
           })
           .select("id")
