@@ -243,3 +243,41 @@ export const generatePromotionCopy = createServerFn({ method: "POST" })
 
     return { copy, link };
   });
+
+/**
+ * Score published articles that never went through the agent pipeline, so the
+ * promotion queue is not ranking older posts with a missing newsworthiness
+ * signal. Runs in small batches and skips anything already scored.
+ */
+export const backfillNewsworthiness = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ limit: z.number().int().min(1).max(25).optional() }).parse(d ?? {}))
+  .handler(async ({ context, data }) => {
+    await requireStaff(context);
+    const sb = context.supabase;
+    const { data: rows, error } = await sb
+      .from("articles")
+      .select("id, title, slug, body")
+      .eq("status", "published")
+      .is("newsworthiness_score", null)
+      .order("published_at", { ascending: false })
+      .limit(data.limit ?? 10);
+    if (error) throw new Error(error.message);
+
+    const { assessNewsworthiness } = await import("./agent-core.server");
+    let scored = 0;
+    for (const a of (rows ?? []) as any[]) {
+      try {
+        const news = await assessNewsworthiness(a.title ?? "", `${SITE_URL}/article/${a.slug}`, a.body ?? "");
+        await sb
+          .from("articles")
+          .update({ newsworthiness_score: news.score, newsworthiness_reason: news.reason })
+          .eq("id", a.id);
+        scored += 1;
+      } catch {
+        // Skip this article, keep going with the rest of the batch.
+      }
+    }
+    const remaining = Math.max(0, (rows?.length ?? 0) - scored);
+    return { scored, remaining_in_batch: remaining };
+  });

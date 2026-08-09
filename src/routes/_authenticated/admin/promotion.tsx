@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { AdminShell } from "@/components/admin/admin-shell";
@@ -9,6 +9,7 @@ import {
   logPromotion,
   listArticlePromotions,
   deletePromotion,
+  backfillNewsworthiness,
 } from "@/lib/promotion.functions";
 import { SITE_URL } from "@/lib/types";
 import { format, formatDistanceToNow } from "date-fns";
@@ -19,6 +20,14 @@ export const Route = createFileRoute("/_authenticated/admin/promotion")({
   head: () => ({ meta: [{ title: "Promotion queue: Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
   component: PromotionPage,
 });
+
+/** Relative timestamps render after mount so SSR and client markup match. */
+function RelativeTime({ iso, fallback }: { iso: string | null; fallback: string }) {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  if (!iso) return <>{fallback}</>;
+  return <>{mounted ? formatDistanceToNow(new Date(iso), { addSuffix: true }) : format(new Date(iso), "MMM d, yyyy")}</>;
+}
 
 type Channel = "linkedin" | "x" | "whatsapp" | "newsletter";
 const CHANNEL_LABELS: Record<string, string> = {
@@ -262,10 +271,20 @@ function PromotionPage() {
   const [openId, setOpenId] = useState<string | null>(null);
   const [filter, setFilter] = useState<"all" | "never" | "high">("all");
 
+  const runBackfill = useServerFn(backfillNewsworthiness);
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["promotion-queue"],
     queryFn: () => fetchQueue(),
     refetchOnWindowFocus: false,
+  });
+
+  const backfill = useMutation({
+    mutationFn: (args: { data: { limit: number } }) => runBackfill(args),
+    onSuccess: (res: any) => {
+      toast.success(res?.scored ? `Scored ${res.scored} article${res.scored === 1 ? "" : "s"}` : "Nothing left to score");
+      refetch();
+    },
+    onError: (e: any) => toast.error(e?.message || "Backfill failed"),
   });
 
   const rows = useMemo(() => {
@@ -293,6 +312,14 @@ function PromotionPage() {
               {f === "all" ? "All" : f === "high" ? "Score 55+" : "Never promoted"}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={() => backfill.mutate({ data: { limit: 10 } })}
+            disabled={backfill.isPending}
+            className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-secondary disabled:opacity-60"
+          >
+            {backfill.isPending ? "Scoring..." : "Score missing articles"}
+          </button>
         </div>
       </div>
 
@@ -328,7 +355,7 @@ function PromotionPage() {
                   {r.title}
                 </Link>
                 <div className="mt-1 text-xs text-muted-foreground">
-                  {r.published_at ? formatDistanceToNow(new Date(r.published_at), { addSuffix: true }) : "unpublished"}
+                  <RelativeTime iso={r.published_at} fallback="unpublished" />
                   {", "}
                   {r.view_count.toLocaleString()} views, {r.views_7d} in the last 7 days
                   {r.newsworthiness_score != null ? `, newsworthiness ${r.newsworthiness_score}/100` : ""}
