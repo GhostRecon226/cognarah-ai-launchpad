@@ -179,6 +179,115 @@ export type Database = {
         }
         Relationships: []
       }
+      article_promotions: {
+        Row: {
+          article_id: string
+          channel: string
+          created_at: string
+          created_by: string | null
+          id: string
+          note: string | null
+          promoted_at: string
+          promotion_status: string
+          updated_at: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+        }
+        Insert: {
+          article_id: string
+          channel: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          promoted_at?: string
+          promotion_status?: string
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Update: {
+          article_id?: string
+          channel?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          note?: string | null
+          promoted_at?: string
+          promotion_status?: string
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_promotions_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      article_views: {
+        Row: {
+          article_id: string | null
+          created_at: string
+          id: string
+          occurred_at: string
+          referrer_host: string | null
+          slug: string
+          source_group: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          visitor_hash: string | null
+        }
+        Insert: {
+          article_id?: string | null
+          created_at?: string
+          id?: string
+          occurred_at?: string
+          referrer_host?: string | null
+          slug: string
+          source_group?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          visitor_hash?: string | null
+        }
+        Update: {
+          article_id?: string | null
+          created_at?: string
+          id?: string
+          occurred_at?: string
+          referrer_host?: string | null
+          slug?: string
+          source_group?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          visitor_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_views_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       articles: {
         Row: {
           africa_angle_type: string | null
@@ -199,6 +308,12 @@ export type Database = {
           is_news: boolean
           key_takeaways: string[]
           meta_description: string | null
+          newsworthiness_reason: string | null
+          newsworthiness_score: number | null
+          promotion_generated_at: string | null
+          promotion_reason: string | null
+          promotion_score: number | null
+          promotion_signals: string[]
           published_at: string | null
           read_time: number
           seo_title: string | null
@@ -229,6 +344,12 @@ export type Database = {
           is_news?: boolean
           key_takeaways?: string[]
           meta_description?: string | null
+          newsworthiness_reason?: string | null
+          newsworthiness_score?: number | null
+          promotion_generated_at?: string | null
+          promotion_reason?: string | null
+          promotion_score?: number | null
+          promotion_signals?: string[]
           published_at?: string | null
           read_time?: number
           seo_title?: string | null
@@ -259,6 +380,12 @@ export type Database = {
           is_news?: boolean
           key_takeaways?: string[]
           meta_description?: string | null
+          newsworthiness_reason?: string | null
+          newsworthiness_score?: number | null
+          promotion_generated_at?: string | null
+          promotion_reason?: string | null
+          promotion_score?: number | null
+          promotion_signals?: string[]
           published_at?: string | null
           read_time?: number
           seo_title?: string | null
@@ -841,6 +968,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      article_views_tracking_start: { Args: never; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
