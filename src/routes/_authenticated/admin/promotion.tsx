@@ -407,6 +407,42 @@ function PromotionPage() {
           </div>
         ))}
       </div>
+
+      {pageCount > 1 && (
+        <nav aria-label="Pagination" className="mt-8 flex flex-wrap items-center justify-center gap-2">
+          <button
+            type="button"
+            onClick={() => goTo(currentPage - 1)}
+            disabled={currentPage <= 1}
+            aria-label="Previous page"
+            className="inline-flex h-10 min-w-10 items-center justify-center rounded-md border border-border px-3 text-sm font-medium transition hover:bg-secondary disabled:pointer-events-none disabled:opacity-40"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          {Array.from({ length: pageCount }, (_, i) => i + 1).map((p) => (
+            <button
+              key={p}
+              type="button"
+              onClick={() => goTo(p)}
+              aria-current={p === currentPage ? "page" : undefined}
+              className={`inline-flex h-10 min-w-10 items-center justify-center rounded-md border border-border px-3 text-sm font-medium transition hover:bg-secondary ${
+                p === currentPage ? "bg-foreground text-background hover:bg-foreground" : ""
+              }`}
+            >
+              {p}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => goTo(currentPage + 1)}
+            disabled={currentPage >= pageCount}
+            aria-label="Next page"
+            className="inline-flex h-10 min-w-10 items-center justify-center rounded-md border border-border px-3 text-sm font-medium transition hover:bg-secondary disabled:pointer-events-none disabled:opacity-40"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </nav>
+      )}
     </AdminShell>
   );
 }
