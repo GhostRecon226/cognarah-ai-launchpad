@@ -968,7 +968,6 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      article_views_tracking_start: { Args: never; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean

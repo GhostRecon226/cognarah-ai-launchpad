@@ -1,0 +1,1 @@
+DROP FUNCTION IF EXISTS public.article_views_tracking_start();
