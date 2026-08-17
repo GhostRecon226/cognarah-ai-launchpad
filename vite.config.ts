@@ -31,7 +31,9 @@ export default defineConfig({
         registerType: "autoUpdate",
         injectRegister: null,
         filename: "sw.js",
+        outDir: "dist/client",
         manifest: false,
+
         devOptions: { enabled: false },
         includeAssets: ["offline.html", "favicon.png", "icon-192.png", "icon-512.png"],
         workbox: {
