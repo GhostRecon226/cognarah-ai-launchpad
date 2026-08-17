@@ -977,6 +977,38 @@ export type Database = {
         }
         Relationships: []
       }
+      translation_requests: {
+        Row: {
+          article_id: string | null
+          created_at: string
+          id: string
+          ip_hash: string
+          language_code: string
+        }
+        Insert: {
+          article_id?: string | null
+          created_at?: string
+          id?: string
+          ip_hash: string
+          language_code: string
+        }
+        Update: {
+          article_id?: string | null
+          created_at?: string
+          id?: string
+          ip_hash?: string
+          language_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "translation_requests_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string

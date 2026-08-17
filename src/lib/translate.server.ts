@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { languageName } from "./languages";
 import { stripEmDashes } from "./strip-em-dashes";
@@ -9,6 +10,11 @@ export interface TranslationResultImpl {
   cached: boolean;
 }
 
+// Readers can generate this many brand new translations per hour.
+export const TRANSLATION_RATE_LIMIT = 5;
+// Articles older than this are served in English only, to cap translation spend on stale content.
+export const TRANSLATION_MAX_AGE_DAYS = 90;
+
 function cleanFences(text: string): string {
   return text
     .trim()
@@ -17,15 +23,26 @@ function cleanFences(text: string): string {
     .trim();
 }
 
+export function hashIp(ip: string): string {
+  return createHash("sha256").update(`translate:${ip}`).digest("hex").slice(0, 32);
+}
+
+function isTooOld(publishedAt: string | null): boolean {
+  if (!publishedAt) return false;
+  const ageMs = Date.now() - new Date(publishedAt).getTime();
+  return ageMs > TRANSLATION_MAX_AGE_DAYS * 24 * 60 * 60 * 1000;
+}
+
 export async function translateArticleImpl(
   slug: string,
   languageCode: string,
+  ip: string,
 ): Promise<TranslationResultImpl> {
   const lang = languageCode.trim().toLowerCase();
 
   const { data: article, error: articleError } = await supabaseAdmin
     .from("articles")
-    .select("id, title, body")
+    .select("id, title, body, published_at")
     .eq("slug", slug)
     .eq("status", "published")
     .maybeSingle();
@@ -48,6 +65,28 @@ export async function translateArticleImpl(
       cached: true,
     };
   }
+
+  if (isTooOld(article.published_at)) {
+    throw new Error(
+      `This article is more than ${TRANSLATION_MAX_AGE_DAYS} days old, so it is available in English only.`,
+    );
+  }
+
+  const ipHash = hashIp(ip || "unknown");
+  const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+  const { count } = await supabaseAdmin
+    .from("translation_requests")
+    .select("id", { count: "exact", head: true })
+    .eq("ip_hash", ipHash)
+    .gte("created_at", since);
+
+  if ((count ?? 0) >= TRANSLATION_RATE_LIMIT) {
+    throw new Error(
+      "You have reached the limit of 5 new translations per hour. Please try again later.",
+    );
+  }
+
+
 
   const key = process.env["ANTHROPIC_API_KEY"];
   if (!key) throw new Error("Translation is not available right now.");
@@ -118,5 +157,13 @@ export async function translateArticleImpl(
     );
   if (insertError) console.error("[translate] cache write failed", insertError.message);
 
+  const { error: logError } = await supabaseAdmin.from("translation_requests").insert({
+    ip_hash: ipHash,
+    article_id: article.id,
+    language_code: lang,
+  });
+  if (logError) console.error("[translate] rate limit log failed", logError.message);
+
   return { languageCode: lang, title, body, cached: false };
 }
+

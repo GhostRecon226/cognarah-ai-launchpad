@@ -169,7 +169,7 @@ function ArticlePage() {
           )}
           <h1 dir={dir} className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">{displayTitle}</h1>
           {!translation && article.excerpt && <p className="mt-4 text-lg text-muted-foreground sm:text-xl">{article.excerpt}</p>}
-          <ArticleTranslate slug={article.slug} active={translation} onTranslated={setTranslation} />
+          <ArticleTranslate slug={article.slug} publishedAt={article.published_at} active={translation} onTranslated={setTranslation} />
 
           <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             {article.author?.name && <span className="font-medium text-foreground">{article.author.name}</span>}
