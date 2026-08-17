@@ -12,6 +12,9 @@ import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
+import { registerServiceWorker } from "../lib/register-sw";
+import { InstallPrompt } from "@/components/site/install-prompt";
+
 
 function NotFoundComponent() {
   return (
