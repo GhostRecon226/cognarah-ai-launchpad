@@ -209,10 +209,11 @@ function ArticlePage() {
             </aside>
           )}
           {(() => {
-            const [firstPart, restPart] = splitBodyAfterSecondParagraph(sanitizeHtml(article.body));
+            const [firstPart, restPart] = splitBodyAfterSecondParagraph(sanitizeHtml(displayBody));
             return (
               <>
                 <div
+                  dir={dir}
                   className="prose-article mt-10"
                   dangerouslySetInnerHTML={{ __html: firstPart }}
                 />
@@ -220,6 +221,7 @@ function ArticlePage() {
                   <>
                     <AdUnit position="in-article" slot={AD_SLOTS.inArticleTop} />
                     <div
+                      dir={dir}
                       className="prose-article"
                       dangerouslySetInnerHTML={{ __html: restPart }}
                     />
@@ -228,6 +230,7 @@ function ArticlePage() {
               </>
             );
           })()}
+
           <AdUnit position="in-article" slot={AD_SLOTS.inArticleBottom} />
           {article.author && (
             <section className="mt-12 rounded-xl border border-border bg-background p-5 sm:p-6">
