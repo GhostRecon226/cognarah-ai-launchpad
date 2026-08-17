@@ -88,11 +88,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:site", content: "@cognarah" },
       { name: "google-site-verification", content: "EOVo7_0XdjuRhHTwkW2J-u-WHHCIhxZAtK27HBec0B0" },
       { name: "google-adsense-account", content: "ca-pub-6846746931516022" },
+      { name: "theme-color", content: "#0A0F2C" },
+      { name: "apple-mobile-web-app-capable", content: "yes" },
+      { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent" },
+      { name: "apple-mobile-web-app-title", content: "Cognarah" },
     ],
     links: [
       { rel: "stylesheet", href: appCss },
       { rel: "icon", type: "image/png", href: "/favicon.png" },
+      { rel: "manifest", href: "/manifest.webmanifest" },
+      { rel: "apple-touch-icon", href: "/apple-touch-icon.png" },
     ],
+
     scripts: [
       {
         src: "https://www.googletagmanager.com/gtag/js?id=G-ZZ0CHXPRPM",
@@ -190,10 +197,16 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  useEffect(() => {
+    registerServiceWorker();
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <Outlet />
+      <InstallPrompt />
       <Toaster position="top-center" richColors />
     </QueryClientProvider>
   );
 }
+
