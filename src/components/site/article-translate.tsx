@@ -5,18 +5,19 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { translateArticle, type TranslationResult } from "@/lib/translate.functions";
+import { translateArticle, TRANSLATION_MAX_AGE_DAYS, type TranslationResult } from "@/lib/translate.functions";
 import { ALL_LANGUAGES, COMMON_LANGUAGES, languageName } from "@/lib/languages";
 
 const DISMISS_KEY = "cognarah:lang-prompt-dismissed";
 
 interface Props {
   slug: string;
+  publishedAt: string | null;
   active: TranslationResult | null;
   onTranslated: (result: TranslationResult | null) => void;
 }
 
-export function ArticleTranslate({ slug, active, onTranslated }: Props) {
+export function ArticleTranslate({ slug, publishedAt, active, onTranslated }: Props) {
   const run = useServerFn(translateArticle);
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -24,8 +25,13 @@ export function ArticleTranslate({ slug, active, onTranslated }: Props) {
   const [suggested, setSuggested] = useState<string | null>(null);
   const requestId = useRef(0);
 
+  const tooOld = publishedAt
+    ? Date.now() - new Date(publishedAt).getTime() >
+      TRANSLATION_MAX_AGE_DAYS * 24 * 60 * 60 * 1000
+    : false;
+
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || tooOld) return;
     try {
       if (window.localStorage.getItem(DISMISS_KEY)) return;
     } catch {
@@ -35,7 +41,8 @@ export function ArticleTranslate({ slug, active, onTranslated }: Props) {
     const base = raw.split("-")[0];
     if (!base || base === "en") return;
     setSuggested(base);
-  }, []);
+  }, [tooOld]);
+
 
   const dismissPrompt = () => {
     setSuggested(null);
