@@ -235,6 +235,41 @@ export type Database = {
           },
         ]
       }
+      article_translations: {
+        Row: {
+          article_id: string
+          created_at: string
+          id: string
+          language_code: string
+          translated_body: string
+          translated_title: string
+        }
+        Insert: {
+          article_id: string
+          created_at?: string
+          id?: string
+          language_code: string
+          translated_body: string
+          translated_title: string
+        }
+        Update: {
+          article_id?: string
+          created_at?: string
+          id?: string
+          language_code?: string
+          translated_body?: string
+          translated_title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "article_translations_article_id_fkey"
+            columns: ["article_id"]
+            isOneToOne: false
+            referencedRelation: "articles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       article_views: {
         Row: {
           article_id: string | null

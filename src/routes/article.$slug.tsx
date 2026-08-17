@@ -1,5 +1,10 @@
+import { useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { ArticleTranslate } from "@/components/site/article-translate";
+import type { TranslationResult } from "@/lib/translate.functions";
+import { isRtl } from "@/lib/languages";
 import { supabase } from "@/integrations/supabase/client";
+
 import { SiteNav } from "@/components/site/nav";
 import { SiteFooter } from "@/components/site/footer";
 import { NewsletterSignup } from "@/components/site/newsletter";
@@ -142,6 +147,10 @@ export const Route = createFileRoute("/article/$slug")({
 function ArticlePage() {
   const { article, related } = Route.useLoaderData();
   const url = `${SITE_URL}/article/${article.slug}`;
+  const [translation, setTranslation] = useState<TranslationResult | null>(null);
+  const displayTitle = translation ? translation.title : article.title;
+  const displayBody = translation ? translation.body : article.body;
+  const dir = translation && isRtl(translation.languageCode) ? "rtl" : undefined;
   return (
     <div className="flex min-h-screen flex-col">
       <ViewTracker slug={article.slug} />
@@ -158,8 +167,10 @@ function ArticlePage() {
               {article.category.name}
             </Link>
           )}
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">{article.title}</h1>
-          {article.excerpt && <p className="mt-4 text-lg text-muted-foreground sm:text-xl">{article.excerpt}</p>}
+          <h1 dir={dir} className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">{displayTitle}</h1>
+          {!translation && article.excerpt && <p className="mt-4 text-lg text-muted-foreground sm:text-xl">{article.excerpt}</p>}
+          <ArticleTranslate slug={article.slug} active={translation} onTranslated={setTranslation} />
+
           <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             {article.author?.name && <span className="font-medium text-foreground">{article.author.name}</span>}
             {article.published_at && (
@@ -198,10 +209,11 @@ function ArticlePage() {
             </aside>
           )}
           {(() => {
-            const [firstPart, restPart] = splitBodyAfterSecondParagraph(sanitizeHtml(article.body));
+            const [firstPart, restPart] = splitBodyAfterSecondParagraph(sanitizeHtml(displayBody));
             return (
               <>
                 <div
+                  dir={dir}
                   className="prose-article mt-10"
                   dangerouslySetInnerHTML={{ __html: firstPart }}
                 />
@@ -209,6 +221,7 @@ function ArticlePage() {
                   <>
                     <AdUnit position="in-article" slot={AD_SLOTS.inArticleTop} />
                     <div
+                      dir={dir}
                       className="prose-article"
                       dangerouslySetInnerHTML={{ __html: restPart }}
                     />
@@ -217,6 +230,7 @@ function ArticlePage() {
               </>
             );
           })()}
+
           <AdUnit position="in-article" slot={AD_SLOTS.inArticleBottom} />
           {article.author && (
             <section className="mt-12 rounded-xl border border-border bg-background p-5 sm:p-6">
