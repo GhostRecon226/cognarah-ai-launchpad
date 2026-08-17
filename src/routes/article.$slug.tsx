@@ -43,7 +43,7 @@ async function loadArticle(slug: string): Promise<{ article: Article; related: A
     .maybeSingle();
   if (!article) throw notFound();
   const a = article as unknown as Article;
-  try { await supabase.rpc("increment_article_views", { _slug: slug }); } catch (e) { console.warn("[views] increment failed", e); }
+  // View counting happens server side in /api/public/track/view (called by ViewTracker).
   let related: Article[] = [];
   if (a.category_id) {
     const { data } = await supabase
