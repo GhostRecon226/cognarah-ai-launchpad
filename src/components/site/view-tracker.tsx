@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { recordArticleView } from "@/components/site/install-prompt";
 
 /**
  * Fires a single first-party view event per article page view.
@@ -10,7 +11,9 @@ export function ViewTracker({ slug }: { slug: string }) {
   useEffect(() => {
     if (sent.current === slug) return;
     sent.current = slug;
+    recordArticleView();
     const params = new URLSearchParams(window.location.search);
+
     const payload = {
       slug,
       referrer: document.referrer || null,
