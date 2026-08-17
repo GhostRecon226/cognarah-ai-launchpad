@@ -77,8 +77,19 @@ export function ArticleTranslate({ slug, publishedAt, active, onTranslated }: Pr
     }
   }
 
+  if (tooOld) {
+    return (
+      <p className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
+        <Globe className="h-4 w-4" aria-hidden />
+        Translation is available on articles published in the last {TRANSLATION_MAX_AGE_DAYS} days.
+        This one is available in English only.
+      </p>
+    );
+  }
+
   return (
     <div className="mt-6 flex flex-wrap items-center gap-3">
+
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
