@@ -142,6 +142,10 @@ export const Route = createFileRoute("/article/$slug")({
 function ArticlePage() {
   const { article, related } = Route.useLoaderData();
   const url = `${SITE_URL}/article/${article.slug}`;
+  const [translation, setTranslation] = useState<TranslationResult | null>(null);
+  const displayTitle = translation ? translation.title : article.title;
+  const displayBody = translation ? translation.body : article.body;
+  const dir = translation && isRtl(translation.languageCode) ? "rtl" : undefined;
   return (
     <div className="flex min-h-screen flex-col">
       <ViewTracker slug={article.slug} />
@@ -158,8 +162,10 @@ function ArticlePage() {
               {article.category.name}
             </Link>
           )}
-          <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">{article.title}</h1>
-          {article.excerpt && <p className="mt-4 text-lg text-muted-foreground sm:text-xl">{article.excerpt}</p>}
+          <h1 dir={dir} className="mt-3 text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">{displayTitle}</h1>
+          {!translation && article.excerpt && <p className="mt-4 text-lg text-muted-foreground sm:text-xl">{article.excerpt}</p>}
+          <ArticleTranslate slug={article.slug} active={translation} onTranslated={setTranslation} />
+
           <div className="mt-6 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             {article.author?.name && <span className="font-medium text-foreground">{article.author.name}</span>}
             {article.published_at && (
