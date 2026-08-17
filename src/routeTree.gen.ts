@@ -9,86 +9,55 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
-import { Route as StateOfAfricanAiRouteImport } from './routes/state-of-african-ai'
-import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
-import { Route as SetupRouteImport } from './routes/setup'
-import { Route as SearchRouteImport } from './routes/search'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
-import { Route as LlmsFullDottxtRouteImport } from './routes/llms-full[.]txt'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as AboutRouteImport } from './routes/about'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as StartupsSubmitRouteImport } from './routes/startups.submit'
-import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
-import { Route as CategorySlugRouteImport } from './routes/category.$slug'
-import { Route as AuthorsSlugRouteImport } from './routes/authors.$slug'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AboutRouteImport } from './routes/about'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as LlmsFullDottxtRouteImport } from './routes/llms-full[.]txt'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SearchRouteImport } from './routes/search'
+import { Route as SetupRouteImport } from './routes/setup'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as StateOfAfricanAiRouteImport } from './routes/state-of-african-ai'
+import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as ArticleSlugRouteImport } from './routes/article.$slug'
-import { Route as ResourcesSkillsIndexRouteImport } from './routes/resources.skills.index'
+import { Route as AuthorsSlugRouteImport } from './routes/authors.$slug'
+import { Route as CategorySlugRouteImport } from './routes/category.$slug'
+import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
+import { Route as StartupsSubmitRouteImport } from './routes/startups.submit'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
-import { Route as ResourcesSkillsSlugRouteImport } from './routes/resources.skills.$slug'
-import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
-import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
-import { Route as AuthenticatedAdminSubscribersRouteImport } from './routes/_authenticated/admin/subscribers'
-import { Route as AuthenticatedAdminStartupsRouteImport } from './routes/_authenticated/admin/startups'
-import { Route as AuthenticatedAdminSkillsRouteImport } from './routes/_authenticated/admin/skills'
-import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
-import { Route as AuthenticatedAdminPromotionRouteImport } from './routes/_authenticated/admin/promotion'
-import { Route as AuthenticatedAdminMediaRouteImport } from './routes/_authenticated/admin/media'
-import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
-import { Route as AuthenticatedAdminAuthorsRouteImport } from './routes/_authenticated/admin/authors'
 import { Route as AuthenticatedAdminAgentRouteImport } from './routes/_authenticated/admin/agent'
+import { Route as AuthenticatedAdminAuthorsRouteImport } from './routes/_authenticated/admin/authors'
+import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
+import { Route as AuthenticatedAdminMediaRouteImport } from './routes/_authenticated/admin/media'
+import { Route as AuthenticatedAdminPromotionRouteImport } from './routes/_authenticated/admin/promotion'
+import { Route as AuthenticatedAdminSettingsRouteImport } from './routes/_authenticated/admin/settings'
+import { Route as AuthenticatedAdminSkillsRouteImport } from './routes/_authenticated/admin/skills'
+import { Route as AuthenticatedAdminStartupsRouteImport } from './routes/_authenticated/admin/startups'
+import { Route as AuthenticatedAdminSubscribersRouteImport } from './routes/_authenticated/admin/subscribers'
+import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin/users'
+import { Route as LovableEmailSuppressionRouteImport } from './routes/lovable/email/suppression'
+import { Route as ResourcesSkillsIndexRouteImport } from './routes/resources.skills.index'
+import { Route as ResourcesSkillsSlugRouteImport } from './routes/resources.skills.$slug'
 import { Route as AuthenticatedAdminArticlesIndexRouteImport } from './routes/_authenticated/admin/articles.index'
-import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
-import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
-import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
-import { Route as ApiPublicTrackViewRouteImport } from './routes/api/public/track/view'
-import { Route as ApiPublicSkillsFilesSplatRouteImport } from './routes/api/public/skills-files.$'
-import { Route as ApiPublicMediaSplatRouteImport } from './routes/api/public/media.$'
-import { Route as ApiPublicHooksResubmitSitemapRouteImport } from './routes/api/public/hooks/resubmit-sitemap'
-import { Route as ApiPublicHooksAgentRunRouteImport } from './routes/api/public/hooks/agent-run'
 import { Route as AuthenticatedAdminArticlesIdRouteImport } from './routes/_authenticated/admin/articles.$id'
+import { Route as ApiPublicHooksAgentRunRouteImport } from './routes/api/public/hooks/agent-run'
+import { Route as ApiPublicHooksResubmitSitemapRouteImport } from './routes/api/public/hooks/resubmit-sitemap'
+import { Route as ApiPublicMediaSplatRouteImport } from './routes/api/public/media.$'
+import { Route as ApiPublicSkillsFilesSplatRouteImport } from './routes/api/public/skills-files.$'
+import { Route as ApiPublicTrackViewRouteImport } from './routes/api/public/track/view'
+import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
+import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
+import { Route as LovableEmailTransactionalSendRouteImport } from './routes/lovable/email/transactional/send'
 import { Route as AuthenticatedAdminEmailPreviewStartupSubmissionIdRouteImport } from './routes/_authenticated/admin/email-preview.startup-submission.$id'
 
-const UnsubscribeRoute = UnsubscribeRouteImport.update({
-  id: '/unsubscribe',
-  path: '/unsubscribe',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StateOfAfricanAiRoute = StateOfAfricanAiRouteImport.update({
-  id: '/state-of-african-ai',
-  path: '/state-of-african-ai',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
-  id: '/sitemap.xml',
-  path: '/sitemap.xml',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SetupRoute = SetupRouteImport.update({
-  id: '/setup',
-  path: '/setup',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const SearchRoute = SearchRouteImport.update({
-  id: '/search',
-  path: '/search',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ResetPasswordRoute = ResetPasswordRouteImport.update({
-  id: '/reset-password',
-  path: '/reset-password',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LlmsFullDottxtRoute = LlmsFullDottxtRouteImport.update({
-  id: '/llms-full.txt',
-  path: '/llms-full.txt',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AboutRoute = AboutRouteImport.update({
@@ -96,33 +65,44 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const LlmsFullDottxtRoute = LlmsFullDottxtRouteImport.update({
+  id: '/llms-full.txt',
+  path: '/llms-full.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
-const StartupsSubmitRoute = StartupsSubmitRouteImport.update({
-  id: '/startups/submit',
-  path: '/startups/submit',
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
-  id: '/email/unsubscribe',
-  path: '/email/unsubscribe',
+const SearchRoute = SearchRouteImport.update({
+  id: '/search',
+  path: '/search',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CategorySlugRoute = CategorySlugRouteImport.update({
-  id: '/category/$slug',
-  path: '/category/$slug',
+const SetupRoute = SetupRouteImport.update({
+  id: '/setup',
+  path: '/setup',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthorsSlugRoute = AuthorsSlugRouteImport.update({
-  id: '/authors/$slug',
-  path: '/authors/$slug',
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StateOfAfricanAiRoute = StateOfAfricanAiRouteImport.update({
+  id: '/state-of-african-ai',
+  path: '/state-of-african-ai',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UnsubscribeRoute = UnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ArticleSlugRoute = ArticleSlugRouteImport.update({
@@ -130,9 +110,24 @@ const ArticleSlugRoute = ArticleSlugRouteImport.update({
   path: '/article/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ResourcesSkillsIndexRoute = ResourcesSkillsIndexRouteImport.update({
-  id: '/resources/skills/',
-  path: '/resources/skills/',
+const AuthorsSlugRoute = AuthorsSlugRouteImport.update({
+  id: '/authors/$slug',
+  path: '/authors/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CategorySlugRoute = CategorySlugRouteImport.update({
+  id: '/category/$slug',
+  path: '/category/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmailUnsubscribeRoute = EmailUnsubscribeRouteImport.update({
+  id: '/email/unsubscribe',
+  path: '/email/unsubscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StartupsSubmitRoute = StartupsSubmitRouteImport.update({
+  id: '/startups/submit',
+  path: '/startups/submit',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
@@ -140,37 +135,32 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const ResourcesSkillsSlugRoute = ResourcesSkillsSlugRouteImport.update({
-  id: '/resources/skills/$slug',
-  path: '/resources/skills/$slug',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
-  id: '/lovable/email/suppression',
-  path: '/lovable/email/suppression',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
-  id: '/admin/users',
-  path: '/admin/users',
+const AuthenticatedAdminAgentRoute = AuthenticatedAdminAgentRouteImport.update({
+  id: '/admin/agent',
+  path: '/admin/agent',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAdminSubscribersRoute =
-  AuthenticatedAdminSubscribersRouteImport.update({
-    id: '/admin/subscribers',
-    path: '/admin/subscribers',
+const AuthenticatedAdminAuthorsRoute =
+  AuthenticatedAdminAuthorsRouteImport.update({
+    id: '/admin/authors',
+    path: '/admin/authors',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAdminStartupsRoute =
-  AuthenticatedAdminStartupsRouteImport.update({
-    id: '/admin/startups',
-    path: '/admin/startups',
+const AuthenticatedAdminCategoriesRoute =
+  AuthenticatedAdminCategoriesRouteImport.update({
+    id: '/admin/categories',
+    path: '/admin/categories',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAdminSkillsRoute =
-  AuthenticatedAdminSkillsRouteImport.update({
-    id: '/admin/skills',
-    path: '/admin/skills',
+const AuthenticatedAdminMediaRoute = AuthenticatedAdminMediaRouteImport.update({
+  id: '/admin/media',
+  path: '/admin/media',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAdminPromotionRoute =
+  AuthenticatedAdminPromotionRouteImport.update({
+    id: '/admin/promotion',
+    path: '/admin/promotion',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedAdminSettingsRoute =
@@ -179,33 +169,43 @@ const AuthenticatedAdminSettingsRoute =
     path: '/admin/settings',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAdminPromotionRoute =
-  AuthenticatedAdminPromotionRouteImport.update({
-    id: '/admin/promotion',
-    path: '/admin/promotion',
+const AuthenticatedAdminSkillsRoute =
+  AuthenticatedAdminSkillsRouteImport.update({
+    id: '/admin/skills',
+    path: '/admin/skills',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedAdminMediaRoute = AuthenticatedAdminMediaRouteImport.update({
-  id: '/admin/media',
-  path: '/admin/media',
+const AuthenticatedAdminStartupsRoute =
+  AuthenticatedAdminStartupsRouteImport.update({
+    id: '/admin/startups',
+    path: '/admin/startups',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminSubscribersRoute =
+  AuthenticatedAdminSubscribersRouteImport.update({
+    id: '/admin/subscribers',
+    path: '/admin/subscribers',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
+  id: '/admin/users',
+  path: '/admin/users',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAdminCategoriesRoute =
-  AuthenticatedAdminCategoriesRouteImport.update({
-    id: '/admin/categories',
-    path: '/admin/categories',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedAdminAuthorsRoute =
-  AuthenticatedAdminAuthorsRouteImport.update({
-    id: '/admin/authors',
-    path: '/admin/authors',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedAdminAgentRoute = AuthenticatedAdminAgentRouteImport.update({
-  id: '/admin/agent',
-  path: '/admin/agent',
-  getParentRoute: () => AuthenticatedRouteRoute,
+const LovableEmailSuppressionRoute = LovableEmailSuppressionRouteImport.update({
+  id: '/lovable/email/suppression',
+  path: '/lovable/email/suppression',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResourcesSkillsIndexRoute = ResourcesSkillsIndexRouteImport.update({
+  id: '/resources/skills/',
+  path: '/resources/skills/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResourcesSkillsSlugRoute = ResourcesSkillsSlugRouteImport.update({
+  id: '/resources/skills/$slug',
+  path: '/resources/skills/$slug',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedAdminArticlesIndexRoute =
   AuthenticatedAdminArticlesIndexRouteImport.update({
@@ -213,38 +213,15 @@ const AuthenticatedAdminArticlesIndexRoute =
     path: '/admin/articles/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const LovableEmailTransactionalSendRoute =
-  LovableEmailTransactionalSendRouteImport.update({
-    id: '/lovable/email/transactional/send',
-    path: '/lovable/email/transactional/send',
-    getParentRoute: () => rootRouteImport,
+const AuthenticatedAdminArticlesIdRoute =
+  AuthenticatedAdminArticlesIdRouteImport.update({
+    id: '/admin/articles/$id',
+    path: '/admin/articles/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const LovableEmailTransactionalPreviewRoute =
-  LovableEmailTransactionalPreviewRouteImport.update({
-    id: '/lovable/email/transactional/preview',
-    path: '/lovable/email/transactional/preview',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const LovableEmailQueueProcessRoute =
-  LovableEmailQueueProcessRouteImport.update({
-    id: '/lovable/email/queue/process',
-    path: '/lovable/email/queue/process',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicTrackViewRoute = ApiPublicTrackViewRouteImport.update({
-  id: '/api/public/track/view',
-  path: '/api/public/track/view',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiPublicSkillsFilesSplatRoute =
-  ApiPublicSkillsFilesSplatRouteImport.update({
-    id: '/api/public/skills-files/$',
-    path: '/api/public/skills-files/$',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ApiPublicMediaSplatRoute = ApiPublicMediaSplatRouteImport.update({
-  id: '/api/public/media/$',
-  path: '/api/public/media/$',
+const ApiPublicHooksAgentRunRoute = ApiPublicHooksAgentRunRouteImport.update({
+  id: '/api/public/hooks/agent-run',
+  path: '/api/public/hooks/agent-run',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPublicHooksResubmitSitemapRoute =
@@ -253,16 +230,39 @@ const ApiPublicHooksResubmitSitemapRoute =
     path: '/api/public/hooks/resubmit-sitemap',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiPublicHooksAgentRunRoute = ApiPublicHooksAgentRunRouteImport.update({
-  id: '/api/public/hooks/agent-run',
-  path: '/api/public/hooks/agent-run',
+const ApiPublicMediaSplatRoute = ApiPublicMediaSplatRouteImport.update({
+  id: '/api/public/media/$',
+  path: '/api/public/media/$',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedAdminArticlesIdRoute =
-  AuthenticatedAdminArticlesIdRouteImport.update({
-    id: '/admin/articles/$id',
-    path: '/admin/articles/$id',
-    getParentRoute: () => AuthenticatedRouteRoute,
+const ApiPublicSkillsFilesSplatRoute =
+  ApiPublicSkillsFilesSplatRouteImport.update({
+    id: '/api/public/skills-files/$',
+    path: '/api/public/skills-files/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiPublicTrackViewRoute = ApiPublicTrackViewRouteImport.update({
+  id: '/api/public/track/view',
+  path: '/api/public/track/view',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LovableEmailQueueProcessRoute =
+  LovableEmailQueueProcessRouteImport.update({
+    id: '/lovable/email/queue/process',
+    path: '/lovable/email/queue/process',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const LovableEmailTransactionalPreviewRoute =
+  LovableEmailTransactionalPreviewRouteImport.update({
+    id: '/lovable/email/transactional/preview',
+    path: '/lovable/email/transactional/preview',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const LovableEmailTransactionalSendRoute =
+  LovableEmailTransactionalSendRouteImport.update({
+    id: '/lovable/email/transactional/send',
+    path: '/lovable/email/transactional/send',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const AuthenticatedAdminEmailPreviewStartupSubmissionIdRoute =
   AuthenticatedAdminEmailPreviewStartupSubmissionIdRouteImport.update({
@@ -561,67 +561,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/unsubscribe': {
-      id: '/unsubscribe'
-      path: '/unsubscribe'
-      fullPath: '/unsubscribe'
-      preLoaderRoute: typeof UnsubscribeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/state-of-african-ai': {
-      id: '/state-of-african-ai'
-      path: '/state-of-african-ai'
-      fullPath: '/state-of-african-ai'
-      preLoaderRoute: typeof StateOfAfricanAiRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/sitemap.xml': {
-      id: '/sitemap.xml'
-      path: '/sitemap.xml'
-      fullPath: '/sitemap.xml'
-      preLoaderRoute: typeof SitemapDotxmlRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/setup': {
-      id: '/setup'
-      path: '/setup'
-      fullPath: '/setup'
-      preLoaderRoute: typeof SetupRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/search': {
-      id: '/search'
-      path: '/search'
-      fullPath: '/search'
-      preLoaderRoute: typeof SearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/reset-password': {
-      id: '/reset-password'
-      path: '/reset-password'
-      fullPath: '/reset-password'
-      preLoaderRoute: typeof ResetPasswordRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/llms-full.txt': {
-      id: '/llms-full.txt'
-      path: '/llms-full.txt'
-      fullPath: '/llms-full.txt'
-      preLoaderRoute: typeof LlmsFullDottxtRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated': {
@@ -631,39 +575,67 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/about': {
+      id: '/about'
+      path: '/about'
+      fullPath: '/about'
+      preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/startups/submit': {
-      id: '/startups/submit'
-      path: '/startups/submit'
-      fullPath: '/startups/submit'
-      preLoaderRoute: typeof StartupsSubmitRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/email/unsubscribe': {
-      id: '/email/unsubscribe'
-      path: '/email/unsubscribe'
-      fullPath: '/email/unsubscribe'
-      preLoaderRoute: typeof EmailUnsubscribeRouteImport
+    '/llms-full.txt': {
+      id: '/llms-full.txt'
+      path: '/llms-full.txt'
+      fullPath: '/llms-full.txt'
+      preLoaderRoute: typeof LlmsFullDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/category/$slug': {
-      id: '/category/$slug'
-      path: '/category/$slug'
-      fullPath: '/category/$slug'
-      preLoaderRoute: typeof CategorySlugRouteImport
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/authors/$slug': {
-      id: '/authors/$slug'
-      path: '/authors/$slug'
-      fullPath: '/authors/$slug'
-      preLoaderRoute: typeof AuthorsSlugRouteImport
+    '/search': {
+      id: '/search'
+      path: '/search'
+      fullPath: '/search'
+      preLoaderRoute: typeof SearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/setup': {
+      id: '/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof SetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/state-of-african-ai': {
+      id: '/state-of-african-ai'
+      path: '/state-of-african-ai'
+      fullPath: '/state-of-african-ai'
+      preLoaderRoute: typeof StateOfAfricanAiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/unsubscribe': {
+      id: '/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof UnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/article/$slug': {
@@ -673,11 +645,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ArticleSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/resources/skills/': {
-      id: '/resources/skills/'
-      path: '/resources/skills'
-      fullPath: '/resources/skills/'
-      preLoaderRoute: typeof ResourcesSkillsIndexRouteImport
+    '/authors/$slug': {
+      id: '/authors/$slug'
+      path: '/authors/$slug'
+      fullPath: '/authors/$slug'
+      preLoaderRoute: typeof AuthorsSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/category/$slug': {
+      id: '/category/$slug'
+      path: '/category/$slug'
+      fullPath: '/category/$slug'
+      preLoaderRoute: typeof CategorySlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/email/unsubscribe': {
+      id: '/email/unsubscribe'
+      path: '/email/unsubscribe'
+      fullPath: '/email/unsubscribe'
+      preLoaderRoute: typeof EmailUnsubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/startups/submit': {
+      id: '/startups/submit'
+      path: '/startups/submit'
+      fullPath: '/startups/submit'
+      preLoaderRoute: typeof StartupsSubmitRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/': {
@@ -687,74 +680,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/resources/skills/$slug': {
-      id: '/resources/skills/$slug'
-      path: '/resources/skills/$slug'
-      fullPath: '/resources/skills/$slug'
-      preLoaderRoute: typeof ResourcesSkillsSlugRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lovable/email/suppression': {
-      id: '/lovable/email/suppression'
-      path: '/lovable/email/suppression'
-      fullPath: '/lovable/email/suppression'
-      preLoaderRoute: typeof LovableEmailSuppressionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated/admin/users': {
-      id: '/_authenticated/admin/users'
-      path: '/admin/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/admin/subscribers': {
-      id: '/_authenticated/admin/subscribers'
-      path: '/admin/subscribers'
-      fullPath: '/admin/subscribers'
-      preLoaderRoute: typeof AuthenticatedAdminSubscribersRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/admin/startups': {
-      id: '/_authenticated/admin/startups'
-      path: '/admin/startups'
-      fullPath: '/admin/startups'
-      preLoaderRoute: typeof AuthenticatedAdminStartupsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/admin/skills': {
-      id: '/_authenticated/admin/skills'
-      path: '/admin/skills'
-      fullPath: '/admin/skills'
-      preLoaderRoute: typeof AuthenticatedAdminSkillsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/admin/settings': {
-      id: '/_authenticated/admin/settings'
-      path: '/admin/settings'
-      fullPath: '/admin/settings'
-      preLoaderRoute: typeof AuthenticatedAdminSettingsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/admin/promotion': {
-      id: '/_authenticated/admin/promotion'
-      path: '/admin/promotion'
-      fullPath: '/admin/promotion'
-      preLoaderRoute: typeof AuthenticatedAdminPromotionRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/admin/media': {
-      id: '/_authenticated/admin/media'
-      path: '/admin/media'
-      fullPath: '/admin/media'
-      preLoaderRoute: typeof AuthenticatedAdminMediaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/admin/categories': {
-      id: '/_authenticated/admin/categories'
-      path: '/admin/categories'
-      fullPath: '/admin/categories'
-      preLoaderRoute: typeof AuthenticatedAdminCategoriesRouteImport
+    '/_authenticated/admin/agent': {
+      id: '/_authenticated/admin/agent'
+      path: '/admin/agent'
+      fullPath: '/admin/agent'
+      preLoaderRoute: typeof AuthenticatedAdminAgentRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/authors': {
@@ -764,12 +694,82 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminAuthorsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/admin/agent': {
-      id: '/_authenticated/admin/agent'
-      path: '/admin/agent'
-      fullPath: '/admin/agent'
-      preLoaderRoute: typeof AuthenticatedAdminAgentRouteImport
+    '/_authenticated/admin/categories': {
+      id: '/_authenticated/admin/categories'
+      path: '/admin/categories'
+      fullPath: '/admin/categories'
+      preLoaderRoute: typeof AuthenticatedAdminCategoriesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/media': {
+      id: '/_authenticated/admin/media'
+      path: '/admin/media'
+      fullPath: '/admin/media'
+      preLoaderRoute: typeof AuthenticatedAdminMediaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/promotion': {
+      id: '/_authenticated/admin/promotion'
+      path: '/admin/promotion'
+      fullPath: '/admin/promotion'
+      preLoaderRoute: typeof AuthenticatedAdminPromotionRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/settings': {
+      id: '/_authenticated/admin/settings'
+      path: '/admin/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AuthenticatedAdminSettingsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/skills': {
+      id: '/_authenticated/admin/skills'
+      path: '/admin/skills'
+      fullPath: '/admin/skills'
+      preLoaderRoute: typeof AuthenticatedAdminSkillsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/startups': {
+      id: '/_authenticated/admin/startups'
+      path: '/admin/startups'
+      fullPath: '/admin/startups'
+      preLoaderRoute: typeof AuthenticatedAdminStartupsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/subscribers': {
+      id: '/_authenticated/admin/subscribers'
+      path: '/admin/subscribers'
+      fullPath: '/admin/subscribers'
+      preLoaderRoute: typeof AuthenticatedAdminSubscribersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/users': {
+      id: '/_authenticated/admin/users'
+      path: '/admin/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/lovable/email/suppression': {
+      id: '/lovable/email/suppression'
+      path: '/lovable/email/suppression'
+      fullPath: '/lovable/email/suppression'
+      preLoaderRoute: typeof LovableEmailSuppressionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resources/skills/': {
+      id: '/resources/skills/'
+      path: '/resources/skills'
+      fullPath: '/resources/skills/'
+      preLoaderRoute: typeof ResourcesSkillsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/resources/skills/$slug': {
+      id: '/resources/skills/$slug'
+      path: '/resources/skills/$slug'
+      fullPath: '/resources/skills/$slug'
+      preLoaderRoute: typeof ResourcesSkillsSlugRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/articles/': {
       id: '/_authenticated/admin/articles/'
@@ -778,46 +778,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminArticlesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/lovable/email/transactional/send': {
-      id: '/lovable/email/transactional/send'
-      path: '/lovable/email/transactional/send'
-      fullPath: '/lovable/email/transactional/send'
-      preLoaderRoute: typeof LovableEmailTransactionalSendRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authenticated/admin/articles/$id': {
+      id: '/_authenticated/admin/articles/$id'
+      path: '/admin/articles/$id'
+      fullPath: '/admin/articles/$id'
+      preLoaderRoute: typeof AuthenticatedAdminArticlesIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/lovable/email/transactional/preview': {
-      id: '/lovable/email/transactional/preview'
-      path: '/lovable/email/transactional/preview'
-      fullPath: '/lovable/email/transactional/preview'
-      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/lovable/email/queue/process': {
-      id: '/lovable/email/queue/process'
-      path: '/lovable/email/queue/process'
-      fullPath: '/lovable/email/queue/process'
-      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/track/view': {
-      id: '/api/public/track/view'
-      path: '/api/public/track/view'
-      fullPath: '/api/public/track/view'
-      preLoaderRoute: typeof ApiPublicTrackViewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/skills-files/$': {
-      id: '/api/public/skills-files/$'
-      path: '/api/public/skills-files/$'
-      fullPath: '/api/public/skills-files/$'
-      preLoaderRoute: typeof ApiPublicSkillsFilesSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/public/media/$': {
-      id: '/api/public/media/$'
-      path: '/api/public/media/$'
-      fullPath: '/api/public/media/$'
-      preLoaderRoute: typeof ApiPublicMediaSplatRouteImport
+    '/api/public/hooks/agent-run': {
+      id: '/api/public/hooks/agent-run'
+      path: '/api/public/hooks/agent-run'
+      fullPath: '/api/public/hooks/agent-run'
+      preLoaderRoute: typeof ApiPublicHooksAgentRunRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/public/hooks/resubmit-sitemap': {
@@ -827,19 +799,47 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicHooksResubmitSitemapRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/public/hooks/agent-run': {
-      id: '/api/public/hooks/agent-run'
-      path: '/api/public/hooks/agent-run'
-      fullPath: '/api/public/hooks/agent-run'
-      preLoaderRoute: typeof ApiPublicHooksAgentRunRouteImport
+    '/api/public/media/$': {
+      id: '/api/public/media/$'
+      path: '/api/public/media/$'
+      fullPath: '/api/public/media/$'
+      preLoaderRoute: typeof ApiPublicMediaSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/admin/articles/$id': {
-      id: '/_authenticated/admin/articles/$id'
-      path: '/admin/articles/$id'
-      fullPath: '/admin/articles/$id'
-      preLoaderRoute: typeof AuthenticatedAdminArticlesIdRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/api/public/skills-files/$': {
+      id: '/api/public/skills-files/$'
+      path: '/api/public/skills-files/$'
+      fullPath: '/api/public/skills-files/$'
+      preLoaderRoute: typeof ApiPublicSkillsFilesSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/public/track/view': {
+      id: '/api/public/track/view'
+      path: '/api/public/track/view'
+      fullPath: '/api/public/track/view'
+      preLoaderRoute: typeof ApiPublicTrackViewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/queue/process': {
+      id: '/lovable/email/queue/process'
+      path: '/lovable/email/queue/process'
+      fullPath: '/lovable/email/queue/process'
+      preLoaderRoute: typeof LovableEmailQueueProcessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/transactional/preview': {
+      id: '/lovable/email/transactional/preview'
+      path: '/lovable/email/transactional/preview'
+      fullPath: '/lovable/email/transactional/preview'
+      preLoaderRoute: typeof LovableEmailTransactionalPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/transactional/send': {
+      id: '/lovable/email/transactional/send'
+      path: '/lovable/email/transactional/send'
+      fullPath: '/lovable/email/transactional/send'
+      preLoaderRoute: typeof LovableEmailTransactionalSendRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/admin/email-preview/startup-submission/$id': {
       id: '/_authenticated/admin/email-preview/startup-submission/$id'

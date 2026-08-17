@@ -78,6 +78,13 @@ export const Route = createFileRoute("/api/public/track/view")({
             .maybeSingle();
           if (!article) return Response.json({ ok: true, skipped: "unknown article" });
 
+          // Bump the article counter with the service role so the counter
+          // function does not need to be callable by site visitors.
+          const { error: incErr } = await supabaseAdmin.rpc("increment_article_views", {
+            _slug: parsed.slug,
+          });
+          if (incErr) console.error("[track/view] increment", incErr.message);
+
           // Campaign identity is part of the fingerprint so a campaign-tagged
           // visit is still recorded when the same person already read the
           // article untagged earlier the same day.
