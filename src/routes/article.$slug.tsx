@@ -1,5 +1,10 @@
+import { useState } from "react";
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { ArticleTranslate } from "@/components/site/article-translate";
+import type { TranslationResult } from "@/lib/translate.functions";
+import { isRtl } from "@/lib/languages";
 import { supabase } from "@/integrations/supabase/client";
+
 import { SiteNav } from "@/components/site/nav";
 import { SiteFooter } from "@/components/site/footer";
 import { NewsletterSignup } from "@/components/site/newsletter";
