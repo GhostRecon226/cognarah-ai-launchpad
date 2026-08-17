@@ -157,5 +157,13 @@ export async function translateArticleImpl(
     );
   if (insertError) console.error("[translate] cache write failed", insertError.message);
 
+  const { error: logError } = await supabaseAdmin.from("translation_requests").insert({
+    ip_hash: ipHash,
+    article_id: article.id,
+    language_code: lang,
+  });
+  if (logError) console.error("[translate] rate limit log failed", logError.message);
+
   return { languageCode: lang, title, body, cached: false };
 }
+
