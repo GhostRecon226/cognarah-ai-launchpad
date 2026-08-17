@@ -7,7 +7,9 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadEnv } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -23,6 +25,62 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    plugins: [
+      VitePWA({
+        strategies: "generateSW",
+        registerType: "autoUpdate",
+        injectRegister: null,
+        filename: "sw.js",
+        outDir: "dist/client",
+        manifest: false,
+
+        devOptions: { enabled: false },
+        includeAssets: ["offline.html", "favicon.png", "icon-192.png", "icon-512.png"],
+        workbox: {
+          globPatterns: ["**/*.{js,css,woff,woff2,png,svg,ico,html}"],
+          navigateFallback: null,
+          cleanupOutdatedCaches: true,
+          clientsClaim: true,
+          skipWaiting: true,
+          runtimeCaching: [
+            {
+              urlPattern: ({ request, url }: { request: Request; url: URL }) =>
+                request.mode === "navigate" &&
+                !url.pathname.startsWith("/~oauth") &&
+                !url.pathname.startsWith("/api/") &&
+                !url.pathname.startsWith("/admin") &&
+                !url.pathname.startsWith("/auth"),
+              handler: "NetworkFirst",
+              options: {
+                cacheName: "cognarah-pages",
+                networkTimeoutSeconds: 8,
+                expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 14 },
+                cacheableResponse: { statuses: [200] },
+                precacheFallback: { fallbackURL: "/offline.html" },
+              },
+            },
+            {
+              urlPattern: ({ request, sameOrigin }: { request: Request; sameOrigin: boolean }) =>
+                sameOrigin && ["style", "script", "font"].includes(request.destination),
+              handler: "StaleWhileRevalidate",
+              options: {
+                cacheName: "cognarah-assets",
+                expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
+              },
+            },
+            {
+              urlPattern: ({ request }: { request: Request }) => request.destination === "image",
+              handler: "CacheFirst",
+              options: {
+                cacheName: "cognarah-images",
+                expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 30 },
+                cacheableResponse: { statuses: [0, 200] },
+              },
+            },
+          ],
+        },
+      }),
+    ],
     resolve: {
       alias: {
         // html-to-text's nested htmlparser2 imports `entities/lib/decode.js`, a v4-only subpath.
@@ -40,4 +98,5 @@ export default defineConfig({
     },
   },
 });
+
 
