@@ -1,4 +1,4 @@
-import { sponsoredAdImageUrl, PLACEMENT_SPECS, type SponsoredAd } from "@/lib/sponsored-ads";
+import { sponsoredAdImageUrl, type SponsoredAd } from "@/lib/sponsored-ads";
 
 interface Props {
   ad: SponsoredAd | null | undefined;
