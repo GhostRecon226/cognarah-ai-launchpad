@@ -7,6 +7,7 @@ import { Plus, Trash2, X, ExternalLink, Upload } from "lucide-react";
 import { stripEmDashes } from "@/lib/strip-em-dashes";
 import {
   PLACEMENT_LABELS,
+  PLACEMENT_SPECS,
   sponsoredAdImageUrl,
   todayIso,
   type AdPlacement,
@@ -155,6 +156,14 @@ function AdsAdmin() {
           Banners run on the Startups and Funding listing pages and inline inside articles in those
           categories. Only ads that are active and inside their date range are shown to readers.
         </p>
+        <div className="w-full rounded-lg border border-border bg-secondary/40 p-3 text-xs text-muted-foreground sm:w-auto">
+          <p className="font-semibold text-foreground">Creative specs for clients</p>
+          <p className="mt-1">
+            Startups listing top: {PLACEMENT_SPECS.startups_listing_top.label}
+          </p>
+          <p>Article inline: {PLACEMENT_SPECS.article_inline.label}</p>
+          <p className="mt-1">Export at the recommended width (or wider) as JPG or PNG.</p>
+        </div>
         <button
           onClick={() => setEditing({ ...EMPTY })}
           className="inline-flex items-center gap-2 rounded-md bg-navy px-4 py-2 text-sm font-medium text-white"
@@ -193,6 +202,9 @@ function AdsAdmin() {
                       alt=""
                       className="h-10 w-28 rounded object-cover"
                     />
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      {PLACEMENT_SPECS[ad.placement].label}
+                    </p>
                   </td>
                   <td className="px-4 py-3 font-medium">{ad.advertiser_name}</td>
                   <td className="px-4 py-3">{PLACEMENT_LABELS[ad.placement]}</td>
@@ -272,6 +284,9 @@ function AdsAdmin() {
 
               <div>
                 <label className="text-sm font-medium">Banner image</label>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Recommended: {PLACEMENT_SPECS[(editing.placement ?? "startups_listing_top") as AdPlacement].label}
+                </p>
                 <div className="mt-1 flex items-center gap-3">
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary">
                     <Upload className="h-4 w-4" />
