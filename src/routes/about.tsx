@@ -49,7 +49,7 @@ function AboutPage() {
           </ul>
           <h2 className="mt-12 text-2xl font-bold">Contact</h2>
           <p className="mt-4 text-lg">
-            Tips, pitches, partnerships: <a className="text-brand underline" href="mailto:hello@cognarah.com">hello@cognarah.com</a>
+            Tips, pitches, partnerships, and collaborations: <a className="text-brand underline" href="mailto:info@cognarah.com">info@cognarah.com</a>
           </p>
         </section>
         <NewsletterSignup />

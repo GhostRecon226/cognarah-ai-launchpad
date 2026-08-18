@@ -42,6 +42,7 @@ export function SiteFooter() {
                 <Facebook className="h-5 w-5" />
               </a>
             </div>
+            <a href="mailto:info@cognarah.com" className="mt-4 inline-block text-sm text-white/70 transition hover:text-[color:var(--brand-soft)]">info@cognarah.com</a>
           </div>
           <div>
             <h3 className="font-display text-sm uppercase tracking-wider text-white">Categories</h3>
@@ -64,7 +65,7 @@ export function SiteFooter() {
             <ul className="mt-4 space-y-2 text-sm text-white/70">
               <li><Link to="/about" className="hover:text-[color:var(--brand-soft)]">About</Link></li>
               <li><Link to="/search" className="hover:text-[color:var(--brand-soft)]">Search</Link></li>
-              <li><a href="mailto:hello@cognarah.com" className="hover:text-[color:var(--brand-soft)]">Contact</a></li>
+              <li><a href="mailto:info@cognarah.com" className="hover:text-[color:var(--brand-soft)]">Contact</a></li>
             </ul>
           </div>
         </div>
