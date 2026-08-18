@@ -45,6 +45,7 @@ import { Route as ApiPublicHooksAgentRunRouteImport } from './routes/api/public/
 import { Route as ApiPublicHooksResubmitSitemapRouteImport } from './routes/api/public/hooks/resubmit-sitemap'
 import { Route as ApiPublicMediaSplatRouteImport } from './routes/api/public/media.$'
 import { Route as ApiPublicSkillsFilesSplatRouteImport } from './routes/api/public/skills-files.$'
+import { Route as ApiPublicSponsoredAdsSplatRouteImport } from './routes/api/public/sponsored-ads.$'
 import { Route as ApiPublicTrackViewRouteImport } from './routes/api/public/track/view'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -241,6 +242,12 @@ const ApiPublicSkillsFilesSplatRoute =
     path: '/api/public/skills-files/$',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicSponsoredAdsSplatRoute =
+  ApiPublicSponsoredAdsSplatRouteImport.update({
+    id: '/api/public/sponsored-ads/$',
+    path: '/api/public/sponsored-ads/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicTrackViewRoute = ApiPublicTrackViewRouteImport.update({
   id: '/api/public/track/view',
   path: '/api/public/track/view',
@@ -306,6 +313,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/api/public/skills-files/$': typeof ApiPublicSkillsFilesSplatRoute
+  '/api/public/sponsored-ads/$': typeof ApiPublicSponsoredAdsSplatRoute
   '/api/public/track/view': typeof ApiPublicTrackViewRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -348,6 +356,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/api/public/skills-files/$': typeof ApiPublicSkillsFilesSplatRoute
+  '/api/public/sponsored-ads/$': typeof ApiPublicSponsoredAdsSplatRoute
   '/api/public/track/view': typeof ApiPublicTrackViewRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -392,6 +401,7 @@ export interface FileRoutesById {
   '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/api/public/skills-files/$': typeof ApiPublicSkillsFilesSplatRoute
+  '/api/public/sponsored-ads/$': typeof ApiPublicSponsoredAdsSplatRoute
   '/api/public/track/view': typeof ApiPublicTrackViewRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -436,6 +446,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
     | '/api/public/skills-files/$'
+    | '/api/public/sponsored-ads/$'
     | '/api/public/track/view'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
@@ -478,6 +489,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
     | '/api/public/skills-files/$'
+    | '/api/public/sponsored-ads/$'
     | '/api/public/track/view'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
@@ -521,6 +533,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
     | '/api/public/skills-files/$'
+    | '/api/public/sponsored-ads/$'
     | '/api/public/track/view'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
@@ -553,6 +566,7 @@ export interface RootRouteChildren {
   ApiPublicHooksResubmitSitemapRoute: typeof ApiPublicHooksResubmitSitemapRoute
   ApiPublicMediaSplatRoute: typeof ApiPublicMediaSplatRoute
   ApiPublicSkillsFilesSplatRoute: typeof ApiPublicSkillsFilesSplatRoute
+  ApiPublicSponsoredAdsSplatRoute: typeof ApiPublicSponsoredAdsSplatRoute
   ApiPublicTrackViewRoute: typeof ApiPublicTrackViewRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -813,6 +827,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSkillsFilesSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/sponsored-ads/$': {
+      id: '/api/public/sponsored-ads/$'
+      path: '/api/public/sponsored-ads/$'
+      fullPath: '/api/public/sponsored-ads/$'
+      preLoaderRoute: typeof ApiPublicSponsoredAdsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/track/view': {
       id: '/api/public/track/view'
       path: '/api/public/track/view'
@@ -913,6 +934,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksResubmitSitemapRoute: ApiPublicHooksResubmitSitemapRoute,
   ApiPublicMediaSplatRoute: ApiPublicMediaSplatRoute,
   ApiPublicSkillsFilesSplatRoute: ApiPublicSkillsFilesSplatRoute,
+  ApiPublicSponsoredAdsSplatRoute: ApiPublicSponsoredAdsSplatRoute,
   ApiPublicTrackViewRoute: ApiPublicTrackViewRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
