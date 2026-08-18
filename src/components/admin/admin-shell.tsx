@@ -2,7 +2,7 @@ import { Link, useRouter, useLocation } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import logoAsset from "@/assets/cognarah-logo.png.asset.json";
-import { LayoutDashboard, FileText, Tags, Users, Image, Settings, LogOut, ExternalLink, Menu, X, Shield, RefreshCw, Sparkles, Rocket, Mail, GraduationCap, Megaphone } from "lucide-react";
+import { LayoutDashboard, FileText, Tags, Users, Image, Settings, LogOut, ExternalLink, Menu, X, Shield, RefreshCw, Sparkles, Rocket, Mail, GraduationCap, Megaphone, BadgeDollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RolesContext, type AppRole, ROLE_LABELS } from "@/lib/admin-roles";
 
@@ -12,6 +12,7 @@ const NAV: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, roles: ["admin", "editor", "author"] },
   { to: "/admin/articles", label: "Articles", icon: FileText, roles: ["admin", "editor", "author"] },
   { to: "/admin/promotion", label: "Promotion", icon: Megaphone, roles: ["admin", "editor"] },
+  { to: "/admin/ads", label: "Sponsored ads", icon: BadgeDollarSign, roles: ["admin", "editor"] },
 
   { to: "/admin/startups", label: "Startups", icon: Rocket, roles: ["admin", "editor"], badgeKey: "pendingStartups" },
   { to: "/admin/agent", label: "AI Agent", icon: Sparkles, roles: ["admin", "editor"] },

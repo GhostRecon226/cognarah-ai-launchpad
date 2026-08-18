@@ -19,6 +19,9 @@ import { ArticleShare } from "@/components/site/article-share";
 import { AdUnit } from "@/components/site/ad-unit";
 import { ViewTracker } from "@/components/site/view-tracker";
 import { AD_SLOTS } from "@/lib/adsense";
+import { SponsoredBanner } from "@/components/site/sponsored-banner";
+import { fetchLiveAd, STARTUP_SECTION_SLUGS, type SponsoredAd } from "@/lib/sponsored-ads";
+
 
 function splitBodyAfterSecondParagraph(html: string): [string, string] {
   const re = /<\/p>/gi;
@@ -34,7 +37,9 @@ function splitBodyAfterSecondParagraph(html: string): [string, string] {
   return [html, ""];
 }
 
-async function loadArticle(slug: string): Promise<{ article: Article; related: Article[] }> {
+async function loadArticle(
+  slug: string,
+): Promise<{ article: Article; related: Article[]; sponsoredAd: SponsoredAd | null }> {
   const { data: article } = await supabase
     .from("articles")
     .select("*, author:authors(*), category:categories(*)")
@@ -56,8 +61,13 @@ async function loadArticle(slug: string): Promise<{ article: Article; related: A
       .limit(3);
     related = (data ?? []) as unknown as Article[];
   }
-  return { article: a, related };
+  const sponsoredAd =
+    a.category?.slug && STARTUP_SECTION_SLUGS.includes(a.category.slug)
+      ? await fetchLiveAd("article_inline")
+      : null;
+  return { article: a, related, sponsoredAd };
 }
+
 
 export const Route = createFileRoute("/article/$slug")({
   loader: ({ params }) => loadArticle(params.slug),
@@ -145,7 +155,7 @@ export const Route = createFileRoute("/article/$slug")({
 });
 
 function ArticlePage() {
-  const { article, related } = Route.useLoaderData();
+  const { article, related, sponsoredAd } = Route.useLoaderData();
   const url = `${SITE_URL}/article/${article.slug}`;
   const [translation, setTranslation] = useState<TranslationResult | null>(null);
   const displayTitle = translation ? translation.title : article.title;
@@ -217,9 +227,11 @@ function ArticlePage() {
                   className="prose-article mt-10"
                   dangerouslySetInnerHTML={{ __html: firstPart }}
                 />
+                <SponsoredBanner ad={sponsoredAd} className="my-8" />
                 {restPart && (
                   <>
                     <AdUnit position="in-article" slot={AD_SLOTS.inArticleTop} />
+
                     <div
                       dir={dir}
                       className="prose-article"

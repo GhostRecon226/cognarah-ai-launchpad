@@ -10,6 +10,9 @@ import { Pagination } from "@/components/site/pagination";
 import { PAGE_SIZE_LIST, getRange, totalPages as calcTotalPages } from "@/lib/pagination";
 import type { Article, Category } from "@/lib/types";
 import { SITE_URL } from "@/lib/types";
+import { SponsoredBanner } from "@/components/site/sponsored-banner";
+import { fetchLiveAd, STARTUP_SECTION_SLUGS, type SponsoredAd } from "@/lib/sponsored-ads";
+
 
 const searchSchema = z.object({
   page: fallback(z.number().int(), 1).default(1),
@@ -18,7 +21,13 @@ const searchSchema = z.object({
 async function loadCategory(
   slug: string,
   page: number,
-): Promise<{ category: Category; articles: Article[]; page: number; totalPages: number }> {
+): Promise<{
+  category: Category;
+  articles: Article[];
+  page: number;
+  totalPages: number;
+  sponsoredAd: SponsoredAd | null;
+}> {
   const { data: category } = await supabase
     .from("categories")
     .select("*")
@@ -37,13 +46,18 @@ async function loadCategory(
     .range(from, to);
   const totalPages = calcTotalPages(count, PAGE_SIZE_LIST);
   if (safePage > totalPages && (count ?? 0) > 0) throw notFound();
+  const sponsoredAd = STARTUP_SECTION_SLUGS.includes(c.slug)
+    ? await fetchLiveAd("startups_listing_top")
+    : null;
   return {
     category: c,
     articles: (articles ?? []) as unknown as Article[],
     page: safePage,
     totalPages,
+    sponsoredAd,
   };
 }
+
 
 export const Route = createFileRoute("/category/$slug")({
   validateSearch: zodValidator(searchSchema),
@@ -55,7 +69,7 @@ export const Route = createFileRoute("/category/$slug")({
     const total = loaderData?.totalPages ?? 1;
     const baseTitle = c ? `${c.name}: Cognarah` : "Category: Cognarah";
     const baseDesc = c?.description || `Latest ${c?.name ?? ""} coverage on Cognarah.`;
-    const title = page > 1 ? `${baseTitle} — Page ${page}` : baseTitle;
+    const title = page > 1 ? `${baseTitle}, Page ${page}` : baseTitle;
     const desc = page > 1 ? `Page ${page} of ${total}. ${baseDesc}` : baseDesc;
     const baseUrl = `${SITE_URL}/category/${params.slug}`;
     const url = page > 1 ? `${baseUrl}?page=${page}` : baseUrl;
@@ -91,7 +105,7 @@ export const Route = createFileRoute("/category/$slug")({
 });
 
 function CategoryPage() {
-  const { category, articles, page, totalPages } = Route.useLoaderData();
+  const { category, articles, page, totalPages, sponsoredAd } = Route.useLoaderData();
   const buildHref = (p: number) =>
     p === 1 ? `/category/${category.slug}` : `/category/${category.slug}?page=${p}`;
   return (
@@ -108,6 +122,8 @@ function CategoryPage() {
           </div>
         </section>
         <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16">
+          <SponsoredBanner ad={sponsoredAd} className="mb-10" />
+
           {category.long_intro && page === 1 && (
             <div
               className="prose-article mx-auto mb-12 max-w-3xl"

@@ -26,6 +26,7 @@ import { Route as CategorySlugRouteImport } from './routes/category.$slug'
 import { Route as EmailUnsubscribeRouteImport } from './routes/email/unsubscribe'
 import { Route as StartupsSubmitRouteImport } from './routes/startups.submit'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin/index'
+import { Route as AuthenticatedAdminAdsRouteImport } from './routes/_authenticated/admin/ads'
 import { Route as AuthenticatedAdminAgentRouteImport } from './routes/_authenticated/admin/agent'
 import { Route as AuthenticatedAdminAuthorsRouteImport } from './routes/_authenticated/admin/authors'
 import { Route as AuthenticatedAdminCategoriesRouteImport } from './routes/_authenticated/admin/categories'
@@ -45,6 +46,7 @@ import { Route as ApiPublicHooksAgentRunRouteImport } from './routes/api/public/
 import { Route as ApiPublicHooksResubmitSitemapRouteImport } from './routes/api/public/hooks/resubmit-sitemap'
 import { Route as ApiPublicMediaSplatRouteImport } from './routes/api/public/media.$'
 import { Route as ApiPublicSkillsFilesSplatRouteImport } from './routes/api/public/skills-files.$'
+import { Route as ApiPublicSponsoredAdsSplatRouteImport } from './routes/api/public/sponsored-ads.$'
 import { Route as ApiPublicTrackViewRouteImport } from './routes/api/public/track/view'
 import { Route as LovableEmailQueueProcessRouteImport } from './routes/lovable/email/queue/process'
 import { Route as LovableEmailTransactionalPreviewRouteImport } from './routes/lovable/email/transactional/preview'
@@ -133,6 +135,11 @@ const StartupsSubmitRoute = StartupsSubmitRouteImport.update({
 const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   id: '/admin/',
   path: '/admin/',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAdminAdsRoute = AuthenticatedAdminAdsRouteImport.update({
+  id: '/admin/ads',
+  path: '/admin/ads',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedAdminAgentRoute = AuthenticatedAdminAgentRouteImport.update({
@@ -241,6 +248,12 @@ const ApiPublicSkillsFilesSplatRoute =
     path: '/api/public/skills-files/$',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiPublicSponsoredAdsSplatRoute =
+  ApiPublicSponsoredAdsSplatRouteImport.update({
+    id: '/api/public/sponsored-ads/$',
+    path: '/api/public/sponsored-ads/$',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiPublicTrackViewRoute = ApiPublicTrackViewRouteImport.update({
   id: '/api/public/track/view',
   path: '/api/public/track/view',
@@ -287,6 +300,7 @@ export interface FileRoutesByFullPath {
   '/category/$slug': typeof CategorySlugRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/startups/submit': typeof StartupsSubmitRoute
+  '/admin/ads': typeof AuthenticatedAdminAdsRoute
   '/admin/agent': typeof AuthenticatedAdminAgentRoute
   '/admin/authors': typeof AuthenticatedAdminAuthorsRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
@@ -306,6 +320,7 @@ export interface FileRoutesByFullPath {
   '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/api/public/skills-files/$': typeof ApiPublicSkillsFilesSplatRoute
+  '/api/public/sponsored-ads/$': typeof ApiPublicSponsoredAdsSplatRoute
   '/api/public/track/view': typeof ApiPublicTrackViewRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -329,6 +344,7 @@ export interface FileRoutesByTo {
   '/category/$slug': typeof CategorySlugRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/startups/submit': typeof StartupsSubmitRoute
+  '/admin/ads': typeof AuthenticatedAdminAdsRoute
   '/admin/agent': typeof AuthenticatedAdminAgentRoute
   '/admin/authors': typeof AuthenticatedAdminAuthorsRoute
   '/admin/categories': typeof AuthenticatedAdminCategoriesRoute
@@ -348,6 +364,7 @@ export interface FileRoutesByTo {
   '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/api/public/skills-files/$': typeof ApiPublicSkillsFilesSplatRoute
+  '/api/public/sponsored-ads/$': typeof ApiPublicSponsoredAdsSplatRoute
   '/api/public/track/view': typeof ApiPublicTrackViewRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -373,6 +390,7 @@ export interface FileRoutesById {
   '/category/$slug': typeof CategorySlugRoute
   '/email/unsubscribe': typeof EmailUnsubscribeRoute
   '/startups/submit': typeof StartupsSubmitRoute
+  '/_authenticated/admin/ads': typeof AuthenticatedAdminAdsRoute
   '/_authenticated/admin/agent': typeof AuthenticatedAdminAgentRoute
   '/_authenticated/admin/authors': typeof AuthenticatedAdminAuthorsRoute
   '/_authenticated/admin/categories': typeof AuthenticatedAdminCategoriesRoute
@@ -392,6 +410,7 @@ export interface FileRoutesById {
   '/api/public/hooks/resubmit-sitemap': typeof ApiPublicHooksResubmitSitemapRoute
   '/api/public/media/$': typeof ApiPublicMediaSplatRoute
   '/api/public/skills-files/$': typeof ApiPublicSkillsFilesSplatRoute
+  '/api/public/sponsored-ads/$': typeof ApiPublicSponsoredAdsSplatRoute
   '/api/public/track/view': typeof ApiPublicTrackViewRoute
   '/lovable/email/queue/process': typeof LovableEmailQueueProcessRoute
   '/lovable/email/transactional/preview': typeof LovableEmailTransactionalPreviewRoute
@@ -417,6 +436,7 @@ export interface FileRouteTypes {
     | '/category/$slug'
     | '/email/unsubscribe'
     | '/startups/submit'
+    | '/admin/ads'
     | '/admin/agent'
     | '/admin/authors'
     | '/admin/categories'
@@ -436,6 +456,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
     | '/api/public/skills-files/$'
+    | '/api/public/sponsored-ads/$'
     | '/api/public/track/view'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
@@ -459,6 +480,7 @@ export interface FileRouteTypes {
     | '/category/$slug'
     | '/email/unsubscribe'
     | '/startups/submit'
+    | '/admin/ads'
     | '/admin/agent'
     | '/admin/authors'
     | '/admin/categories'
@@ -478,6 +500,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
     | '/api/public/skills-files/$'
+    | '/api/public/sponsored-ads/$'
     | '/api/public/track/view'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
@@ -502,6 +525,7 @@ export interface FileRouteTypes {
     | '/category/$slug'
     | '/email/unsubscribe'
     | '/startups/submit'
+    | '/_authenticated/admin/ads'
     | '/_authenticated/admin/agent'
     | '/_authenticated/admin/authors'
     | '/_authenticated/admin/categories'
@@ -521,6 +545,7 @@ export interface FileRouteTypes {
     | '/api/public/hooks/resubmit-sitemap'
     | '/api/public/media/$'
     | '/api/public/skills-files/$'
+    | '/api/public/sponsored-ads/$'
     | '/api/public/track/view'
     | '/lovable/email/queue/process'
     | '/lovable/email/transactional/preview'
@@ -553,6 +578,7 @@ export interface RootRouteChildren {
   ApiPublicHooksResubmitSitemapRoute: typeof ApiPublicHooksResubmitSitemapRoute
   ApiPublicMediaSplatRoute: typeof ApiPublicMediaSplatRoute
   ApiPublicSkillsFilesSplatRoute: typeof ApiPublicSkillsFilesSplatRoute
+  ApiPublicSponsoredAdsSplatRoute: typeof ApiPublicSponsoredAdsSplatRoute
   ApiPublicTrackViewRoute: typeof ApiPublicTrackViewRoute
   LovableEmailQueueProcessRoute: typeof LovableEmailQueueProcessRoute
   LovableEmailTransactionalPreviewRoute: typeof LovableEmailTransactionalPreviewRoute
@@ -678,6 +704,13 @@ declare module '@tanstack/react-router' {
       path: '/admin'
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/ads': {
+      id: '/_authenticated/admin/ads'
+      path: '/admin/ads'
+      fullPath: '/admin/ads'
+      preLoaderRoute: typeof AuthenticatedAdminAdsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/admin/agent': {
@@ -813,6 +846,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPublicSkillsFilesSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/public/sponsored-ads/$': {
+      id: '/api/public/sponsored-ads/$'
+      path: '/api/public/sponsored-ads/$'
+      fullPath: '/api/public/sponsored-ads/$'
+      preLoaderRoute: typeof ApiPublicSponsoredAdsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/track/view': {
       id: '/api/public/track/view'
       path: '/api/public/track/view'
@@ -852,6 +892,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAdminAdsRoute: typeof AuthenticatedAdminAdsRoute
   AuthenticatedAdminAgentRoute: typeof AuthenticatedAdminAgentRoute
   AuthenticatedAdminAuthorsRoute: typeof AuthenticatedAdminAuthorsRoute
   AuthenticatedAdminCategoriesRoute: typeof AuthenticatedAdminCategoriesRoute
@@ -869,6 +910,7 @@ interface AuthenticatedRouteRouteChildren {
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAdminAdsRoute: AuthenticatedAdminAdsRoute,
   AuthenticatedAdminAgentRoute: AuthenticatedAdminAgentRoute,
   AuthenticatedAdminAuthorsRoute: AuthenticatedAdminAuthorsRoute,
   AuthenticatedAdminCategoriesRoute: AuthenticatedAdminCategoriesRoute,
@@ -913,6 +955,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPublicHooksResubmitSitemapRoute: ApiPublicHooksResubmitSitemapRoute,
   ApiPublicMediaSplatRoute: ApiPublicMediaSplatRoute,
   ApiPublicSkillsFilesSplatRoute: ApiPublicSkillsFilesSplatRoute,
+  ApiPublicSponsoredAdsSplatRoute: ApiPublicSponsoredAdsSplatRoute,
   ApiPublicTrackViewRoute: ApiPublicTrackViewRoute,
   LovableEmailQueueProcessRoute: LovableEmailQueueProcessRoute,
   LovableEmailTransactionalPreviewRoute: LovableEmailTransactionalPreviewRoute,
