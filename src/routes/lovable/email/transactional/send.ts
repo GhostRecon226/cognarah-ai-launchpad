@@ -59,6 +59,20 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
           return Response.json({ error: 'Unauthorized' }, { status: 401 })
         }
 
+        // Require a staff role: a valid session alone is not enough, since
+        // anyone can self-register an account.
+        const { data: roleRows, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id)
+          .in('role', ['admin', 'editor'])
+          .limit(1)
+
+        if (roleError || !roleRows || roleRows.length === 0) {
+          return Response.json({ error: 'Forbidden' }, { status: 403 })
+        }
+
+
         // Parse request body
         let templateName: string
         let recipientEmail: string
