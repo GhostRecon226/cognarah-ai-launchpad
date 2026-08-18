@@ -73,6 +73,7 @@ export function AdUnit({ slot, position, className }: AdUnitProps) {
           style={insStyle}
           data-ad-client={ADSENSE_CLIENT}
           data-ad-slot={slot}
+          suppressHydrationWarning
           {...dataAttrs}
         />
       )}
