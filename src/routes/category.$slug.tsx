@@ -10,6 +10,9 @@ import { Pagination } from "@/components/site/pagination";
 import { PAGE_SIZE_LIST, getRange, totalPages as calcTotalPages } from "@/lib/pagination";
 import type { Article, Category } from "@/lib/types";
 import { SITE_URL } from "@/lib/types";
+import { SponsoredBanner } from "@/components/site/sponsored-banner";
+import { fetchLiveAd, STARTUP_SECTION_SLUGS, type SponsoredAd } from "@/lib/sponsored-ads";
+
 
 const searchSchema = z.object({
   page: fallback(z.number().int(), 1).default(1),
