@@ -122,6 +122,8 @@ function CategoryPage() {
           </div>
         </section>
         <section className="mx-auto max-w-7xl px-4 py-10 sm:px-6 sm:py-16">
+          <SponsoredBanner ad={sponsoredAd} className="mb-10" />
+
           {category.long_intro && page === 1 && (
             <div
               className="prose-article mx-auto mb-12 max-w-3xl"
