@@ -792,6 +792,45 @@ export type Database = {
         }
         Relationships: []
       }
+      sponsored_ads: {
+        Row: {
+          active: boolean
+          advertiser_name: string
+          created_at: string
+          destination_url: string
+          end_date: string
+          id: string
+          image_url: string
+          placement: Database["public"]["Enums"]["ad_placement"]
+          start_date: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          advertiser_name: string
+          created_at?: string
+          destination_url: string
+          end_date?: string
+          id?: string
+          image_url: string
+          placement: Database["public"]["Enums"]["ad_placement"]
+          start_date?: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          advertiser_name?: string
+          created_at?: string
+          destination_url?: string
+          end_date?: string
+          id?: string
+          image_url?: string
+          placement?: Database["public"]["Enums"]["ad_placement"]
+          start_date?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       startup_submissions: {
         Row: {
           admin_notes: string | null
@@ -1078,6 +1117,7 @@ export type Database = {
       }
     }
     Enums: {
+      ad_placement: "startups_listing_top" | "article_inline"
       app_role: "admin" | "editor" | "author"
       article_status: "draft" | "published"
       skill_category:
@@ -1219,6 +1259,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      ad_placement: ["startups_listing_top", "article_inline"],
       app_role: ["admin", "editor", "author"],
       article_status: ["draft", "published"],
       skill_category: [
