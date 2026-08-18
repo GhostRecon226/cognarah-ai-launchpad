@@ -149,7 +149,7 @@ function AdsAdmin() {
   }
 
   return (
-    <AdminShell title="Sponsored ads" roles={["admin", "editor"]}>
+    <AdminShell title="Sponsored ads" requiredRoles={["admin", "editor"]}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="max-w-2xl text-sm text-muted-foreground">
           Banners run on the Startups and Funding listing pages and inline inside articles in those
