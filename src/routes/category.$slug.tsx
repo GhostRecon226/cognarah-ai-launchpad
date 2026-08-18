@@ -105,7 +105,7 @@ export const Route = createFileRoute("/category/$slug")({
 });
 
 function CategoryPage() {
-  const { category, articles, page, totalPages } = Route.useLoaderData();
+  const { category, articles, page, totalPages, sponsoredAd } = Route.useLoaderData();
   const buildHref = (p: number) =>
     p === 1 ? `/category/${category.slug}` : `/category/${category.slug}?page=${p}`;
   return (
