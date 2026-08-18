@@ -155,7 +155,7 @@ export const Route = createFileRoute("/article/$slug")({
 });
 
 function ArticlePage() {
-  const { article, related } = Route.useLoaderData();
+  const { article, related, sponsoredAd } = Route.useLoaderData();
   const url = `${SITE_URL}/article/${article.slug}`;
   const [translation, setTranslation] = useState<TranslationResult | null>(null);
   const displayTitle = translation ? translation.title : article.title;
