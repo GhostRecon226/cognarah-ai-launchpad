@@ -636,18 +636,6 @@ export type Database = {
         }
         Relationships: []
       }
-      rls_probe: {
-        Row: {
-          id: number | null
-        }
-        Insert: {
-          id?: number | null
-        }
-        Update: {
-          id?: number | null
-        }
-        Relationships: []
-      }
       site_settings: {
         Row: {
           facebook: string | null
@@ -1127,7 +1115,6 @@ export type Database = {
           read_ct: number
         }[]
       }
-      rls_probe_fn: { Args: never; Returns: boolean }
     }
     Enums: {
       ad_placement: "startups_listing_top" | "article_inline"
