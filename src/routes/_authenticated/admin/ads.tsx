@@ -282,7 +282,7 @@ function AdsAdmin() {
                 />
               </div>
 
-                <div>
+              <div>
                 <label className="text-sm font-medium">Banner image</label>
                 <p className="mt-0.5 text-xs text-muted-foreground">
                   Recommended: {PLACEMENT_SPECS[(editing.placement ?? "startups_listing_top") as AdPlacement].label}
