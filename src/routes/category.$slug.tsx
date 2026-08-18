@@ -18,7 +18,13 @@ const searchSchema = z.object({
 async function loadCategory(
   slug: string,
   page: number,
-): Promise<{ category: Category; articles: Article[]; page: number; totalPages: number }> {
+): Promise<{
+  category: Category;
+  articles: Article[];
+  page: number;
+  totalPages: number;
+  sponsoredAd: SponsoredAd | null;
+}> {
   const { data: category } = await supabase
     .from("categories")
     .select("*")
@@ -37,13 +43,18 @@ async function loadCategory(
     .range(from, to);
   const totalPages = calcTotalPages(count, PAGE_SIZE_LIST);
   if (safePage > totalPages && (count ?? 0) > 0) throw notFound();
+  const sponsoredAd = STARTUP_SECTION_SLUGS.includes(c.slug)
+    ? await fetchLiveAd("startups_listing_top")
+    : null;
   return {
     category: c,
     articles: (articles ?? []) as unknown as Article[],
     page: safePage,
     totalPages,
+    sponsoredAd,
   };
 }
+
 
 export const Route = createFileRoute("/category/$slug")({
   validateSearch: zodValidator(searchSchema),
