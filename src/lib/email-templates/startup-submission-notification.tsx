@@ -175,7 +175,7 @@ export const template = {
     `New Startup Submission: ${stripEmDashes((d?.companyName as string) || "")}`.trim() ||
     "New Startup Submission",
   displayName: "New startup submission notification",
-  to: "cognarah.ai@gmail.com",
+  to: "info@cognarah.com",
   previewData: {
     companyName: "Acme AI",
     founderName: "Jane Doe",

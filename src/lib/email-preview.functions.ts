@@ -59,7 +59,7 @@ export const previewStartupSubmissionEmail = createServerFn({ method: "GET" })
 
     return {
       subject,
-      to: entry.to ?? "cognarah.ai@gmail.com",
+      to: entry.to ?? "info@cognarah.com",
       html,
       text,
       companyName: row.company_name,
