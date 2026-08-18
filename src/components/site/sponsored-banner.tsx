@@ -1,4 +1,4 @@
-import { sponsoredAdImageUrl, type SponsoredAd } from "@/lib/sponsored-ads";
+import { sponsoredAdImageUrl, PLACEMENT_SPECS, type SponsoredAd } from "@/lib/sponsored-ads";
 
 interface Props {
   ad: SponsoredAd | null | undefined;
@@ -31,7 +31,7 @@ export function SponsoredBanner({ ad, className }: Props) {
         <img
           src={src}
           alt={`Sponsored banner by ${ad.advertiser_name}`}
-          className="w-full object-cover"
+          className="aspect-[7/1] w-full object-cover"
           loading="lazy"
         />
       </a>

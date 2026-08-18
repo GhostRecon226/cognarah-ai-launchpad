@@ -20,6 +20,28 @@ export const PLACEMENT_LABELS: Record<AdPlacement, string> = {
   article_inline: "Article inline",
 };
 
+export interface PlacementSpec {
+  aspect: string;
+  recommendedWidth: number;
+  recommendedHeight: number;
+  label: string;
+}
+
+export const PLACEMENT_SPECS: Record<AdPlacement, PlacementSpec> = {
+  startups_listing_top: {
+    aspect: "7/1",
+    recommendedWidth: 1200,
+    recommendedHeight: 171,
+    label: "1200 x 171 px (7:1 leaderboard)",
+  },
+  article_inline: {
+    aspect: "7/1",
+    recommendedWidth: 700,
+    recommendedHeight: 100,
+    label: "700 x 100 px (7:1 leaderboard)",
+  },
+};
+
 /** Category slugs that make up the Startups and Funding section. */
 export const STARTUP_SECTION_SLUGS = ["startups", "funding"];
 
