@@ -227,9 +227,11 @@ function ArticlePage() {
                   className="prose-article mt-10"
                   dangerouslySetInnerHTML={{ __html: firstPart }}
                 />
+                <SponsoredBanner ad={sponsoredAd} className="my-8" />
                 {restPart && (
                   <>
                     <AdUnit position="in-article" slot={AD_SLOTS.inArticleTop} />
+
                     <div
                       dir={dir}
                       className="prose-article"
