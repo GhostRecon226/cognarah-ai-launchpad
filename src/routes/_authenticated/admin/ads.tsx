@@ -202,6 +202,9 @@ function AdsAdmin() {
                       alt=""
                       className="h-10 w-28 rounded object-cover"
                     />
+                    <p className="mt-1 text-[10px] text-muted-foreground">
+                      {PLACEMENT_SPECS[ad.placement].label}
+                    </p>
                   </td>
                   <td className="px-4 py-3 font-medium">{ad.advertiser_name}</td>
                   <td className="px-4 py-3">{PLACEMENT_LABELS[ad.placement]}</td>
@@ -279,8 +282,11 @@ function AdsAdmin() {
                 />
               </div>
 
-              <div>
+                <div>
                 <label className="text-sm font-medium">Banner image</label>
+                <p className="mt-0.5 text-xs text-muted-foreground">
+                  Recommended: {PLACEMENT_SPECS[(editing.placement ?? "startups_listing_top") as AdPlacement].label}
+                </p>
                 <div className="mt-1 flex items-center gap-3">
                   <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-2 text-sm hover:bg-secondary">
                     <Upload className="h-4 w-4" />
