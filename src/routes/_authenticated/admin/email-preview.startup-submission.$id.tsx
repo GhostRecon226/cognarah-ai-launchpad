@@ -53,7 +53,7 @@ function PreviewPage() {
       {data && (
         <div className="space-y-4">
           <div className="rounded-lg border border-border bg-background p-4 text-sm">
-            <dl className="grid grid-cols-[110px,1fr] gap-x-4 gap-y-2">
+            <dl className="grid grid-cols-[110px_1fr] gap-x-4 gap-y-2">
               <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">To</dt>
               <dd className="text-foreground">{data.to}</dd>
               <dt className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Subject</dt>
