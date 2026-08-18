@@ -12,6 +12,7 @@ const NAV: NavItem[] = [
   { to: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true, roles: ["admin", "editor", "author"] },
   { to: "/admin/articles", label: "Articles", icon: FileText, roles: ["admin", "editor", "author"] },
   { to: "/admin/promotion", label: "Promotion", icon: Megaphone, roles: ["admin", "editor"] },
+  { to: "/admin/ads", label: "Sponsored ads", icon: BadgeDollarSign, roles: ["admin", "editor"] },
 
   { to: "/admin/startups", label: "Startups", icon: Rocket, roles: ["admin", "editor"], badgeKey: "pendingStartups" },
   { to: "/admin/agent", label: "AI Agent", icon: Sparkles, roles: ["admin", "editor"] },
