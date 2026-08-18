@@ -19,6 +19,9 @@ import { ArticleShare } from "@/components/site/article-share";
 import { AdUnit } from "@/components/site/ad-unit";
 import { ViewTracker } from "@/components/site/view-tracker";
 import { AD_SLOTS } from "@/lib/adsense";
+import { SponsoredBanner } from "@/components/site/sponsored-banner";
+import { fetchLiveAd, STARTUP_SECTION_SLUGS, type SponsoredAd } from "@/lib/sponsored-ads";
+
 
 function splitBodyAfterSecondParagraph(html: string): [string, string] {
   const re = /<\/p>/gi;
