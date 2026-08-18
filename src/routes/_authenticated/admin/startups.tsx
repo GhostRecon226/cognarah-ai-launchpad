@@ -168,7 +168,7 @@ function StartupsPage() {
       </div>
 
       <div className="overflow-hidden rounded-lg border border-border bg-background">
-        <div className="hidden grid-cols-[1fr,1fr,1fr,1fr,1fr,auto,auto] gap-3 border-b border-border bg-secondary px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:grid">
+        <div className="hidden grid-cols-[1fr_1fr_1fr_1fr_1fr_auto_auto] gap-3 border-b border-border bg-secondary px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:grid">
           <div>Company</div>
           <div>Founder</div>
           <div>Country</div>
@@ -190,7 +190,7 @@ function StartupsPage() {
               <button
                 type="button"
                 onClick={() => setExpanded(isOpen ? null : s.id)}
-                className="grid w-full grid-cols-1 items-center gap-2 px-4 py-3 text-left hover:bg-secondary md:grid-cols-[1fr,1fr,1fr,1fr,1fr,auto,auto] md:gap-3"
+                className="grid w-full grid-cols-1 items-center gap-2 px-4 py-3 text-left hover:bg-secondary md:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto_auto] md:gap-3"
               >
                 <div className="flex items-center gap-2 font-medium">
                   {isOpen ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
@@ -248,7 +248,7 @@ function StartupsPage() {
               </button>
 
               {isOpen && (
-                <div className="grid grid-cols-1 gap-6 border-t border-border bg-secondary/40 px-4 py-5 md:grid-cols-[160px,1fr]">
+                <div className="grid grid-cols-1 gap-6 border-t border-border bg-secondary/40 px-4 py-5 md:grid-cols-[160px_1fr]">
                   <div className="space-y-3">
                     <MediaImage
                       src={s.logo_url}
