@@ -34,7 +34,9 @@ function splitBodyAfterSecondParagraph(html: string): [string, string] {
   return [html, ""];
 }
 
-async function loadArticle(slug: string): Promise<{ article: Article; related: Article[] }> {
+async function loadArticle(
+  slug: string,
+): Promise<{ article: Article; related: Article[]; sponsoredAd: SponsoredAd | null }> {
   const { data: article } = await supabase
     .from("articles")
     .select("*, author:authors(*), category:categories(*)")
@@ -56,8 +58,13 @@ async function loadArticle(slug: string): Promise<{ article: Article; related: A
       .limit(3);
     related = (data ?? []) as unknown as Article[];
   }
-  return { article: a, related };
+  const sponsoredAd =
+    a.category?.slug && STARTUP_SECTION_SLUGS.includes(a.category.slug)
+      ? await fetchLiveAd("article_inline")
+      : null;
+  return { article: a, related, sponsoredAd };
 }
+
 
 export const Route = createFileRoute("/article/$slug")({
   loader: ({ params }) => loadArticle(params.slug),
