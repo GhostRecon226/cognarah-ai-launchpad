@@ -69,7 +69,7 @@ export const Route = createFileRoute("/category/$slug")({
     const total = loaderData?.totalPages ?? 1;
     const baseTitle = c ? `${c.name}: Cognarah` : "Category: Cognarah";
     const baseDesc = c?.description || `Latest ${c?.name ?? ""} coverage on Cognarah.`;
-    const title = page > 1 ? `${baseTitle} — Page ${page}` : baseTitle;
+    const title = page > 1 ? `${baseTitle}, Page ${page}` : baseTitle;
     const desc = page > 1 ? `Page ${page} of ${total}. ${baseDesc}` : baseDesc;
     const baseUrl = `${SITE_URL}/category/${params.slug}`;
     const url = page > 1 ? `${baseUrl}?page=${page}` : baseUrl;
