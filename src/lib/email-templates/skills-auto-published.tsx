@@ -87,7 +87,7 @@ export const template = {
     return `${n} skill${n === 1 ? "" : "s"} auto-published on Cognarah`;
   },
   displayName: "Skills auto-published notification",
-  to: "cognarah.ai@gmail.com",
+  to: "info@cognarah.com",
   previewData: {
     skills: [
       { title: "Web Search Skill", source: "https://github.com/anthropics/skills/tree/main/web-search" },
