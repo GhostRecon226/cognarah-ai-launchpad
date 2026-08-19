@@ -161,9 +161,20 @@ function StartupsTable() {
     }
   }
 
+  async function remove(s: Submission) {
+    const ok = window.confirm(
+      `Delete the submission from ${s.company_name}? This cannot be undone.${s.article_id ? " Any article already generated from it stays in place." : ""}`,
+    );
+    if (!ok) return;
+    const { error } = await supabase.from("startup_submissions").delete().eq("id", s.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Submission deleted");
+    setSubs((prev) => prev.filter((x) => x.id !== s.id));
+    setExpanded((prev) => (prev === s.id ? null : prev));
+  }
 
   return (
-    <AdminShell title="Startup submissions" requiredRoles={["admin", "editor"]}>
+    <>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {STATUS_FILTERS.map((f) => (
           <button
@@ -181,16 +192,18 @@ function StartupsTable() {
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-background">
-        <div className="hidden grid-cols-[1fr_1fr_1fr_1fr_1fr_auto_auto] gap-3 border-b border-border bg-secondary px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:grid">
-          <div>Company</div>
-          <div>Founder</div>
-          <div>Country</div>
-          <div>Stage</div>
-          <div>Submitted</div>
+      <div className="overflow-x-auto rounded-lg border border-border bg-background">
+       <div className="md:min-w-[1180px]">
+        <div className={cn("hidden gap-3 border-b border-border bg-secondary px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:grid", COLS)}>
+          <div className="min-w-0">Company</div>
+          <div className="min-w-0">Founder</div>
+          <div className="min-w-0">Country</div>
+          <div className="min-w-0">Stage</div>
+          <div className="min-w-0">Submitted</div>
           <div>Status</div>
-          <div className="pr-2 text-right">Actions</div>
+          <div className="text-right">Actions</div>
         </div>
+
 
         {loading && <p className="px-4 py-6 text-sm text-muted-foreground">Loading submissions...</p>}
         {!loading && visible.length === 0 && (
