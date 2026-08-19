@@ -5,9 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { MediaImage } from "@/components/site/media-image";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Check, X, ExternalLink, Sparkles, Eye, Loader2, Mail, Copy } from "lucide-react";
+import { ChevronDown, ChevronRight, Check, X, ExternalLink, Sparkles, Eye, Loader2, Mail, Copy, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRoles } from "@/lib/admin-roles";
 import { generateStartupDraft } from "@/lib/startup-submissions.functions";
+
 
 export const Route = createFileRoute("/_authenticated/admin/startups")({
   head: () => ({ meta: [{ title: "Startup submissions: Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
