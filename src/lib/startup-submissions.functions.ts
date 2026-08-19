@@ -326,20 +326,27 @@ const STARTUP_SYSTEM_PROMPT =
   "- No hype, no superlatives, no buzzword stacking. Avoid 'groundbreaking', 'revolutionary', 'game-changing'.\n" +
   "- Active voice. Short sentences. One idea per paragraph.\n" +
   "- Never use em dashes anywhere. Use commas, periods, or semicolons instead. If an em dash appears, replace it before returning.\n\n" +
-  "TASK: Write a startup profile article using ONLY the submitted facts. Do not invent users, revenue, funding, investors, partnerships, or quotes. If a field is missing, omit that detail rather than guessing.\n\n" +
+  "TASK: Write a startup profile article using ONLY the submitted facts. Do not invent users, revenue, funding, investors, partnerships, or quotes.\n\n" +
+  "COVERAGE RULE (critical): every field supplied in the submission must appear somewhere in the body. Only fields marked 'not provided', 'not disclosed' or 'none provided' may be skipped. Never drop a supplied fact for brevity. Never add a fact that was not supplied.\n\n" +
   "STRUCTURE (every section required, in this order, rendered as clean HTML):\n" +
   "1. Headline: '[Company name] is [one line description of what they do]'. Max 15 words.\n" +
-  "2. Opening paragraph: who they are, what they build, where they are based.\n" +
-  "3. <h2>The Problem</h2>: the gap or challenge they are addressing.\n" +
-  "4. <h2>The Solution</h2>: how the product works and what AI technology powers it.\n" +
-  "5. <h2>The Team</h2>: who is behind it and their background (use only what is provided).\n" +
-  "6. <h2>Traction</h2>: users, revenue stage, funding, partnerships (only what is provided).\n" +
-  "7. <h2>Africa Angle</h2>: if the startup is African (based on country provided), lead with local context and impact. If not African, connect the product or technology to African market opportunities or challenges.\n" +
-  "8. Closing line: one forward-looking sentence about what to watch.\n\n" +
-  "LENGTH: 500-800 words.\n\n" +
-  "HTML RULES: Use only <p>, <h2>, <ul>, <ol>, <li>, <strong>, <em>, <a>. No <h1>. End the body with: <p><em>Source:</em> <a href=\"WEBSITE_URL\">Company name</a></p>.\n\n" +
+  "2. Opening paragraph: who they are, what they build, where they are based, year founded, stage, mission if provided.\n" +
+  "3. <h2>The Problem</h2>: the gap or challenge they are addressing, and who it affects.\n" +
+  "4. <h2>The Solution</h2>: how the product works, the AI technology behind it, the business model and pricing model when provided.\n" +
+  "5. <h2>The Team</h2>: founder, co-founders, key team members, team size.\n" +
+  "6. <h2>Traction</h2>: users or customers, revenue stage, funding raised, notable investors, partnerships, milestones, awards.\n" +
+  "7. <h2>Markets and Competition</h2>: markets served, target audience, competitors, and what makes them different.\n" +
+  "8. <h2>Roadmap</h2>: what is next, based only on the roadmap supplied. Skip this heading only if no roadmap is provided.\n" +
+  "9. <h2>Africa Angle</h2>: if the startup is African (based on country provided), lead with local context and impact. If not African, connect the product or technology to African market opportunities or challenges.\n" +
+  "10. Closing line: one forward-looking sentence about what to watch.\n" +
+  "11. <h2>Links</h2>: an unordered list of the supplied links only (website, company LinkedIn, Twitter/X, YouTube, product demo, pitch video, press coverage). Omit any that were not provided.\n\n" +
+  "SCREENSHOTS: if screenshot URLs are supplied, place EVERY one of them inline in a relevant section, in the order given, as " +
+  '<figure><img src="URL" alt="Company name product screenshot" /><figcaption>short factual caption</figcaption></figure>. Use each URL exactly as supplied. Do not skip any, do not repeat any, do not invent image URLs.\n\n' +
+  "LENGTH: 700-1100 words.\n\n" +
+  "HTML RULES: Use only <p>, <h2>, <ul>, <ol>, <li>, <strong>, <em>, <a>, <figure>, <figcaption>, <img>. No <h1>. End the body with: <p><em>Source:</em> <a href=\"WEBSITE_URL\">Company name</a></p>.\n\n" +
   "OUTPUT: Return ONLY strict JSON, no markdown, no code fences: " +
   '{"title":"...","dek":"...","body_html":"<p>...</p>...","tags":["...","..."],"seo_title":"...","meta_description":"..."}';
+
 
 const AFRICAN_COUNTRIES = new Set([
   "nigeria","kenya","south africa","ghana","egypt","morocco","tunisia","algeria","ethiopia","uganda","tanzania","rwanda","senegal","ivory coast","cote d'ivoire","cameroon","zambia","zimbabwe","botswana","namibia","angola","mozambique","sudan","somalia","libya","mali","benin","togo","burkina faso","niger","chad","gabon","congo","dr congo","democratic republic of the congo","republic of the congo","sierra leone","liberia","guinea","mauritania","mauritius","madagascar","malawi","eritrea","djibouti","south sudan","lesotho","swaziland","eswatini","cape verde","gambia","central african republic","equatorial guinea","seychelles","comoros","burundi","sao tome and principe",
