@@ -361,6 +361,7 @@ function buildStartupUserPrompt(s: Record<string, unknown>): string {
         .join("; ")
     : "";
   const markets = Array.isArray(s.markets_served) ? (s.markets_served as string[]).join(", ") : "";
+  const screenshots = screenshotUrls(s);
   const lines = [
     `Company name: ${s.company_name}`,
     `Tagline: ${s.tagline || "not provided"}`,
