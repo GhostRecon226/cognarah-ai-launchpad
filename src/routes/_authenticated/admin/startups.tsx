@@ -196,6 +196,11 @@ function StartupsTable() {
 
   return (
     <>
+      {missingTarget && (
+        <div className="mb-4 rounded-md border border-yellow-300 bg-yellow-50 px-4 py-2 text-sm text-yellow-900">
+          That submission was not found. It may have been deleted. Showing all submissions instead.
+        </div>
+      )}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {STATUS_FILTERS.map((f) => (
           <button
