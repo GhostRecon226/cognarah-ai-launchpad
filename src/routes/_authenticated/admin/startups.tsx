@@ -239,7 +239,14 @@ function StartupsTable() {
         {visible.map((s) => {
           const isOpen = expanded === s.id;
           return (
-            <div key={s.id} className="border-b border-border last:border-b-0">
+            <div
+              key={s.id}
+              id={`submission-${s.id}`}
+              className={cn(
+                "border-b border-border last:border-b-0",
+                targetId === s.id && "bg-brand/5 ring-1 ring-inset ring-brand/40",
+              )}
+            >
               <button
                 type="button"
                 onClick={() => setExpanded(isOpen ? null : s.id)}
