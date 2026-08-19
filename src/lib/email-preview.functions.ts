@@ -41,7 +41,7 @@ export const previewStartupSubmissionEmail = createServerFn({ method: "GET" })
       contactMethod: row.contact_method,
       whatsappNumber: row.whatsapp_number,
       submittedAt: row.submitted_at,
-      reviewUrl: "https://cognarah.com/admin/startups",
+      reviewUrl: `https://cognarah.com/admin/startups?submission=${row.id}`,
     };
 
     const React = await import("react");
@@ -63,5 +63,6 @@ export const previewStartupSubmissionEmail = createServerFn({ method: "GET" })
       html,
       text,
       companyName: row.company_name,
+      reviewUrl: templateData.reviewUrl,
     };
   });

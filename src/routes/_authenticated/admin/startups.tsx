@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { MediaImage } from "@/components/site/media-image";
@@ -12,6 +12,10 @@ import { generateStartupDraft } from "@/lib/startup-submissions.functions";
 
 
 export const Route = createFileRoute("/_authenticated/admin/startups")({
+  validateSearch: (search: Record<string, unknown>): { submission?: string } =>
+    typeof search.submission === "string" && search.submission
+      ? { submission: search.submission }
+      : {},
   head: () => ({ meta: [{ title: "Startup submissions: Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
   component: StartupsPage,
 });
@@ -103,11 +107,12 @@ function StartupsTable() {
   const [filter, setFilter] = useState<Status | "all">("all");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [generating, setGenerating] = useState<Set<string>>(new Set());
+  const [missingTarget, setMissingTarget] = useState(false);
   const generateDraft = useServerFn(generateStartupDraft);
   const { hasRole } = useRoles();
   const canDelete = hasRole("admin");
-
-
+  const { submission: targetId } = Route.useSearch();
+  const focusedRef = useRef<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -120,6 +125,20 @@ function StartupsTable() {
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
+
+  // Deep link from the notification email: open and scroll to the submission.
+  useEffect(() => {
+    if (!targetId || loading || focusedRef.current === targetId) return;
+    focusedRef.current = targetId;
+    const found = subs.some((s) => s.id === targetId);
+    if (!found) { setMissingTarget(true); return; }
+    setMissingTarget(false);
+    setFilter("all");
+    setExpanded(targetId);
+    requestAnimationFrame(() => {
+      document.getElementById(`submission-${targetId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, [targetId, loading, subs]);
 
   const visible = useMemo(() => filter === "all" ? subs : subs.filter((s) => s.status === filter), [subs, filter]);
   const counts = useMemo(() => {
@@ -177,6 +196,11 @@ function StartupsTable() {
 
   return (
     <>
+      {missingTarget && (
+        <div className="mb-4 rounded-md border border-yellow-300 bg-yellow-50 px-4 py-2 text-sm text-yellow-900">
+          That submission was not found. It may have been deleted. Showing all submissions instead.
+        </div>
+      )}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {STATUS_FILTERS.map((f) => (
           <button
@@ -215,7 +239,14 @@ function StartupsTable() {
         {visible.map((s) => {
           const isOpen = expanded === s.id;
           return (
-            <div key={s.id} className="border-b border-border last:border-b-0">
+            <div
+              key={s.id}
+              id={`submission-${s.id}`}
+              className={cn(
+                "border-b border-border last:border-b-0",
+                targetId === s.id && "bg-brand/5 ring-1 ring-inset ring-brand/40",
+              )}
+            >
               <button
                 type="button"
                 onClick={() => setExpanded(isOpen ? null : s.id)}
