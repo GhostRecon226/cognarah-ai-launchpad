@@ -360,9 +360,11 @@ function StartupsTable() {
             </div>
           );
         })}
+       </div>
       </div>
-    </AdminShell>
+    </>
   );
+
 }
 
 function Detail({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
