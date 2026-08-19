@@ -85,12 +85,26 @@ function StatusBadge({ status }: { status: Status }) {
 }
 
 function StartupsPage() {
+  return (
+    <AdminShell title="Startup submissions" requiredRoles={["admin", "editor"]}>
+      <StartupsTable />
+    </AdminShell>
+  );
+}
+
+const COLS =
+  "md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_100px_368px]";
+
+function StartupsTable() {
   const [subs, setSubs] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Status | "all">("all");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [generating, setGenerating] = useState<Set<string>>(new Set());
   const generateDraft = useServerFn(generateStartupDraft);
+  const { hasRole } = useRoles();
+  const canDelete = hasRole("admin");
+
 
 
   async function load() {
