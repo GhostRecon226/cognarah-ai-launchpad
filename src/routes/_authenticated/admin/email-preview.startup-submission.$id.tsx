@@ -70,9 +70,20 @@ function PreviewPage() {
             <iframe
               title="Email HTML preview"
               srcDoc={data.html}
-              sandbox=""
+              sandbox="allow-popups allow-popups-to-escape-sandbox"
               className="h-[800px] w-full bg-white"
             />
+            <div className="border-t border-border bg-secondary px-4 py-2 text-xs text-muted-foreground">
+              Review button links to{" "}
+              <a
+                href={data.reviewUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="break-all font-medium text-brand underline"
+              >
+                {data.reviewUrl}
+              </a>
+            </div>
           </div>
 
           <details className="rounded-lg border border-border bg-background">
