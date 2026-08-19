@@ -435,7 +435,7 @@ async function geminiDraftStartup(s: Record<string, unknown>): Promise<StartupDr
   return JSON.parse(cleaned) as StartupDraft;
 }
 
-async function claudeRefineStartup(draft: StartupDraft, websiteUrl: string): Promise<StartupDraft | null> {
+async function claudeMessage(system: string, userContent: string): Promise<StartupDraft | null> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return null;
   try {
@@ -448,15 +448,9 @@ async function claudeRefineStartup(draft: StartupDraft, websiteUrl: string): Pro
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 4096,
-        system: STARTUP_SYSTEM_PROMPT,
-        messages: [{
-          role: "user",
-          content:
-            "Refine this startup profile draft for tone, structure, and flow. Do NOT change facts, quotes, links, or the Source footer. " +
-            "Do not add users, revenue, funding, investors, or partnerships that are not already present. Keep the same JSON schema. Return ONLY strict JSON, no code fences.\n\n" +
-            `Website (must remain in the Source footer): ${websiteUrl}\n\nDRAFT JSON:\n${JSON.stringify(draft)}`,
-        }],
+        max_tokens: 8192,
+        system,
+        messages: [{ role: "user", content: userContent }],
       }),
     });
     if (!res.ok) return null;
@@ -473,6 +467,111 @@ async function claudeRefineStartup(draft: StartupDraft, websiteUrl: string): Pro
     return null;
   }
 }
+
+async function claudeRefineStartup(
+  draft: StartupDraft,
+  websiteUrl: string,
+  screenshots: string[],
+): Promise<StartupDraft | null> {
+  const parsed = await claudeMessage(
+    STARTUP_SYSTEM_PROMPT,
+    "Refine this startup profile draft for tone, structure, and flow. Do NOT change facts, quotes, links, images, or the Source footer. " +
+      "Do not remove any section, any supplied detail, or any <figure> image. " +
+      "Do not add users, revenue, funding, investors, or partnerships that are not already present. Keep the same JSON schema. Return ONLY strict JSON, no code fences.\n\n" +
+      `Website (must remain in the Source footer): ${websiteUrl}\n` +
+      `Screenshot image URLs that must all remain embedded in the body: ${screenshots.join(" | ") || "none"}\n\n` +
+      `DRAFT JSON:\n${JSON.stringify(draft)}`,
+  );
+  if (!parsed) return null;
+  // Reject a refinement that dropped images or the source footer.
+  const lostImage = screenshots.some((u) => !parsed.body_html.includes(u));
+  const lostSource = !parsed.body_html.includes(websiteUrl);
+  if (lostImage || lostSource) return null;
+  return parsed;
+}
+
+// Long-form fields that must show up in the finished body when supplied.
+const COVERAGE_FIELDS: Array<{ key: string; label: string }> = [
+  { key: "mission", label: "Mission" },
+  { key: "differentiator", label: "What makes them different" },
+  { key: "competitors", label: "Competitors" },
+  { key: "business_model", label: "Business model" },
+  { key: "pricing_model", label: "Pricing model" },
+  { key: "markets_served", label: "Markets served" },
+  { key: "milestones", label: "Milestones" },
+  { key: "awards", label: "Awards / recognition" },
+  { key: "roadmap", label: "Roadmap / what's next" },
+  { key: "user_count", label: "Users / customers" },
+  { key: "funding_raised", label: "Funding raised" },
+  { key: "notable_investors", label: "Notable investors" },
+  { key: "partnerships", label: "Partnerships / clients" },
+  { key: "key_team_members", label: "Key team members" },
+  { key: "press_links", label: "Press coverage" },
+];
+
+function normalizeText(v: string): string {
+  return v.toLowerCase().replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
+}
+
+/** Returns supplied fields whose distinctive words never made it into the body. */
+function missingCoverage(s: Record<string, unknown>, bodyHtml: string): Array<{ label: string; value: string }> {
+  const body = normalizeText(bodyHtml);
+  const missing: Array<{ label: string; value: string }> = [];
+  for (const f of COVERAGE_FIELDS) {
+    const raw = s[f.key];
+    const value = Array.isArray(raw) ? (raw as unknown[]).join(", ") : raw ? String(raw) : "";
+    if (!value.trim()) continue;
+    const words = normalizeText(value)
+      .split(/[^a-z0-9]+/)
+      .filter((w) => w.length > 4);
+    if (words.length === 0) continue;
+    const hits = words.filter((w) => body.includes(w)).length;
+    if (hits / words.length < 0.34) missing.push({ label: f.label, value });
+  }
+  return missing;
+}
+
+/** One corrective pass folding omitted facts back in. Returns null when it cannot be trusted. */
+async function claudeFillGaps(
+  draft: StartupDraft,
+  missing: Array<{ label: string; value: string }>,
+  websiteUrl: string,
+  screenshots: string[],
+): Promise<StartupDraft | null> {
+  const parsed = await claudeMessage(
+    STARTUP_SYSTEM_PROMPT,
+    "This startup profile draft left out facts the founder supplied. Fold every missing fact below into the most relevant section. " +
+      "Do not rewrite or remove anything already present, do not remove any <figure> image, and keep the Source footer intact. " +
+      "Add nothing beyond the facts listed. Keep the same JSON schema. Return ONLY strict JSON, no code fences.\n\n" +
+      `Website (must remain in the Source footer): ${websiteUrl}\n` +
+      `Screenshot image URLs that must all remain embedded: ${screenshots.join(" | ") || "none"}\n\n` +
+      `MISSING FACTS:\n${missing.map((m) => `${m.label}: ${m.value}`).join("\n")}\n\n` +
+      `DRAFT JSON:\n${JSON.stringify(draft)}`,
+  );
+  if (!parsed) return null;
+  if (screenshots.some((u) => !parsed.body_html.includes(u))) return null;
+  if (!parsed.body_html.includes(websiteUrl)) return null;
+  return parsed;
+}
+
+/** Guarantees no submitted screenshot is lost, even if the models ignored one. */
+function ensureScreenshots(bodyHtml: string, company: string, screenshots: string[]): string {
+  const missing = screenshots.filter((u) => !bodyHtml.includes(u));
+  if (missing.length === 0) return bodyHtml;
+  const gallery =
+    "<h2>Product screenshots</h2>" +
+    missing
+      .map(
+        (u, i) =>
+          `<figure><img src="${u}" alt="${company} product screenshot ${i + 1}" /><figcaption>${company} product screenshot</figcaption></figure>`,
+      )
+      .join("");
+  // Insert before the Source footer when present, otherwise append.
+  const idx = bodyHtml.lastIndexOf("<p><em>Source:");
+  if (idx !== -1) return bodyHtml.slice(0, idx) + gallery + bodyHtml.slice(idx);
+  return bodyHtml + gallery;
+}
+
 
 function sanitizeDraft(d: StartupDraft): StartupDraft {
   return {
