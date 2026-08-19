@@ -272,6 +272,16 @@ function StartupsTable() {
                   >
                     <X className="h-4 w-4" />
                   </button>
+                  {canDelete && (
+                    <button
+                      onClick={() => remove(s)}
+                      title="Delete submission"
+                      className="rounded-md border border-border bg-background p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+
                 </div>
               </button>
 
