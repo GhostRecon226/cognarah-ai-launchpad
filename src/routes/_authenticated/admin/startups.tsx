@@ -217,18 +217,19 @@ function StartupsTable() {
               <button
                 type="button"
                 onClick={() => setExpanded(isOpen ? null : s.id)}
-                className="grid w-full grid-cols-1 items-center gap-2 px-4 py-3 text-left hover:bg-secondary md:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto_auto] md:gap-3"
+                className={cn("grid w-full grid-cols-1 items-center gap-2 px-4 py-3 text-left hover:bg-secondary md:gap-3", COLS)}
               >
-                <div className="flex items-center gap-2 font-medium">
+                <div className="flex min-w-0 items-center gap-2 font-medium">
                   {isOpen ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
                   <span className="truncate">{s.company_name}</span>
                 </div>
-                <div className="truncate text-sm text-muted-foreground md:text-foreground">{s.founder_name}</div>
-                <div className="truncate text-sm text-muted-foreground">{s.country}, {s.city}</div>
-                <div className="truncate text-sm text-muted-foreground">{s.company_stage}</div>
-                <div className="truncate text-sm text-muted-foreground">{new Date(s.submitted_at).toLocaleDateString()}</div>
+                <div className="min-w-0 truncate text-sm text-muted-foreground md:text-foreground">{s.founder_name}</div>
+                <div className="min-w-0 truncate text-sm text-muted-foreground">{s.country}, {s.city}</div>
+                <div className="min-w-0 truncate text-sm text-muted-foreground">{s.company_stage}</div>
+                <div className="min-w-0 truncate text-sm text-muted-foreground">{new Date(s.submitted_at).toLocaleDateString()}</div>
                 <div><StatusBadge status={s.status} /></div>
-                <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                <div className="flex flex-wrap items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+
                   <Link
                     to="/admin/email-preview/startup-submission/$id"
                     params={{ id: s.id }}
