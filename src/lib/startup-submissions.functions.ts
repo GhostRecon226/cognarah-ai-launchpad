@@ -326,24 +326,37 @@ const STARTUP_SYSTEM_PROMPT =
   "- No hype, no superlatives, no buzzword stacking. Avoid 'groundbreaking', 'revolutionary', 'game-changing'.\n" +
   "- Active voice. Short sentences. One idea per paragraph.\n" +
   "- Never use em dashes anywhere. Use commas, periods, or semicolons instead. If an em dash appears, replace it before returning.\n\n" +
-  "TASK: Write a startup profile article using ONLY the submitted facts. Do not invent users, revenue, funding, investors, partnerships, or quotes. If a field is missing, omit that detail rather than guessing.\n\n" +
+  "TASK: Write a startup profile article using ONLY the submitted facts. Do not invent users, revenue, funding, investors, partnerships, or quotes.\n\n" +
+  "COVERAGE RULE (critical): every field supplied in the submission must appear somewhere in the body. Only fields marked 'not provided', 'not disclosed' or 'none provided' may be skipped. Never drop a supplied fact for brevity. Never add a fact that was not supplied.\n\n" +
   "STRUCTURE (every section required, in this order, rendered as clean HTML):\n" +
   "1. Headline: '[Company name] is [one line description of what they do]'. Max 15 words.\n" +
-  "2. Opening paragraph: who they are, what they build, where they are based.\n" +
-  "3. <h2>The Problem</h2>: the gap or challenge they are addressing.\n" +
-  "4. <h2>The Solution</h2>: how the product works and what AI technology powers it.\n" +
-  "5. <h2>The Team</h2>: who is behind it and their background (use only what is provided).\n" +
-  "6. <h2>Traction</h2>: users, revenue stage, funding, partnerships (only what is provided).\n" +
-  "7. <h2>Africa Angle</h2>: if the startup is African (based on country provided), lead with local context and impact. If not African, connect the product or technology to African market opportunities or challenges.\n" +
-  "8. Closing line: one forward-looking sentence about what to watch.\n\n" +
-  "LENGTH: 500-800 words.\n\n" +
-  "HTML RULES: Use only <p>, <h2>, <ul>, <ol>, <li>, <strong>, <em>, <a>. No <h1>. End the body with: <p><em>Source:</em> <a href=\"WEBSITE_URL\">Company name</a></p>.\n\n" +
+  "2. Opening paragraph: who they are, what they build, where they are based, year founded, stage, mission if provided.\n" +
+  "3. <h2>The Problem</h2>: the gap or challenge they are addressing, and who it affects.\n" +
+  "4. <h2>The Solution</h2>: how the product works, the AI technology behind it, the business model and pricing model when provided.\n" +
+  "5. <h2>The Team</h2>: founder, co-founders, key team members, team size.\n" +
+  "6. <h2>Traction</h2>: users or customers, revenue stage, funding raised, notable investors, partnerships, milestones, awards.\n" +
+  "7. <h2>Markets and Competition</h2>: markets served, target audience, competitors, and what makes them different.\n" +
+  "8. <h2>Roadmap</h2>: what is next, based only on the roadmap supplied. Skip this heading only if no roadmap is provided.\n" +
+  "9. <h2>Africa Angle</h2>: if the startup is African (based on country provided), lead with local context and impact. If not African, connect the product or technology to African market opportunities or challenges.\n" +
+  "10. Closing line: one forward-looking sentence about what to watch.\n" +
+  "11. <h2>Links</h2>: an unordered list of the supplied links only (website, company LinkedIn, Twitter/X, YouTube, product demo, pitch video, press coverage). Omit any that were not provided.\n\n" +
+  "SCREENSHOTS: if screenshot URLs are supplied, place EVERY one of them inline in a relevant section, in the order given, as " +
+  '<figure><img src="URL" alt="Company name product screenshot" /><figcaption>short factual caption</figcaption></figure>. Use each URL exactly as supplied. Do not skip any, do not repeat any, do not invent image URLs.\n\n' +
+  "LENGTH: 700-1100 words.\n\n" +
+  "HTML RULES: Use only <p>, <h2>, <ul>, <ol>, <li>, <strong>, <em>, <a>, <figure>, <figcaption>, <img>. No <h1>. End the body with: <p><em>Source:</em> <a href=\"WEBSITE_URL\">Company name</a></p>.\n\n" +
   "OUTPUT: Return ONLY strict JSON, no markdown, no code fences: " +
   '{"title":"...","dek":"...","body_html":"<p>...</p>...","tags":["...","..."],"seo_title":"...","meta_description":"..."}';
+
 
 const AFRICAN_COUNTRIES = new Set([
   "nigeria","kenya","south africa","ghana","egypt","morocco","tunisia","algeria","ethiopia","uganda","tanzania","rwanda","senegal","ivory coast","cote d'ivoire","cameroon","zambia","zimbabwe","botswana","namibia","angola","mozambique","sudan","somalia","libya","mali","benin","togo","burkina faso","niger","chad","gabon","congo","dr congo","democratic republic of the congo","republic of the congo","sierra leone","liberia","guinea","mauritania","mauritius","madagascar","malawi","eritrea","djibouti","south sudan","lesotho","swaziland","eswatini","cape verde","gambia","central african republic","equatorial guinea","seychelles","comoros","burundi","sao tome and principe",
 ]);
+
+function screenshotUrls(s: Record<string, unknown>): string[] {
+  return Array.isArray(s.screenshot_urls)
+    ? (s.screenshot_urls as unknown[]).map((u) => String(u)).filter(Boolean)
+    : [];
+}
 
 function buildStartupUserPrompt(s: Record<string, unknown>): string {
   const isAfrican = AFRICAN_COUNTRIES.has(String(s.country || "").trim().toLowerCase());
@@ -354,6 +367,7 @@ function buildStartupUserPrompt(s: Record<string, unknown>): string {
         .join("; ")
     : "";
   const markets = Array.isArray(s.markets_served) ? (s.markets_served as string[]).join(", ") : "";
+  const screenshots = screenshotUrls(s);
   const lines = [
     `Company name: ${s.company_name}`,
     `Tagline: ${s.tagline || "not provided"}`,
@@ -389,9 +403,14 @@ function buildStartupUserPrompt(s: Record<string, unknown>): string {
     `Product demo: ${s.product_demo || "none provided"}`,
     `Pitch video: ${s.pitch_video_url || "none provided"}`,
     `Press coverage: ${s.press_links || "none provided"}`,
+    `Logo image URL (already used as the hero image, do not embed in the body): ${s.logo_url || "none"}`,
+    `Screenshot image URLs (embed every one inline, in this order): ${
+      screenshots.length > 0 ? screenshots.join(" | ") : "none provided"
+    }`,
   ];
-  return `Write the startup profile using ONLY these submitted facts:\n\n${lines.join("\n")}\n\nReturn strict JSON per the schema. End the body with the Source footer linking to ${s.website_url}.`;
+  return `Write the startup profile using ONLY these submitted facts:\n\n${lines.join("\n")}\n\nEvery supplied fact above must appear in the body. Embed all ${screenshots.length} screenshot image URLs inline as figures. Return strict JSON per the schema. End the body with the Source footer linking to ${s.website_url}.`;
 }
+
 
 
 async function geminiDraftStartup(s: Record<string, unknown>): Promise<StartupDraft> {
@@ -416,7 +435,7 @@ async function geminiDraftStartup(s: Record<string, unknown>): Promise<StartupDr
   return JSON.parse(cleaned) as StartupDraft;
 }
 
-async function claudeRefineStartup(draft: StartupDraft, websiteUrl: string): Promise<StartupDraft | null> {
+async function claudeMessage(system: string, userContent: string): Promise<StartupDraft | null> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return null;
   try {
@@ -429,15 +448,9 @@ async function claudeRefineStartup(draft: StartupDraft, websiteUrl: string): Pro
       },
       body: JSON.stringify({
         model: "claude-sonnet-4-6",
-        max_tokens: 4096,
-        system: STARTUP_SYSTEM_PROMPT,
-        messages: [{
-          role: "user",
-          content:
-            "Refine this startup profile draft for tone, structure, and flow. Do NOT change facts, quotes, links, or the Source footer. " +
-            "Do not add users, revenue, funding, investors, or partnerships that are not already present. Keep the same JSON schema. Return ONLY strict JSON, no code fences.\n\n" +
-            `Website (must remain in the Source footer): ${websiteUrl}\n\nDRAFT JSON:\n${JSON.stringify(draft)}`,
-        }],
+        max_tokens: 8192,
+        system,
+        messages: [{ role: "user", content: userContent }],
       }),
     });
     if (!res.ok) return null;
@@ -454,6 +467,111 @@ async function claudeRefineStartup(draft: StartupDraft, websiteUrl: string): Pro
     return null;
   }
 }
+
+async function claudeRefineStartup(
+  draft: StartupDraft,
+  websiteUrl: string,
+  screenshots: string[],
+): Promise<StartupDraft | null> {
+  const parsed = await claudeMessage(
+    STARTUP_SYSTEM_PROMPT,
+    "Refine this startup profile draft for tone, structure, and flow. Do NOT change facts, quotes, links, images, or the Source footer. " +
+      "Do not remove any section, any supplied detail, or any <figure> image. " +
+      "Do not add users, revenue, funding, investors, or partnerships that are not already present. Keep the same JSON schema. Return ONLY strict JSON, no code fences.\n\n" +
+      `Website (must remain in the Source footer): ${websiteUrl}\n` +
+      `Screenshot image URLs that must all remain embedded in the body: ${screenshots.join(" | ") || "none"}\n\n` +
+      `DRAFT JSON:\n${JSON.stringify(draft)}`,
+  );
+  if (!parsed) return null;
+  // Reject a refinement that dropped images or the source footer.
+  const lostImage = screenshots.some((u) => !parsed.body_html.includes(u));
+  const lostSource = !parsed.body_html.includes(websiteUrl);
+  if (lostImage || lostSource) return null;
+  return parsed;
+}
+
+// Long-form fields that must show up in the finished body when supplied.
+const COVERAGE_FIELDS: Array<{ key: string; label: string }> = [
+  { key: "mission", label: "Mission" },
+  { key: "differentiator", label: "What makes them different" },
+  { key: "competitors", label: "Competitors" },
+  { key: "business_model", label: "Business model" },
+  { key: "pricing_model", label: "Pricing model" },
+  { key: "markets_served", label: "Markets served" },
+  { key: "milestones", label: "Milestones" },
+  { key: "awards", label: "Awards / recognition" },
+  { key: "roadmap", label: "Roadmap / what's next" },
+  { key: "user_count", label: "Users / customers" },
+  { key: "funding_raised", label: "Funding raised" },
+  { key: "notable_investors", label: "Notable investors" },
+  { key: "partnerships", label: "Partnerships / clients" },
+  { key: "key_team_members", label: "Key team members" },
+  { key: "press_links", label: "Press coverage" },
+];
+
+function normalizeText(v: string): string {
+  return v.toLowerCase().replace(/<[^>]*>/g, " ").replace(/\s+/g, " ");
+}
+
+/** Returns supplied fields whose distinctive words never made it into the body. */
+function missingCoverage(s: Record<string, unknown>, bodyHtml: string): Array<{ label: string; value: string }> {
+  const body = normalizeText(bodyHtml);
+  const missing: Array<{ label: string; value: string }> = [];
+  for (const f of COVERAGE_FIELDS) {
+    const raw = s[f.key];
+    const value = Array.isArray(raw) ? (raw as unknown[]).join(", ") : raw ? String(raw) : "";
+    if (!value.trim()) continue;
+    const words = normalizeText(value)
+      .split(/[^a-z0-9]+/)
+      .filter((w) => w.length > 4);
+    if (words.length === 0) continue;
+    const hits = words.filter((w) => body.includes(w)).length;
+    if (hits / words.length < 0.34) missing.push({ label: f.label, value });
+  }
+  return missing;
+}
+
+/** One corrective pass folding omitted facts back in. Returns null when it cannot be trusted. */
+async function claudeFillGaps(
+  draft: StartupDraft,
+  missing: Array<{ label: string; value: string }>,
+  websiteUrl: string,
+  screenshots: string[],
+): Promise<StartupDraft | null> {
+  const parsed = await claudeMessage(
+    STARTUP_SYSTEM_PROMPT,
+    "This startup profile draft left out facts the founder supplied. Fold every missing fact below into the most relevant section. " +
+      "Do not rewrite or remove anything already present, do not remove any <figure> image, and keep the Source footer intact. " +
+      "Add nothing beyond the facts listed. Keep the same JSON schema. Return ONLY strict JSON, no code fences.\n\n" +
+      `Website (must remain in the Source footer): ${websiteUrl}\n` +
+      `Screenshot image URLs that must all remain embedded: ${screenshots.join(" | ") || "none"}\n\n` +
+      `MISSING FACTS:\n${missing.map((m) => `${m.label}: ${m.value}`).join("\n")}\n\n` +
+      `DRAFT JSON:\n${JSON.stringify(draft)}`,
+  );
+  if (!parsed) return null;
+  if (screenshots.some((u) => !parsed.body_html.includes(u))) return null;
+  if (!parsed.body_html.includes(websiteUrl)) return null;
+  return parsed;
+}
+
+/** Guarantees no submitted screenshot is lost, even if the models ignored one. */
+function ensureScreenshots(bodyHtml: string, company: string, screenshots: string[]): string {
+  const missing = screenshots.filter((u) => !bodyHtml.includes(u));
+  if (missing.length === 0) return bodyHtml;
+  const gallery =
+    "<h2>Product screenshots</h2>" +
+    missing
+      .map(
+        (u, i) =>
+          `<figure><img src="${u}" alt="${company} product screenshot ${i + 1}" /><figcaption>${company} product screenshot</figcaption></figure>`,
+      )
+      .join("");
+  // Insert before the Source footer when present, otherwise append.
+  const idx = bodyHtml.lastIndexOf("<p><em>Source:");
+  if (idx !== -1) return bodyHtml.slice(0, idx) + gallery + bodyHtml.slice(idx);
+  return bodyHtml + gallery;
+}
+
 
 function sanitizeDraft(d: StartupDraft): StartupDraft {
   return {
@@ -487,11 +605,25 @@ export const generateStartupDraft = createServerFn({ method: "POST" })
     if (sub.status !== "approved") throw new Error("Submission must be approved before generating a draft");
     if (sub.article_id) throw new Error("Draft already generated for this submission");
 
+    const website = String(sub.website_url);
+    const shots = screenshotUrls(sub);
+
     // Stage 1: Gemini
     const rough = await geminiDraftStartup(sub);
     // Stage 2: Claude (falls back to Gemini on failure)
-    const refined = await claudeRefineStartup(rough, String(sub.website_url));
-    const draft = sanitizeDraft(refined ?? rough);
+    const refined = await claudeRefineStartup(rough, website, shots);
+    let working = refined ?? rough;
+
+    // Stage 3: coverage guard. Fold back any supplied facts the models skipped.
+    const missing = missingCoverage(sub, working.body_html || "");
+    if (missing.length > 0) {
+      const filled = await claudeFillGaps(working, missing, website, shots);
+      if (filled) working = filled;
+    }
+
+    const draft = sanitizeDraft(working);
+    draft.body_html = ensureScreenshots(draft.body_html, String(sub.company_name), shots);
+
 
     // Resolve category and AI author
     const [{ data: cats }, { data: authorRow }] = await Promise.all([
