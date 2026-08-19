@@ -297,7 +297,7 @@ export const submitStartup = createServerFn({ method: "POST" })
           contactMethod: row.contact_method,
           whatsappNumber: row.whatsapp_number,
           submittedAt: inserted.submitted_at,
-          reviewUrl: "https://cognarah.com/admin/startups",
+          reviewUrl: `https://cognarah.com/admin/startups?submission=${inserted.id}`,
         },
       });
     } catch (err) {
