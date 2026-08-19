@@ -63,5 +63,6 @@ export const previewStartupSubmissionEmail = createServerFn({ method: "GET" })
       html,
       text,
       companyName: row.company_name,
+      reviewUrl: templateData.reviewUrl,
     };
   });
