@@ -107,11 +107,12 @@ function StartupsTable() {
   const [filter, setFilter] = useState<Status | "all">("all");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [generating, setGenerating] = useState<Set<string>>(new Set());
+  const [missingTarget, setMissingTarget] = useState(false);
   const generateDraft = useServerFn(generateStartupDraft);
   const { hasRole } = useRoles();
   const canDelete = hasRole("admin");
-
-
+  const { submission: targetId } = Route.useSearch();
+  const focusedRef = useRef<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -124,6 +125,20 @@ function StartupsTable() {
     setLoading(false);
   }
   useEffect(() => { load(); }, []);
+
+  // Deep link from the notification email: open and scroll to the submission.
+  useEffect(() => {
+    if (!targetId || loading || focusedRef.current === targetId) return;
+    focusedRef.current = targetId;
+    const found = subs.some((s) => s.id === targetId);
+    if (!found) { setMissingTarget(true); return; }
+    setMissingTarget(false);
+    setFilter("all");
+    setExpanded(targetId);
+    requestAnimationFrame(() => {
+      document.getElementById(`submission-${targetId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+  }, [targetId, loading, subs]);
 
   const visible = useMemo(() => filter === "all" ? subs : subs.filter((s) => s.status === filter), [subs, filter]);
   const counts = useMemo(() => {
