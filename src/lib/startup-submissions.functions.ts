@@ -352,6 +352,12 @@ const AFRICAN_COUNTRIES = new Set([
   "nigeria","kenya","south africa","ghana","egypt","morocco","tunisia","algeria","ethiopia","uganda","tanzania","rwanda","senegal","ivory coast","cote d'ivoire","cameroon","zambia","zimbabwe","botswana","namibia","angola","mozambique","sudan","somalia","libya","mali","benin","togo","burkina faso","niger","chad","gabon","congo","dr congo","democratic republic of the congo","republic of the congo","sierra leone","liberia","guinea","mauritania","mauritius","madagascar","malawi","eritrea","djibouti","south sudan","lesotho","swaziland","eswatini","cape verde","gambia","central african republic","equatorial guinea","seychelles","comoros","burundi","sao tome and principe",
 ]);
 
+function screenshotUrls(s: Record<string, unknown>): string[] {
+  return Array.isArray(s.screenshot_urls)
+    ? (s.screenshot_urls as unknown[]).map((u) => String(u)).filter(Boolean)
+    : [];
+}
+
 function buildStartupUserPrompt(s: Record<string, unknown>): string {
   const isAfrican = AFRICAN_COUNTRIES.has(String(s.country || "").trim().toLowerCase());
   const cofounders = Array.isArray(s.cofounders)
