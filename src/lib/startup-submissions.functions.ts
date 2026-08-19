@@ -605,11 +605,25 @@ export const generateStartupDraft = createServerFn({ method: "POST" })
     if (sub.status !== "approved") throw new Error("Submission must be approved before generating a draft");
     if (sub.article_id) throw new Error("Draft already generated for this submission");
 
+    const website = String(sub.website_url);
+    const shots = screenshotUrls(sub);
+
     // Stage 1: Gemini
     const rough = await geminiDraftStartup(sub);
     // Stage 2: Claude (falls back to Gemini on failure)
-    const refined = await claudeRefineStartup(rough, String(sub.website_url));
-    const draft = sanitizeDraft(refined ?? rough);
+    const refined = await claudeRefineStartup(rough, website, shots);
+    let working = refined ?? rough;
+
+    // Stage 3: coverage guard. Fold back any supplied facts the models skipped.
+    const missing = missingCoverage(sub, working.body_html || "");
+    if (missing.length > 0) {
+      const filled = await claudeFillGaps(working, missing, website, shots);
+      if (filled) working = filled;
+    }
+
+    const draft = sanitizeDraft(working);
+    draft.body_html = ensureScreenshots(draft.body_html, String(sub.company_name), shots);
+
 
     // Resolve category and AI author
     const [{ data: cats }, { data: authorRow }] = await Promise.all([
