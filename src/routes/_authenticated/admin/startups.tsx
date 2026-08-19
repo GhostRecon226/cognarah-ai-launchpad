@@ -12,6 +12,9 @@ import { generateStartupDraft } from "@/lib/startup-submissions.functions";
 
 
 export const Route = createFileRoute("/_authenticated/admin/startups")({
+  validateSearch: (search: Record<string, unknown>) => ({
+    submission: typeof search.submission === "string" ? search.submission : undefined,
+  }),
   head: () => ({ meta: [{ title: "Startup submissions: Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
   component: StartupsPage,
 });
