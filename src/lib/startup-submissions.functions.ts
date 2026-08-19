@@ -396,9 +396,14 @@ function buildStartupUserPrompt(s: Record<string, unknown>): string {
     `Product demo: ${s.product_demo || "none provided"}`,
     `Pitch video: ${s.pitch_video_url || "none provided"}`,
     `Press coverage: ${s.press_links || "none provided"}`,
+    `Logo image URL (already used as the hero image, do not embed in the body): ${s.logo_url || "none"}`,
+    `Screenshot image URLs (embed every one inline, in this order): ${
+      screenshots.length > 0 ? screenshots.join(" | ") : "none provided"
+    }`,
   ];
-  return `Write the startup profile using ONLY these submitted facts:\n\n${lines.join("\n")}\n\nReturn strict JSON per the schema. End the body with the Source footer linking to ${s.website_url}.`;
+  return `Write the startup profile using ONLY these submitted facts:\n\n${lines.join("\n")}\n\nEvery supplied fact above must appear in the body. Embed all ${screenshots.length} screenshot image URLs inline as figures. Return strict JSON per the schema. End the body with the Source footer linking to ${s.website_url}.`;
 }
+
 
 
 async function geminiDraftStartup(s: Record<string, unknown>): Promise<StartupDraft> {
