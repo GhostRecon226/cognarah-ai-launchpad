@@ -5,9 +5,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { MediaImage } from "@/components/site/media-image";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Check, X, ExternalLink, Sparkles, Eye, Loader2, Mail, Copy } from "lucide-react";
+import { ChevronDown, ChevronRight, Check, X, ExternalLink, Sparkles, Eye, Loader2, Mail, Copy, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useRoles } from "@/lib/admin-roles";
 import { generateStartupDraft } from "@/lib/startup-submissions.functions";
+
 
 export const Route = createFileRoute("/_authenticated/admin/startups")({
   head: () => ({ meta: [{ title: "Startup submissions: Cognarah CMS" }, { name: "robots", content: "noindex" }] }),
@@ -85,12 +87,26 @@ function StatusBadge({ status }: { status: Status }) {
 }
 
 function StartupsPage() {
+  return (
+    <AdminShell title="Startup submissions" requiredRoles={["admin", "editor"]}>
+      <StartupsTable />
+    </AdminShell>
+  );
+}
+
+const COLS =
+  "md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_100px_368px]";
+
+function StartupsTable() {
   const [subs, setSubs] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<Status | "all">("all");
   const [expanded, setExpanded] = useState<string | null>(null);
   const [generating, setGenerating] = useState<Set<string>>(new Set());
   const generateDraft = useServerFn(generateStartupDraft);
+  const { hasRole } = useRoles();
+  const canDelete = hasRole("admin");
+
 
 
   async function load() {
@@ -147,9 +163,20 @@ function StartupsPage() {
     }
   }
 
+  async function remove(s: Submission) {
+    const ok = window.confirm(
+      `Delete the submission from ${s.company_name}? This cannot be undone.${s.article_id ? " Any article already generated from it stays in place." : ""}`,
+    );
+    if (!ok) return;
+    const { error } = await supabase.from("startup_submissions").delete().eq("id", s.id);
+    if (error) { toast.error(error.message); return; }
+    toast.success("Submission deleted");
+    setSubs((prev) => prev.filter((x) => x.id !== s.id));
+    setExpanded((prev) => (prev === s.id ? null : prev));
+  }
 
   return (
-    <AdminShell title="Startup submissions" requiredRoles={["admin", "editor"]}>
+    <>
       <div className="mb-4 flex flex-wrap items-center gap-2">
         {STATUS_FILTERS.map((f) => (
           <button
@@ -167,16 +194,18 @@ function StartupsPage() {
         ))}
       </div>
 
-      <div className="overflow-hidden rounded-lg border border-border bg-background">
-        <div className="hidden grid-cols-[1fr_1fr_1fr_1fr_1fr_auto_auto] gap-3 border-b border-border bg-secondary px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:grid">
-          <div>Company</div>
-          <div>Founder</div>
-          <div>Country</div>
-          <div>Stage</div>
-          <div>Submitted</div>
+      <div className="overflow-x-auto rounded-lg border border-border bg-background">
+       <div className="md:min-w-[1180px]">
+        <div className={cn("hidden gap-3 border-b border-border bg-secondary px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground md:grid", COLS)}>
+          <div className="min-w-0">Company</div>
+          <div className="min-w-0">Founder</div>
+          <div className="min-w-0">Country</div>
+          <div className="min-w-0">Stage</div>
+          <div className="min-w-0">Submitted</div>
           <div>Status</div>
-          <div className="pr-2 text-right">Actions</div>
+          <div className="text-right">Actions</div>
         </div>
+
 
         {loading && <p className="px-4 py-6 text-sm text-muted-foreground">Loading submissions...</p>}
         {!loading && visible.length === 0 && (
@@ -190,18 +219,19 @@ function StartupsPage() {
               <button
                 type="button"
                 onClick={() => setExpanded(isOpen ? null : s.id)}
-                className="grid w-full grid-cols-1 items-center gap-2 px-4 py-3 text-left hover:bg-secondary md:grid-cols-[1fr_1fr_1fr_1fr_1fr_auto_auto] md:gap-3"
+                className={cn("grid w-full grid-cols-1 items-center gap-2 px-4 py-3 text-left hover:bg-secondary md:gap-3", COLS)}
               >
-                <div className="flex items-center gap-2 font-medium">
+                <div className="flex min-w-0 items-center gap-2 font-medium">
                   {isOpen ? <ChevronDown className="h-4 w-4 shrink-0" /> : <ChevronRight className="h-4 w-4 shrink-0" />}
                   <span className="truncate">{s.company_name}</span>
                 </div>
-                <div className="truncate text-sm text-muted-foreground md:text-foreground">{s.founder_name}</div>
-                <div className="truncate text-sm text-muted-foreground">{s.country}, {s.city}</div>
-                <div className="truncate text-sm text-muted-foreground">{s.company_stage}</div>
-                <div className="truncate text-sm text-muted-foreground">{new Date(s.submitted_at).toLocaleDateString()}</div>
+                <div className="min-w-0 truncate text-sm text-muted-foreground md:text-foreground">{s.founder_name}</div>
+                <div className="min-w-0 truncate text-sm text-muted-foreground">{s.country}, {s.city}</div>
+                <div className="min-w-0 truncate text-sm text-muted-foreground">{s.company_stage}</div>
+                <div className="min-w-0 truncate text-sm text-muted-foreground">{new Date(s.submitted_at).toLocaleDateString()}</div>
                 <div><StatusBadge status={s.status} /></div>
-                <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+                <div className="flex flex-wrap items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
+
                   <Link
                     to="/admin/email-preview/startup-submission/$id"
                     params={{ id: s.id }}
@@ -244,6 +274,16 @@ function StartupsPage() {
                   >
                     <X className="h-4 w-4" />
                   </button>
+                  {canDelete && (
+                    <button
+                      onClick={() => remove(s)}
+                      title="Delete submission"
+                      className="rounded-md border border-border bg-background p-1.5 text-muted-foreground hover:bg-red-50 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
+
                 </div>
               </button>
 
@@ -333,9 +373,11 @@ function StartupsPage() {
             </div>
           );
         })}
+       </div>
       </div>
-    </AdminShell>
+    </>
   );
+
 }
 
 function Detail({ label, children, full }: { label: string; children: React.ReactNode; full?: boolean }) {
