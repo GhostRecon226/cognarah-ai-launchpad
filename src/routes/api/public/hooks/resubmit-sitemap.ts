@@ -2,7 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 
 const SITE_URL = "https://cognarah.com/";
 const SITEMAP_URL = "https://cognarah.com/sitemap.xml";
-const GATEWAY = "https://connector-gateway.lovable.dev/google_search_console";
+// Search Console's Sitemaps resource only exists on the legacy Webmasters API v3 host —
+// it was never ported to the newer searchconsole.googleapis.com host.
+const SEARCH_CONSOLE_API = "https://www.googleapis.com/webmasters/v3";
+const SEARCH_CONSOLE_SCOPE = "https://www.googleapis.com/auth/webmasters";
 
 export const Route = createFileRoute("/api/public/hooks/resubmit-sitemap")({
   server: {
@@ -14,24 +17,27 @@ export const Route = createFileRoute("/api/public/hooks/resubmit-sitemap")({
           return new Response("Unauthorized", { status: 401 });
         }
 
-        const lovableKey = process.env.LOVABLE_API_KEY;
-        const gscKey = process.env.GOOGLE_SEARCH_CONSOLE_API_KEY;
-        if (!lovableKey || !gscKey) {
+        // Dynamic import: route files ship to the client bundle, so server-only modules
+        // must be loaded inside the handler, not imported at the top level.
+        let accessToken: string;
+        try {
+          const { getGoogleAccessToken } = await import("@/lib/google-service-account.server");
+          accessToken = await getGoogleAccessToken(SEARCH_CONSOLE_SCOPE);
+        } catch (e: any) {
           return new Response(
-            JSON.stringify({ error: "Search Console connector not configured" }),
+            JSON.stringify({ error: `Search Console connector not configured: ${e?.message || e}` }),
             { status: 500, headers: { "Content-Type": "application/json" } },
           );
         }
 
         const siteEnc = encodeURIComponent(SITE_URL);
         const sitemapEnc = encodeURIComponent(SITEMAP_URL);
-        const url = `${GATEWAY}/webmasters/v3/sites/${siteEnc}/sitemaps/${sitemapEnc}`;
+        const url = `${SEARCH_CONSOLE_API}/sites/${siteEnc}/sitemaps/${sitemapEnc}`;
 
         const res = await fetch(url, {
           method: "PUT",
           headers: {
-            Authorization: `Bearer ${lovableKey}`,
-            "X-Connection-Api-Key": gscKey,
+            Authorization: `Bearer ${accessToken}`,
           },
         });
 

@@ -30,3 +30,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Google service account keys, never commit these
+*.iam.gserviceaccount.com.json
+gen-lang-client-*.json
+
+# Local secrets, never commit
+.env
+.env.local

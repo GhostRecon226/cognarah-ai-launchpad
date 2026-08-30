@@ -414,23 +414,11 @@ function buildStartupUserPrompt(s: Record<string, unknown>): string {
 
 
 async function geminiDraftStartup(s: Record<string, unknown>): Promise<StartupDraft> {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("LOVABLE_API_KEY missing");
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
-      messages: [
-        { role: "system", content: STARTUP_SYSTEM_PROMPT },
-        { role: "user", content: buildStartupUserPrompt(s) },
-      ],
-      response_format: { type: "json_object" },
-    }),
-  });
-  if (!res.ok) throw new Error(`AI gateway ${res.status}: ${(await res.text()).slice(0, 300)}`);
-  const json: any = await res.json();
-  const text: string = json?.choices?.[0]?.message?.content ?? "";
+  // Dynamic import: this is a .functions.ts file that ships to the client bundle, so
+  // server-only modules must be loaded inside the handler, not imported at the top level
+  // (same pattern as the client.server / enqueue-internal.server imports below).
+  const { callGeminiJSON } = await import("./gemini.server");
+  const text = await callGeminiJSON(STARTUP_SYSTEM_PROMPT, buildStartupUserPrompt(s));
   const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
   return JSON.parse(cleaned) as StartupDraft;
 }

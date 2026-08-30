@@ -85,67 +85,120 @@ since that route still lives there until Phase 3.
 | "Connect Supabase in Lovable Cloud" error text | [src/integrations/supabase/client.ts:17](src/integrations/supabase/client.ts#L17), [client.server.ts:18](src/integrations/supabase/client.server.ts#L18), [auth-middleware.ts:20](src/integrations/supabase/auth-middleware.ts#L20) | Just wording in a console.error message when Supabase env vars are missing — Supabase itself isn't routed through Lovable. Reword to something generic. |
 | Lovable-referencing code comments | [vite.config.ts:1-6](vite.config.ts#L1-L6), [background.server.ts:8](src/lib/background.server.ts#L8), [enqueue-internal.server.ts:3](src/lib/email/enqueue-internal.server.ts#L3) | Comments only. The `vite.config.ts` one documents what `@lovable.dev/vite-tanstack-config` bundles — keep it (or its replacement) until Phase 4 actually removes that package, then it's obsolete too. |
 
-## Phase 2 — Direct API calls (AI gateway, Search Console connector)
+## Phase 2 — Direct API calls (AI gateway, Search Console connector) ✅ Done, live-verified (2026-08-30)
 
-### 2a. AI gateway (`ai.gateway.lovable.dev`)
+Credentials landed in `.env` (`GEMINI_API_KEY`, `GOOGLE_SEARCH_CONSOLE_CLIENT_EMAIL`,
+`GOOGLE_SEARCH_CONSOLE_PRIVATE_KEY`, service account given Full access on the
+`cognarah.com` Search Console property) and both paths were exercised for
+real, not just built:
 
-Two call sites, both proxying the **same underlying model**
+- **Gemini**: ran `callGeminiJSON` from `src/lib/gemini.server.ts` directly
+  (the exact shared function both `agent-skills.server.ts` and
+  `startup-submissions.functions.ts` call) with a system/user prompt shaped
+  like the real skill-drafting task. Got back real generated JSON matching
+  the `SkillDraft` schema (`title`, `description`, `category`, `difficulty`,
+  `content` at 208 words, `author`).
+- **Search Console**: started the dev server, POSTed to
+  `/api/public/hooks/resubmit-sitemap` with a matching `AGENT_CRON_SECRET`,
+  got back `{"ok":true,"submitted":"https://cognarah.com/sitemap.xml",...}`
+  with a 200 — the full chain worked: JWT signed, exchanged for a Google
+  OAuth token, sitemap PUT accepted by `www.googleapis.com/webmasters/v3`.
+
+**Model id changed mid-verification**: `gemini-3.7-flash` (the model
+originally requested as "current stable") returned a persistent `503
+UNAVAILABLE — high demand` from Google across repeated attempts over several
+minutes. Confirmed this wasn't an auth or wiring problem — `gemini-3.6-flash`
+succeeded immediately with the same `GEMINI_API_KEY` seconds later, and
+Google's own API independently named `gemini-3.6-flash` as the current
+replacement in the deprecation error returned for the older `gemini-2.5-flash`.
+Flagged this back rather than silently swapping; decision was to ship
+`gemini-3.6-flash` now. Worth revisiting `gemini-3.7-flash` later if Google's
+capacity issue for it clears — see the comment above `GEMINI_MODEL` in
+[gemini.server.ts](src/lib/gemini.server.ts).
+
+`GOOGLE_SEARCH_CONSOLE_API_KEY` (the old Lovable connector secret) is now
+fully unused and can be deleted from wherever it's still set.
+
+### 2a. AI gateway (`ai.gateway.lovable.dev`) — done
+
+Both call sites proxied the **same underlying model**
 (`google/gemini-3-flash-preview`) through an OpenAI-compatible
-chat-completions shape:
+chat-completions shape. Both now go through one shared helper,
+[src/lib/gemini.server.ts](src/lib/gemini.server.ts), which calls
+`generativelanguage.googleapis.com` natively:
 
-- [src/lib/agent-skills.server.ts:55-68](src/lib/agent-skills.server.ts#L55-L68) (`callLovableAI`, used at [line 293](src/lib/agent-skills.server.ts#L293) for skill-drafting from scraped pages)
-- [src/lib/startup-submissions.functions.ts:416-436](src/lib/startup-submissions.functions.ts#L416-L436) (`geminiDraftStartup`)
+- [src/lib/agent-skills.server.ts](src/lib/agent-skills.server.ts) — deleted
+  `callLovableAI` entirely, replaced its one call site with
+  `callGeminiJSON(SKILLS_SYSTEM_PROMPT, userPrompt)`. Top-level import is
+  fine here — this file already carries the `.server.ts` suffix.
+- [src/lib/startup-submissions.functions.ts](src/lib/startup-submissions.functions.ts) —
+  rewrote `geminiDraftStartup` to call `callGeminiJSON`, but via a **dynamic**
+  `await import("./gemini.server")` inside the function, not a top-level
+  import. This file has a `.functions.ts` suffix, meaning (per the existing
+  comment on `client.server.ts`) it ships to the client bundle — a top-level
+  import of a server-only module here would risk bundling server code
+  client-side, the same reason `client.server` and `enqueue-internal.server`
+  are already dynamically imported elsewhere in this file. Verified after the
+  fact: `grep` over `dist/client` for `GEMINI_API_KEY` /
+  `generativelanguage.googleapis` came up empty.
 
-Both already have a direct-Anthropic fallback path (`refineWithClaude` /
-`claudeMessage`) sitting right next to them, so the direct-API pattern in this
-codebase is already established — this phase just extends it to the primary
+Both already had a direct-Anthropic fallback path (`refineWithClaude` /
+`claudeMessage`) sitting right next to them, so the direct-API pattern was
+already established in this codebase — this just extended it to the primary
 call instead of only the fallback.
 
-**Before the code change is possible:**
-- A `GEMINI_API_KEY` that works directly against Google's Gemini API (not
-  Lovable's gateway). Per [CLAUDE.md:48-49](CLAUDE.md#L48-L49) the current key
-  lives only in Lovable's project secrets panel — either pull that value out,
-  or (cleaner, since the goal is zero Lovable dependency) generate a fresh key
-  from Google AI Studio / Vertex AI directly and don't reuse whatever Lovable
-  provisioned.
-- Confirm `ANTHROPIC_API_KEY` is likewise a real key you hold outside Lovable
-  (it's called directly already, but if it was ever a Lovable-issued key,
-  rotate it to one from your own Anthropic Console account).
+**Not a pure URL swap, as expected:** the gateway calls used an OpenAI-style
+`messages` + `response_format: {type: "json_object"}` shape. Gemini's native
+API uses `systemInstruction`/`contents` for the request and
+`generationConfig.responseMimeType` instead of `response_format`; the
+response comes back as `candidates[0].content.parts[].text` instead of
+`choices[0].message.content`. `gemini.server.ts` translates both directions
+and joins multiple text parts defensively, and surfaces the model's
+`finishReason`/`promptFeedback.blockReason` in the thrown error when no text
+comes back, so a safety-filtered response fails loudly instead of silently
+returning `undefined`.
 
-**Why this isn't a pure URL swap:** the gateway calls use an OpenAI-style
-`messages` + `response_format: {type: "json_object"}` request/response shape.
-Google's native Gemini API has a different request shape (`contents` instead
-of `messages`, `generationConfig.responseMimeType` instead of
-`response_format`, different response envelope). The rewrite has to translate
-both the request builder and the response parser in both call sites, not just
-repoint a hostname.
+The model id originally carried over unchanged from the gateway calls
+(`gemini-3-flash-preview`, the same string after the `google/` vendor
+prefix) was swapped once live-verified with real credentials — see the
+"Model id changed mid-verification" note above for why it's now
+`gemini-3.6-flash`.
 
-### 2b. Google Search Console connector (`connector-gateway.lovable.dev`)
+**Live-verified 2026-08-30** — see the note above the two subsections.
 
-[src/routes/api/public/hooks/resubmit-sitemap.ts:5-34](src/routes/api/public/hooks/resubmit-sitemap.ts#L5-L34)
-— pings `https://connector-gateway.lovable.dev/google_search_console` with
-`Authorization: Bearer $LOVABLE_API_KEY` and
-`X-Connection-Api-Key: $GOOGLE_SEARCH_CONSOLE_API_KEY` to resubmit
-`cognarah.com`'s sitemap.
+### 2b. Google Search Console connector (`connector-gateway.lovable.dev`) — done
 
-**Before the code change is possible:**
-- A Google Cloud project with the **Search Console API** enabled.
-- A service account (or OAuth client) created in that project, with its
-  email added as a verified **Owner or Full user** on the `cognarah.com`
-  property in Search Console — without that verification step, calls to
-  Google's API will 403 regardless of credentials.
-- Note: the current `GOOGLE_SEARCH_CONSOLE_API_KEY` is likely just an
-  internal secret Lovable's own connector gateway uses to look up its stored
-  Google OAuth token on their side — it may not be a Google-issued credential
-  at all. Don't assume it's reusable; check what it actually is in Lovable's
-  connectors panel, but plan to provision fresh Google-side credentials
-  regardless.
+[src/routes/api/public/hooks/resubmit-sitemap.ts](src/routes/api/public/hooks/resubmit-sitemap.ts)
+used to ping `https://connector-gateway.lovable.dev/google_search_console`
+with `Authorization: Bearer $LOVABLE_API_KEY` and
+`X-Connection-Api-Key: $GOOGLE_SEARCH_CONSOLE_API_KEY`. It now calls Google
+directly in two steps:
 
-Once the service account exists, the rewrite calls
-`https://searchconsole.googleapis.com/webmasters/v3/sites/.../sitemaps/...`
-directly (a `PUT` or `GET+notify`, need to check exact verb wanted) with a
-Google-issued bearer token, dropping both `LOVABLE_API_KEY` and
-`GOOGLE_SEARCH_CONSOLE_API_KEY` from this route entirely.
+1. [src/lib/google-service-account.server.ts](src/lib/google-service-account.server.ts)
+   (new) — exchanges a Google service-account key for a short-lived OAuth2
+   access token via the standard JWT-Bearer flow (RS256-signs a claim with
+   Node's built-in `crypto`, no `google-auth-library` dependency added, same
+   reasoning as `gemini.server.ts`: this codebase calls provider APIs
+   directly rather than through SDKs). Reads
+   `GOOGLE_SEARCH_CONSOLE_CLIENT_EMAIL` and `GOOGLE_SEARCH_CONSOLE_PRIVATE_KEY`.
+2. `resubmit-sitemap.ts` uses that access token as a plain bearer token
+   against `https://www.googleapis.com/webmasters/v3/sites/.../sitemaps/...`
+   — note this is the **legacy Webmasters API v3 host**, not
+   `searchconsole.googleapis.com`; the Sitemaps resource (submit/get/list/
+   delete) was never ported to the newer host, only Search Analytics and URL
+   Inspection were. The path shape (`/webmasters/v3/sites/{site}/sitemaps/{feed}`)
+   is unchanged from what the Lovable gateway was already forwarding to,
+   since that's Google's real, stable REST path — only the host and the auth
+   header changed.
+3. Both `LOVABLE_API_KEY` and `GOOGLE_SEARCH_CONSOLE_API_KEY` are gone from
+   this route entirely, replaced by the two env vars above. The route file
+   loads `google-service-account.server` via dynamic import inside the
+   handler for the same client-bundle reason as 2a.
+
+**Live-verified 2026-08-30**: POSTed to the running route with a matching
+`AGENT_CRON_SECRET` and got back `{"ok":true,"submitted":"https://cognarah.com/sitemap.xml",...}`
+at 200 — full chain confirmed (JWT sign → OAuth token exchange → sitemap PUT
+accepted by Google).
 
 ## Phase 3 — Email pipeline
 
@@ -237,10 +290,10 @@ comment — it's the actual source of truth for what needs replacing 1:1.
 
 ## Summary sequence
 
-1. **Resolve the build baseline blocker** (vite.config.ts entities alias) — decide fix-now vs. accept unknown baseline.
-2. **Phase 1** — cosmetic, zero prerequisites, do anytime.
-3. **Phase 2a** — get a direct `GEMINI_API_KEY`, rewrite the two AI gateway call sites.
-4. **Phase 2b** — provision Google Search Console API access, rewrite the sitemap-resubmit route.
+1. ✅ **Resolve the build baseline blocker** (vite.config.ts entities alias) — fixed via `package.json` overrides, see Baseline status above.
+2. ✅ **Phase 1** — cosmetic, zero prerequisites, done.
+3. ✅ **Phase 2a** — AI gateway call sites rewritten to call Gemini natively, live-verified with a real `GEMINI_API_KEY` (running on `gemini-3.6-flash`, see note above).
+4. ✅ **Phase 2b** — sitemap-resubmit route rewritten to call Google directly, live-verified end-to-end with the Search Console service account.
 5. **Phase 3** — pick an ESP, migrate DNS, rewrite the email queue/suppression/send routes.
 6. **Phase 4** — decide deployment target, manually reconstruct the Vite/Nitro config, retire `@lovable.dev/vite-tanstack-config`.
 

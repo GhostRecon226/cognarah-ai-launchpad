@@ -6,6 +6,7 @@ import slugify from "slugify";
 import { createHash } from "crypto";
 import { stripEmDashes } from "./strip-em-dashes";
 import { fetchSkillPackage, assessLicense, type ParsedSkillPackage } from "./skill-package.server";
+import { callGeminiJSON } from "./gemini.server";
 
 type Sb = any;
 
@@ -51,21 +52,6 @@ const SKILLS_SYSTEM_PROMPT =
   "- `content` is the full skill body in Markdown, minimum 200 words.\n\n" +
   "OUTPUT FORMAT: Return ONLY strict JSON (no markdown, no code fences) matching:\n" +
   `{"title":"...","description":"...","category":"...","difficulty":"...","content":"...","author":"..."}`;
-
-async function callLovableAI<T>(body: unknown): Promise<T> {
-  const key = process.env.LOVABLE_API_KEY;
-  if (!key) throw new Error("LOVABLE_API_KEY missing");
-  const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error(`AI gateway ${res.status}: ${t.slice(0, 300)}`);
-  }
-  return res.json() as Promise<T>;
-}
 
 async function refineWithClaude(draft: SkillDraft): Promise<SkillDraft | null> {
   const key = process.env.ANTHROPIC_API_KEY;
@@ -290,15 +276,7 @@ export async function runSkillsAgentCore(args: RunSkillsArgs) {
             `Detected author (may be empty): ${pageAuthor}\n\n` +
             `SCRAPED CONTENT:\n${md.slice(0, 16000)}`;
 
-          const aiRes: any = await callLovableAI({
-            model: "google/gemini-3-flash-preview",
-            messages: [
-              { role: "system", content: SKILLS_SYSTEM_PROMPT },
-              { role: "user", content: userPrompt },
-            ],
-            response_format: { type: "json_object" },
-          });
-          const content: string = aiRes?.choices?.[0]?.message?.content ?? "";
+          const content = await callGeminiJSON(SKILLS_SYSTEM_PROMPT, userPrompt);
           try { draft = JSON.parse(content); }
           catch { logLine("Skipped: non-JSON response from Gemini"); continue; }
 
