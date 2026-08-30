@@ -48,17 +48,7 @@ Mobile responsive
 
 Do not add placeholder images or stock graphics. Keep it minimal and let the logo do the work.
 
-This project was built with [Lovable](https://lovable.dev).
-
-**Live app**: https://cognarah-ai-launchpad.lovable.app
-
-## Build with Lovable
-
-Continue developing this project in the [Lovable editor](https://lovable.dev/projects/c66fe103-5e02-4808-a9a8-a307d05762f2).
-
-- **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: every change made in Lovable is committed straight to this repository.
-- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
+**Live app**: https://cognarah.com
 
 ## Development
 

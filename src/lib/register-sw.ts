@@ -8,11 +8,6 @@ function isBlockedContext(): boolean {
   } catch {
     return true;
   }
-  const host = window.location.hostname;
-  if (host.startsWith("id-preview--") || host.startsWith("preview--")) return true;
-  if (host === "lovableproject.com" || host.endsWith(".lovableproject.com")) return true;
-  if (host === "lovableproject-dev.com" || host.endsWith(".lovableproject-dev.com")) return true;
-  if (host === "beta.lovable.dev" || host.endsWith(".beta.lovable.dev")) return true;
   if (new URL(window.location.href).searchParams.get("sw") === "off") return true;
   return false;
 }

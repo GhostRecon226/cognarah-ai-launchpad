@@ -6,7 +6,7 @@ type WaitUntilCtx = { waitUntil?: (p: Promise<unknown>) => void } | undefined;
 
 declare global {
   // eslint-disable-next-line no-var
-  var __lovableRequestWaitUntil: WaitUntilCtx;
+  var __cognarahRequestWaitUntil: WaitUntilCtx;
 }
 
 /**
@@ -19,7 +19,7 @@ export function runInBackground(work: Promise<unknown>): void {
   const wrapped = work.catch((err) => {
     console.error("[runInBackground] task failed:", err);
   });
-  const ctx = globalThis.__lovableRequestWaitUntil;
+  const ctx = globalThis.__cognarahRequestWaitUntil;
   const hasWaitUntil = !!(ctx && typeof ctx.waitUntil === "function");
   console.log(
     `[runInBackground] waitUntil ${hasWaitUntil ? "registered (worker will stay alive)" : "unavailable (fire-and-forget fallback)"}`,

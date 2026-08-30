@@ -69,8 +69,8 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     // Expose Cloudflare's ctx.waitUntil to server-only code (see src/lib/background.server.ts)
     // so agent runs and other background work can outlive the HTTP response.
-    const prev = (globalThis as any).__lovableRequestWaitUntil as ExecutionCtx;
-    (globalThis as any).__lovableRequestWaitUntil = ctx as ExecutionCtx;
+    const prev = (globalThis as any).__cognarahRequestWaitUntil as ExecutionCtx;
+    (globalThis as any).__cognarahRequestWaitUntil = ctx as ExecutionCtx;
     try {
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
@@ -83,7 +83,7 @@ export default {
         headers: { "content-type": "text/html; charset=utf-8" },
       });
     } finally {
-      (globalThis as any).__lovableRequestWaitUntil = prev;
+      (globalThis as any).__cognarahRequestWaitUntil = prev;
     }
   },
 };
