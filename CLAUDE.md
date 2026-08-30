@@ -62,9 +62,11 @@ project secrets/connectors panel, not in this repo. Pull them from there.
   check implies something external pings `/api/public/hooks/agent-run` on a schedule.
   Check Supabase (pg_cron/pg_net - there are cron-related migrations) and/or an
   external scheduler tied to the old Lovable-hosted domain to find and replicate it.
-- While still connected to Lovable's GitHub sync: avoid force-push, rebase, or
-  amending already-pushed commits on main, it rewrites history Lovable's editor
-  depends on. Once Lovable is fully disconnected this restriction goes away.
+- GitHub sync to Lovable's editor was disconnected 2026-08-30 (was previously
+  a reason to avoid force-push/rebase/amend on main, since it rewrote history
+  Lovable's editor depended on — no longer a constraint, that git-safety
+  banner has been removed from AGENTS.md along with the file itself since it
+  had no other content).
 
 ## Post-migration goals (stated by Peter, 2026-08-30)
 

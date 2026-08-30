@@ -68,16 +68,17 @@ Confirmed the Lovable editor/live-preview iframe is no longer used before
 removing the three items that only functioned there. `npm run build` and
 `npx tsc --noEmit` both pass after these changes (12 files changed, 19
 insertions, 169 deletions — mostly dead-code deletion). `AGENTS.md`'s Lovable
-git-sync banner was intentionally left alone — that one's still true as long
-as this repo's GitHub sync to Lovable is connected, which wasn't confirmed
-disconnected, only that the editor UI itself isn't used. `enqueue-internal.server.ts`'s
-comment referencing the `/lovable/email/...` route path was also left as-is
-since that route still lives there until Phase 3.
+git-sync banner was initially left alone since GitHub sync to Lovable wasn't
+yet confirmed disconnected — **update 2026-08-30**: sync has since been
+disconnected, so the banner (and `AGENTS.md` itself, which had no other
+content) was removed. `enqueue-internal.server.ts`'s comment referencing the
+`/lovable/email/...` route path was also left as-is since that route still
+lives there until Phase 3.
 
 | Item | File(s) | Notes |
 |---|---|---|
 | "Build with Lovable" badge/section | [README.md:51-61](README.md#L51-L61) | Marketing text, delete or rewrite. |
-| Lovable git-sync warning banner | [AGENTS.md:1-10](AGENTS.md#L1-L10) | Remove once Lovable's GitHub sync is actually disconnected — until then the warning is still true (see [CLAUDE.md](CLAUDE.md#L60-L62)), don't remove prematurely. |
+| Lovable git-sync warning banner | ~~AGENTS.md:1-10~~ (file deleted) | ✅ Removed 2026-08-30 once GitHub sync to Lovable was actually disconnected. `AGENTS.md` had no other content, so the file was deleted rather than left empty. |
 | Preview-editor auth broker | [src/integrations/supabase/previewAuthStorage.ts](src/integrations/supabase/previewAuthStorage.ts) | Only runs when the app is loaded inside a `lovableproject.com`/`lovable.app`/`gptengineer.*` iframe, brokering the Supabase session to Lovable's editor via `postMessage`. Dead code once nobody opens this project in Lovable's live editor. **Check first**: confirm the Lovable editor preview is no longer in active use — removing this breaks that iframe's login if it is. |
 | Service-worker preview-domain gating | [src/lib/register-sw.ts:12-16](src/lib/register-sw.ts#L12-L16) | Disables SW registration on Lovable preview hosts. Same caveat as above — safe once the editor preview is retired. |
 | Editor error-reporting hook | [src/lib/lovable-error-reporting.ts](src/lib/lovable-error-reporting.ts), its import/call in [src/routes/__root.tsx:14,45](src/routes/__root.tsx#L14) | `window.__lovableEvents` only exists when Lovable's editor injects it; a no-op everywhere else. Safe to delete. |
