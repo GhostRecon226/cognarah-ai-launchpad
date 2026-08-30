@@ -38,8 +38,6 @@ Required, not all present in the committed `.env` (only the Supabase public keys
   now also required for agent-skills.server.ts / startup-submissions.functions.ts,
   see note above
 - FIRECRAWL_API_KEY
-- LOVABLE_API_KEY - only the email pipeline (Phase 3, not yet migrated) still
-  needs this; the AI gateway and Search Console connector no longer do
 - GITHUB_TOKEN - used for skill publishing back to GitHub
 - AGENT_CRON_SECRET - shared secret for the agent-run webhook
 - GOOGLE_SEARCH_CONSOLE_CLIENT_EMAIL, GOOGLE_SEARCH_CONSOLE_PRIVATE_KEY - a
@@ -47,11 +45,18 @@ Required, not all present in the committed `.env` (only the Supabase public keys
   user on the cognarah.com property), replaces the old GOOGLE_SEARCH_CONSOLE_API_KEY
   which was a Lovable connector secret, not a real Google credential
 - SITE_URL / PUBLIC_SITE_URL
-- LOVABLE_SEND_URL - used by @lovable.dev/email-js for outbound email, another
-  live Lovable-platform dependency worth knowing about
+- RESEND_API_KEY - email pipeline (Phase 3, done 2026-08-30), sends via
+  notify.cognarah.com (verified in Resend), replaces LOVABLE_API_KEY /
+  LOVABLE_SEND_URL / @lovable.dev/email-js entirely
+- RESEND_WEBHOOK_SECRET - verifies Resend's bounce/complaint webhook signatures
+  (format `whsec_...`, from the Resend dashboard once a webhook endpoint pointing
+  at /lovable/email/suppression exists), replaces @lovable.dev/webhooks-js
+- EMAIL_PREVIEW_API_KEY - internal shared secret gating
+  /lovable/email/transactional/preview (only the Go API calls this), replaces
+  reusing LOVABLE_API_KEY for that purpose — pick any fresh random secret
 
-All the above (except the Supabase public keys) currently live only in Lovable's
-project secrets/connectors panel, not in this repo. Pull them from there.
+LOVABLE_API_KEY, LOVABLE_SEND_URL, and GOOGLE_SEARCH_CONSOLE_API_KEY are no
+longer used anywhere in this repo as of Phase 3 completion.
 
 ## Known repo quirks
 

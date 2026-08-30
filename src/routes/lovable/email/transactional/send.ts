@@ -6,12 +6,12 @@ import { TEMPLATES } from '@/lib/email-templates/registry'
 
 // Configuration baked in at scaffold time
 const SITE_NAME = "cognarah-ai-launchpad"
-// SENDER_DOMAIN is the verified sender subdomain FQDN (e.g., "notify.example.com").
-// It MUST match the subdomain delegated to Lovable's nameservers. NEVER use the root domain.
+// SENDER_DOMAIN is the verified sending domain in Resend. The From: header's domain
+// must exactly match a domain verified in Resend — unlike the old Lovable/Mailgun
+// gateway, Resend has no "cosmetic root domain, real subdomain" trick, so this can no
+// longer be the root domain unless that's separately verified too. NEVER change this
+// without verifying the new domain in Resend first (sends will 403 otherwise).
 const SENDER_DOMAIN = "notify.cognarah.com"
-// FROM_DOMAIN is the domain shown in the From: header (e.g., "example.com").
-// Can be the root domain when display_from_root is enabled — this is cosmetic only.
-const FROM_DOMAIN = "cognarah.com"
 
 function redactEmail(email: string | null | undefined): string {
   if (!email) return '***'
@@ -292,8 +292,7 @@ export const Route = createFileRoute("/lovable/email/transactional/send")({
           payload: {
             message_id: messageId,
             to: effectiveRecipient,
-            from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-            sender_domain: SENDER_DOMAIN,
+            from: `${SITE_NAME} <noreply@${SENDER_DOMAIN}>`,
             subject: resolvedSubject,
             html,
             text: plainText,

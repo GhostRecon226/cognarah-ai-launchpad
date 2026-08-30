@@ -201,43 +201,46 @@ directly in two steps:
 at 200 — full chain confirmed (JWT sign → OAuth token exchange → sitemap PUT
 accepted by Google).
 
-## Phase 3 — Email pipeline
+## Phase 3 — Email pipeline ✅ Done, live-verified (2026-08-30)
 
-Highest-touch phase before the vite config rewrite: three routes, two
-packages, and a DNS-level dependency.
+`notify.cognarah.com` was verified in Resend and `RESEND_API_KEY` added, so
+this shipped straight through rather than in separate credential/code steps
+like Phase 2.
 
-| File | Role | Lovable coupling |
-|---|---|---|
-| [src/routes/lovable/email/queue/process.ts](src/routes/lovable/email/queue/process.ts) | Drains the send queue | `sendLovableEmail()` from `@lovable.dev/email-js`, using `LOVABLE_API_KEY` + `LOVABLE_SEND_URL` |
-| [src/routes/lovable/email/suppression.ts](src/routes/lovable/email/suppression.ts) | Bounce/complaint webhook | `verifyWebhookRequest()` from `@lovable.dev/webhooks-js`, HMAC-keyed on `LOVABLE_API_KEY` |
-| [src/routes/lovable/email/transactional/send.ts:9-11](src/routes/lovable/email/transactional/send.ts#L9-L11) | Sends a transactional email | `SENDER_DOMAIN = "notify.cognarah.com"` — comment says this **must** match a subdomain delegated to Lovable's nameservers |
-| [src/routes/lovable/email/transactional/preview.ts](src/routes/lovable/email/transactional/preview.ts) | Internal template preview | Just gated by `LOVABLE_API_KEY` as an auth token, no other coupling |
-| [src/lib/email/enqueue-internal.server.ts](src/lib/email/enqueue-internal.server.ts) | Internal queue writer, bypasses the JWT-gated send route | No direct Lovable call, just references the route above in a comment |
+| File | Change |
+|---|---|
+| [src/lib/resend.server.ts](src/lib/resend.server.ts) (new) | Thin direct wrapper around `POST api.resend.com/emails`, no SDK dependency (same pattern as `gemini.server.ts`). Throws `EmailAPIError` with `.status`/`.retryAfterSeconds` — the exact shape `queue/process.ts`'s `isRateLimited`/`isForbidden`/`getRetryAfterSeconds` already expected, so none of that retry/DLQ logic needed to change. |
+| [src/lib/resend-webhook.server.ts](src/lib/resend-webhook.server.ts) (new) | Verifies Resend's webhook signatures (Svix scheme: HMAC-SHA256 over `svix-id.svix-timestamp.body`, `whsec_...` secret) using Node's `crypto`, no `svix` package added. |
+| [queue/process.ts](src/routes/lovable/email/queue/process.ts) | `sendLovableEmail` → `sendResendEmail` (dynamic import — route files ship to the client bundle). Also now builds `List-Unsubscribe`/`List-Unsubscribe-Post` headers itself from `payload.unsubscribe_token`, since Lovable's SDK used to build those implicitly and Resend just passes headers through as given. |
+| [transactional/send.ts](src/routes/lovable/email/transactional/send.ts), [enqueue-internal.server.ts](src/lib/email/enqueue-internal.server.ts) | Collapsed `SENDER_DOMAIN`/`FROM_DOMAIN` into one `SENDER_DOMAIN = "notify.cognarah.com"` used directly in `from`. **This is a real behavior change, not cosmetic**: the old code sent via `notify.cognarah.com` while showing `noreply@cognarah.com` in the From: header — a Mailgun/Lovable-gateway trick (verified subdomain sends, root domain displays) that Resend doesn't support. Resend requires the `from` address's domain to exactly match a verified domain, and only the subdomain is verified, so the visible From: address is now `noreply@notify.cognarah.com` instead of `noreply@cognarah.com`. |
+| [transactional/preview.ts](src/routes/lovable/email/transactional/preview.ts) | Auth switched from reusing `LOVABLE_API_KEY` to a dedicated `EMAIL_PREVIEW_API_KEY`. |
+| [suppression.ts](src/routes/lovable/email/suppression.ts) | Rewritten for Resend's actual webhook shape (`{type: "email.bounced"/"email.complained", data: {...}}`) instead of the old `{data: {email, reason, ...}}` the Go API forwarded from Mailgun. No stored mapping from our `message_id` to Resend's `email_id`, so the suppression log's `message_id` is now `null` and Resend's `email_id` goes into `metadata` instead — doesn't affect whether suppression actually works, since that's keyed by email address, not message_id. |
+| `package.json` | `@lovable.dev/email-js` and `@lovable.dev/webhooks-js` removed. `@lovable.dev/vite-tanstack-config` stays until Phase 4. |
 
-**Before any code change is possible:**
-1. **Pick a transactional ESP** (Resend, Postmark, SES, SendGrid, etc.) and
-   create an account.
-2. **Domain delegation**: `notify.cognarah.com` is currently delegated to
-   Lovable's nameservers for email sending (SPF/DKIM/DMARC are almost
-   certainly set up there, not in your own DNS). Before rewriting `send.ts`,
-   you need to either re-delegate that subdomain's NS records to your own DNS
-   provider, or add the new ESP's required SPF/DKIM/DMARC/return-path records
-   directly if `cognarah.com`'s root DNS is already outside Lovable's control
-   (worth checking which is actually true — CLAUDE.md only says the
-   subdomain is delegated, not the whole domain).
-3. **Webhook secret** from the new ESP for bounce/complaint delivery, to
-   replace the HMAC verification `@lovable.dev/webhooks-js` currently does
-   against `LOVABLE_API_KEY`.
-4. Only after DNS + ESP account exist can `queue/process.ts` and
-   `suppression.ts` be rewritten against the new ESP's SDK/webhook format, and
-   `@lovable.dev/email-js` + `@lovable.dev/webhooks-js` dropped from
-   `package.json`.
+**Live-verified 2026-08-30**: called `sendResendEmail` directly (the exact
+function `queue/process.ts` invokes) with a real send to
+chibuzor.opara15@gmail.com from `notify.cognarah.com` — Resend accepted it
+(returned a real email id, which also confirms domain verification is
+working) and the user confirmed it arrived. The full queue-based path
+(`send.ts` → `enqueue_email` RPC → pgmq → `queue/process.ts`) is still
+**not** live-tested end-to-end — every one of those routes also needs
+`SUPABASE_SERVICE_ROLE_KEY`, which isn't in `.env` yet, so they still 500 on
+the config-completeness check before ever reaching Resend. Worth doing once
+that key is added.
 
-Note the `/lovable/email/...` route path prefix itself is just a URL
-namespace — renaming it is optional and separate from removing the
-underlying Lovable calls; not required for the dependency removal itself, but
-worth doing in the same pass so nothing user-facing still says "lovable" in
-the URL.
+**Still needed, not yet added:**
+- `RESEND_WEBHOOK_SECRET` — create a webhook endpoint in the Resend
+  dashboard pointing at wherever `/lovable/email/suppression` is publicly
+  reachable, subscribed to at least `email.bounced` and `email.complained`;
+  Resend gives you the signing secret (`whsec_...`) at that point. Not
+  live-tested — needs a public URL Resend can actually POST to.
+- `EMAIL_PREVIEW_API_KEY` — any fresh random secret, shared with whatever
+  calls `transactional/preview.ts` (the Go API, per its existing comment).
+
+The `/lovable/email/...` route path prefix itself was left unchanged —
+renaming it is a separate, optional cleanup (would need updating whatever
+calls these routes: pg_cron, the Go API, the Resend webhook config), not
+part of this rewrite.
 
 ## Phase 4 — `vite.config.ts` / `@lovable.dev/vite-tanstack-config` (last, highest risk)
 
@@ -295,7 +298,7 @@ comment — it's the actual source of truth for what needs replacing 1:1.
 2. ✅ **Phase 1** — cosmetic, zero prerequisites, done.
 3. ✅ **Phase 2a** — AI gateway call sites rewritten to call Gemini natively, live-verified with a real `GEMINI_API_KEY` (running on `gemini-3.6-flash`, see note above).
 4. ✅ **Phase 2b** — sitemap-resubmit route rewritten to call Google directly, live-verified end-to-end with the Search Console service account.
-5. **Phase 3** — pick an ESP, migrate DNS, rewrite the email queue/suppression/send routes.
+5. ✅ **Phase 3** — email pipeline rewritten for Resend, live-verified with a real send. Still need `RESEND_WEBHOOK_SECRET` and `EMAIL_PREVIEW_API_KEY` added, and the full queue-based path (vs. calling the sender directly) needs `SUPABASE_SERVICE_ROLE_KEY` to actually test.
 6. **Phase 4** — decide deployment target, manually reconstruct the Vite/Nitro config, retire `@lovable.dev/vite-tanstack-config`.
 
 After Phase 4, `package.json` should have zero `@lovable.dev/*` packages and

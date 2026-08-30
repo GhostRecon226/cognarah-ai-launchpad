@@ -1,4 +1,3 @@
-import { sendLovableEmail } from '@lovable.dev/email-js'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createFileRoute } from '@tanstack/react-router'
 
@@ -9,8 +8,8 @@ const DEFAULT_AUTH_TTL_MINUTES = 15
 const DEFAULT_TRANSACTIONAL_TTL_MINUTES = 60
 
 // Check if an error is a rate-limit (429) response.
-// Uses EmailAPIError.status when available (email-js >=0.x with structured errors),
-// falls back to parsing the error message for older versions.
+// Uses EmailAPIError.status (see src/lib/resend.server.ts), falls back to
+// parsing the error message.
 function isRateLimited(error: unknown): boolean {
   if (error && typeof error === 'object' && 'status' in error) {
     return (error as { status: number }).status === 429
@@ -64,11 +63,11 @@ export const Route = createFileRoute("/lovable/email/queue/process")({
   server: {
     handlers: {
       POST: async ({ request }) => {
-        const apiKey = process.env.LOVABLE_API_KEY
+        const resendApiKey = process.env.RESEND_API_KEY
         const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-        if (!apiKey || !supabaseUrl || !supabaseServiceKey) {
+        if (!resendApiKey || !supabaseUrl || !supabaseServiceKey) {
           console.error('Missing required environment variables')
           return Response.json(
             { error: 'Server configuration error' },
@@ -221,23 +220,32 @@ export const Route = createFileRoute("/lovable/email/queue/process")({
             }
 
             try {
-              await sendLovableEmail(
-                {
-                  run_id: payload.run_id,
-                  to: payload.to,
-                  from: payload.from,
-                  sender_domain: payload.sender_domain,
-                  subject: payload.subject,
-                  html: payload.html,
-                  text: payload.text,
-                  purpose: payload.purpose,
-                  label: payload.label,
-                  idempotency_key: payload.idempotency_key,
-                  unsubscribe_token: payload.unsubscribe_token,
-                  message_id: payload.message_id,
-                },
-                { apiKey, sendUrl: process.env.LOVABLE_SEND_URL }
-              )
+              // Dynamic import: route files ship to the client bundle, so server-only
+              // modules must be loaded inside the handler, not imported at the top level.
+              const { sendResendEmail } = await import('@/lib/resend.server')
+
+              // RFC 8058 one-click unsubscribe headers. Lovable's email-js SDK built
+              // these itself from unsubscribe_token; Resend just passes headers through,
+              // so build them here. /email/unsubscribe already handles the resulting
+              // POST (see its "List-Unsubscribe=One-Click" detection).
+              const unsubscribeHeaders: Record<string, string> | undefined = payload.unsubscribe_token
+                ? {
+                    'List-Unsubscribe': `<${
+                      process.env.PUBLIC_SITE_URL || process.env.SITE_URL || 'https://cognarah.com'
+                    }/email/unsubscribe?token=${payload.unsubscribe_token}>`,
+                    'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+                  }
+                : undefined
+
+              await sendResendEmail({
+                to: payload.to,
+                from: payload.from,
+                subject: payload.subject,
+                html: payload.html,
+                text: payload.text,
+                message_id: payload.message_id,
+                headers: unsubscribeHeaders,
+              })
 
               // Log success
               await supabase.from('email_send_log').insert({

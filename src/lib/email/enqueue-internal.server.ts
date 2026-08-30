@@ -8,8 +8,9 @@ import { render } from "@react-email/render";
 import { TEMPLATES } from "@/lib/email-templates/registry";
 
 const SITE_NAME = "cognarah-ai-launchpad";
+// Must exactly match a domain verified in Resend — see the comment on this same
+// constant in ../../routes/lovable/email/transactional/send.ts.
 const SENDER_DOMAIN = "notify.cognarah.com";
-const FROM_DOMAIN = "cognarah.com";
 
 function generateToken(): string {
   const bytes = new Uint8Array(32);
@@ -101,8 +102,7 @@ export async function enqueueTransactionalEmail(args: EnqueueEmailArgs): Promise
     payload: {
       message_id: messageId,
       to: effectiveRecipient,
-      from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
-      sender_domain: SENDER_DOMAIN,
+      from: `${SITE_NAME} <noreply@${SENDER_DOMAIN}>`,
       subject,
       html,
       text,
