@@ -265,55 +265,102 @@ renaming it is a separate, optional cleanup (would need updating whatever
 calls these routes: pg_cron, the Go API, the Resend webhook config), not
 part of this rewrite.
 
-## Phase 4 — `vite.config.ts` / `@lovable.dev/vite-tanstack-config` (last, highest risk)
+## Phase 4 — `vite.config.ts` / `@lovable.dev/vite-tanstack-config` ✅ Done (2026-08-31)
 
-[vite.config.ts](vite.config.ts) wraps `defineConfig` from
-`@lovable.dev/vite-tanstack-config` (currently pinned to `2.13.1` in
-`package.json` devDependencies). Per the file's own header comment, that
-package bundles, in one opaque call:
+Read the actual package source (`index.js`, `hmr-gate.js`, `dev-server-bridge.js`,
+`runtime/fetch-entry.mjs`) rather than trusting the old header comment, which
+turned out to be partly wrong.
 
-- `tanstackStart`, `viteReact`, `tailwindcss`, `tsConfigPaths` plugins
-- Nitro build config, defaulting to a **Cloudflare** target
-  (confirmed live: this session's `npm run build` logged
-  `preset: cloudflare-module`)
-- `componentTagger` (dev-only — almost certainly wiring for Lovable's visual
-  editor's click-to-select-component feature; safe to drop once the editor
-  is retired)
-- `VITE_*` env injection, the `@` path alias, React/TanStack dedupe
-- "error logger plugins" (likely related to `lovable-error-reporting.ts` /
-  `__lovableEvents` from Phase 1 — check for overlap before assuming both
-  need separate replacements)
-- "sandbox detection" (port/host/`strictPort` binding logic for Lovable's
-  preview sandbox — irrelevant once not running inside Lovable's infra)
+**Genuinely needed, ported 1:1** into the new [vite.config.ts](vite.config.ts):
+`tanstackStart()` (with its `importProtection` default — a real TanStack
+feature blocking `.server.ts`/server-only code from client bundles, directly
+relevant given how much this migration leaned on that convention),
+`viteReact()`, `@tailwindcss/vite`, `vite-tsconfig-paths`, `nitro()`
+(`defaultPreset: "cloudflare-module"`, build-only — deploy target unchanged,
+per your call to revisit only when hosting actually moves), the `@` path
+alias, React/TanStack `resolve.dedupe`, `optimizeDeps` tuning, `VITE_*` env
+injection, and `css: {transformer: "lightningcss"}`. `@tanstack/devtools-vite`
+kept too (dev-only), per your call — added as an explicit devDependency along
+with `lightningcss`, since both were previously only transitive through the
+removed package.
 
-This is last because replacing it means manually reconstructing every one of
-those pieces as plain Vite/Nitro config and confirming the app still builds
-*and* deploys correctly — a single opaque dependency is being swapped for
-several explicit, independently-maintained ones, which is inherently more
-surface area for something to be subtly wrong (wrong Nitro preset, missing
-env injection scope, dedupe regressions between React/TanStack versions,
-etc.).
+**Confirmed dead — Lovable's live-preview/editor sandbox infrastructure,
+already inert for us before removal** (all gated behind
+`isSandboxEnvironment()`, which checks `LOVABLE_SANDBOX`/
+`DEV_SERVER__PROJECT_PATH`, neither ever set here): `hmrGatePlugin`,
+`devServerBridgePlugin` (notably its `/_sandbox/preview/execute` endpoint,
+which let Lovable's editor run arbitrary JS in the live preview tab — the
+kind of thing worth being rid of even though it was already a no-op),
+`lovableAssetsProxyPlugin`, `lovableBuildErrorDiagnostics`,
+`stripRedundantNodejsCompatFlag`. Also dropped `devServerFnErrorLogger` /
+`devSsrErrorLogger` — these ran for us but had no consumer left
+(`lovable-error-reporting.ts` was removed in Phase 1), so they'd been
+patching TanStack Start's internals to broadcast into the void.
 
-**Before the code change is possible:**
-- No new external account is strictly required for the plugin swap itself,
-  but you do need to **decide the deployment target** (this is currently the
-  Cloudflare preset via Nitro — is that still where this deploys, or is that
-  changing too as part of leaving Lovable's hosting? That decision changes
-  what the Nitro config in the replacement looks like).
-- Confirm whether `componentTagger` and the "sandbox detection" logic are
-  safe to drop outright (yes, if the Lovable editor is fully retired by this
-  point — which it should be, since Phases 1-3 removed everything else) or
-  whether anything else in the repo secretly depends on them.
-- Have `npm run dev` and `npm run build` both passing on the *current* config
-  first (see Baseline status above) so there's a real before/after to
-  compare once this phase lands — this is the one phase where a silent
-  regression (wrong plugin order, missing alias, wrong build target) would be
-  easy to miss without one.
+**The old header comment's `componentTagger` claim was simply wrong** —
+nothing by that name exists anywhere in the installed package (v2.13.1).
+Nothing to port there.
 
-Suggested approach when this phase starts: read
-`node_modules/@lovable.dev/vite-tanstack-config/dist/index.js` directly to see
-exactly what plugin list and options it passes, rather than guessing from the
-comment — it's the actual source of truth for what needs replacing 1:1.
+One real TS fix needed: `esbuild.keepNames` (for the `build:dev` script) had
+to be dropped — this Vite install's `ESBuildOptions` type no longer includes
+that field (Vite 8 shifted much of its transform pipeline to Rolldown). Only
+affects the rarely-used `build:dev` script; noted in a code comment in
+`vite.config.ts`.
+
+**Verification**: backed up the original as
+[vite.config.lovable-backup.ts](vite.config.lovable-backup.ts). Typecheck
+clean. `npm run dev` boots and serves real content (homepage, an article
+page, `/auth`), console-clean aside from a pre-existing hydration warning
+A/B-confirmed to exist identically on the *old* config too (not a
+regression). `npm run build` succeeds, produces the identical
+`cloudflare-module` Nitro/wrangler output as before.
+
+### ⚠️ Known pre-existing issue, blocks Phase 5 (hosting move) — `__exportAll is not a function`
+
+Discovered while verifying Phase 4, but **confirmed pre-existing and
+unrelated to the vite.config.ts rewrite** — reproduces identically with the
+old, Lovable-wrapped config too (see repro below, done as an A/B test against
+both configs). This means the current Cloudflare Workers build target for
+this app may never have actually been runtime-verified before — every prior
+check in this migration only confirmed `npm run build`'s exit code, never
+actually executed the built output. `npm run build`'s success (exit 0, valid
+`wrangler.json`) is **not sufficient evidence the Workers build actually
+runs**.
+
+**Repro:**
+```bash
+npm run build
+cd .output/server
+npx wrangler dev --port 8788
+# in another shell:
+curl -i http://localhost:8788/
+```
+Result: HTTP 500, app's own SSR error fallback page ("This page didn't
+load"). The real error, visible via wrangler's local observability API:
+```bash
+curl -s -X POST http://localhost:8788/cdn-cgi/local/explorer/api/local/observability/query \
+  -H 'Content-Type: application/json' \
+  -d '{"sql":"SELECT * FROM logs ORDER BY rowid DESC LIMIT 10"}'
+# -> "TypeError: __exportAll is not a function"
+```
+
+**What's known:** `_runtime.mjs` in the built output defines and exports
+`__exportAll` (aliased `r`); several chunks (`domutils.mjs`,
+`dom-serializer+[...].mjs`, `htmlparser2.mjs`, `@react-email/render+[...].mjs`,
+`@tiptap/core+[...].mjs`, `@mendable/firecrawl-js+[...].mjs` — all
+CJS-originated packages needing synthetic ESM export helpers) import it from
+there. At runtime under `workerd` the imported binding isn't actually a
+function when called — looks like a chunk-splitting/module-evaluation-order
+hazard specific to how Nitro's Rollup/Rolldown output behaves once loaded as
+real Workers modules (`wrangler.json` has `no_bundle: true`, so each `.mjs`
+file ships as its own ES module rather than being re-bundled by wrangler —
+worth checking whether that's the right setting, or whether the ordering
+hazard is inside Nitro's own output). Not yet investigated further per your
+instruction — this needs someone to actually dig into Nitro's
+`cloudflare-module` preset output before Phase 5 (moving hosting) can be
+considered viable on Cloudflare Workers as currently configured. Whether this
+also reproduces on real deployed Cloudflare (vs. just wrangler's local
+`workerd` simulator) is unconfirmed.
 
 ## Summary sequence
 
@@ -322,8 +369,9 @@ comment — it's the actual source of truth for what needs replacing 1:1.
 3. ✅ **Phase 2a** — AI gateway call sites rewritten to call Gemini natively, live-verified with a real `GEMINI_API_KEY` (running on `gemini-3.6-flash`, see note above).
 4. ✅ **Phase 2b** — sitemap-resubmit route rewritten to call Google directly, live-verified end-to-end with the Search Console service account.
 5. ✅ **Phase 3** — email pipeline rewritten for Resend, full queue path (`send.ts` → enqueue → pgmq → `queue/process.ts` → Resend) live-verified end to end against the real database. Only `RESEND_WEBHOOK_SECRET` remains, intentionally blocked on the hosting move.
-6. **Phase 4** — decide deployment target, manually reconstruct the Vite/Nitro config, retire `@lovable.dev/vite-tanstack-config`.
+6. ✅ **Phase 4** — `vite.config.ts` rewritten by hand, `@lovable.dev/vite-tanstack-config` fully retired. `npm run dev` and `npm run build` both verified working. Surfaced (but deliberately not fixed) a pre-existing, unrelated Cloudflare Workers runtime bug — see "Known pre-existing issue" above — that needs resolving before Phase 5 (hosting move) is viable.
 
-After Phase 4, `package.json` should have zero `@lovable.dev/*` packages and
-`grep -rniI lovable src` should return nothing but historical comments (or
-nothing at all).
+`package.json` now has zero `@lovable.dev/*` packages. `grep -rniI lovable src`
+still returns the `/lovable/email/...` route path (deliberately unrenamed,
+see Phase 3) and a handful of explanatory comments — no remaining functional
+dependency on Lovable's platform anywhere in this repo.

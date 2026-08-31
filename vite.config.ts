@@ -1,15 +1,29 @@
-// @lovable.dev/vite-tanstack-config already includes the following — do NOT add them manually
-// or the app will break with duplicate plugins:
-//   - tanstackStart, viteReact, tailwindcss, tsConfigPaths, nitro (build-only using cloudflare as a default target),
-//     componentTagger (dev-only), VITE_* env injection, @ path alias, React/TanStack dedupe,
-//     error logger plugins, and sandbox detection (port/host/strictPort).
-// You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
+// Replaces @lovable.dev/vite-tanstack-config (removed in the Lovable migration, Phase 4).
+// That wrapper bundled: tanstackStart, viteReact, tailwindcss, tsConfigPaths, nitro
+// (cloudflare-module target), @tanstack/devtools-vite, VITE_* env injection, the @ path
+// alias, React/TanStack dedupe, and optimizeDeps tuning — all genuine, generic Vite/
+// TanStack config, wired up explicitly below instead.
+//
+// Deliberately NOT ported: hmrGatePlugin, devServerBridgePlugin (notably its
+// /_sandbox/preview/execute endpoint, which let Lovable's editor run arbitrary JS in the
+// live preview tab), lovableAssetsProxyPlugin, and the build-error-diagnostics/
+// nodejs-compat-flag plugins — all gated behind Lovable's own sandbox detection and
+// already inert outside their platform. Also dropped devServerFnErrorLogger/
+// devSsrErrorLogger — these patched TanStack Start's internals to broadcast dev errors
+// over a websocket, but their only consumer (lovable-error-reporting.ts) was removed in
+// Phase 1, so they'd been firing into the void. The "componentTagger" mentioned in the
+// old header comment doesn't exist anywhere in the installed package version (2.13.1) —
+// nothing to port there.
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadEnv } from "vite";
+import { defineConfig, loadEnv, type UserConfig } from "vite";
 import { VitePWA } from "vite-plugin-pwa";
-import { defineConfig } from "@lovable.dev/vite-tanstack-config";
-
+import { devtools } from "@tanstack/devtools-vite";
+import tailwindcss from "@tailwindcss/vite";
+import tsConfigPaths from "vite-tsconfig-paths";
+import { tanstackStart } from "@tanstack/react-start/plugin/vite";
+import { nitro } from "nitro/vite";
+import viteReact from "@vitejs/plugin-react";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -18,14 +32,76 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const serverEnv = loadEnv(process.env.NODE_ENV ?? "development", process.cwd(), "");
 Object.assign(process.env, serverEnv);
 
-export default defineConfig({
-  tanstackStart: {
-    // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
-    // nitro/vite builds from this
-    server: { entry: "server" },
-  },
-  vite: {
+export default defineConfig(({ command, mode }): UserConfig => {
+  // VITE_*-prefixed vars, statically exposed to the client bundle as import.meta.env.VITE_*.
+  const clientEnv = loadEnv(mode, process.cwd(), "VITE_");
+  const envDefine: Record<string, string> = {};
+  for (const [key, value] of Object.entries(clientEnv)) {
+    envDefine[`import.meta.env.${key}`] = JSON.stringify(value);
+  }
+
+  // True only for `npm run build:dev` (vite build --mode development).
+  const isDevBuild = command === "build" && mode === "development";
+
+  return {
+    define: envDefine,
+    environments: isDevBuild
+      ? { client: { define: { "process.env.NODE_ENV": JSON.stringify("development") } } }
+      : undefined,
+    // The old wrapper also set esbuild.keepNames here for isDevBuild — this Vite install's
+    // ESBuildOptions type no longer has that field (Vite 8 shifted most transforms to
+    // Rolldown), so it's dropped rather than typed past. Only affects the rarely-used
+    // build:dev script.
+    css: { transformer: "lightningcss" },
+    resolve: {
+      alias: { "@": path.resolve(__dirname, "src") },
+      dedupe: [
+        "react",
+        "react-dom",
+        "react/jsx-runtime",
+        "react/jsx-dev-runtime",
+        "@tanstack/react-query",
+        "@tanstack/query-core",
+      ],
+    },
+    optimizeDeps: {
+      include: ["react", "react-dom", "react-dom/client", "react/jsx-runtime", "react/jsx-dev-runtime"],
+      ignoreOutdatedRequests: true,
+    },
+    server: {
+      host: "::",
+      port: 8080,
+      watch: {
+        awaitWriteFinish: { stabilityThreshold: 1000, pollInterval: 100 },
+      },
+    },
     plugins: [
+      ...(mode === "development"
+        ? [
+            devtools({
+              logging: false,
+              eventBusConfig: { enabled: false },
+              enhancedLogs: { enabled: false },
+              consolePiping: { enabled: false },
+              removeDevtoolsOnBuild: false,
+              injectSource: { enabled: true },
+            }),
+          ]
+        : []),
+      tailwindcss(),
+      tsConfigPaths({ projects: ["./tsconfig.json"] }),
+      tanstackStart({
+        importProtection: {
+          behavior: "error",
+          client: { files: ["**/server/**"], specifiers: ["server-only"] },
+        },
+        // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
+        // nitro/vite builds from this
+        server: { entry: "server" },
+      }),
+      // nitro is build-only — the original wrapper never added it during `vite dev` either.
+      ...(command === "build" ? [nitro({ defaultPreset: "cloudflare-module" })] : []),
+      viteReact(),
       VitePWA({
         strategies: "generateSW",
         registerType: "autoUpdate",
@@ -81,7 +157,5 @@ export default defineConfig({
         },
       }),
     ],
-  },
+  };
 });
-
-
