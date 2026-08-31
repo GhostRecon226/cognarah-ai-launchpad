@@ -221,21 +221,44 @@ like Phase 2.
 function `queue/process.ts` invokes) with a real send to
 chibuzor.opara15@gmail.com from `notify.cognarah.com` — Resend accepted it
 (returned a real email id, which also confirms domain verification is
-working) and the user confirmed it arrived. The full queue-based path
-(`send.ts` → `enqueue_email` RPC → pgmq → `queue/process.ts`) is still
-**not** live-tested end-to-end — every one of those routes also needs
-`SUPABASE_SERVICE_ROLE_KEY`, which isn't in `.env` yet, so they still 500 on
-the config-completeness check before ever reaching Resend. Worth doing once
-that key is added.
+working) and the user confirmed it arrived.
+
+**Full queue path live-verified 2026-08-31**: `send.ts` → `enqueue_email` RPC
+→ pgmq → `queue/process.ts` → Resend, driven end to end for real, not just
+the sender in isolation.
+
+- Along the way, a `SUPABASE_SERVICE_ROLE_KEY` mix-up surfaced two more
+  Supabase projects in play (one empty scaffold, one stale/pre-migration) —
+  see the postmortem in this repo's session history if it comes up again;
+  `.env` now correctly points at `bgybhqjnzjpzzqinkfkm`, the fully-migrated
+  project (schema, data, storage, admin auth user, vault secrets all
+  present — verified with real `select` queries against `articles` (202
+  rows), `agent_runs` (159), `user_roles`, `email_send_log`, not just
+  existence checks, since a HEAD/count-style check gave false positives
+  against the empty project during the investigation).
+- Created a dedicated `qa-internal@cognarah.com` test account (`editor`
+  role, clearly labeled in `user_metadata`) to get a real JWT for `send.ts`'s
+  auth check, rather than touching any real user.
+- `POST /lovable/email/transactional/send` with that JWT → `{"success":true,"queued":true}`,
+  confirmed a `pending` row in `email_send_log`.
+- `POST /lovable/email/queue/process` with the service role key →
+  `{"processed":1}`, confirmed the log flipped to a new `sent` row
+  (append-only — both rows still present).
+- Recipient was `info@cognarah.com` (the `skills-auto-published` template's
+  fixed `to`) — user confirmed it arrived.
 
 **Still needed, not yet added:**
-- `RESEND_WEBHOOK_SECRET` — create a webhook endpoint in the Resend
-  dashboard pointing at wherever `/lovable/email/suppression` is publicly
-  reachable, subscribed to at least `email.bounced` and `email.complained`;
-  Resend gives you the signing secret (`whsec_...`) at that point. Not
-  live-tested — needs a public URL Resend can actually POST to.
-- `EMAIL_PREVIEW_API_KEY` — any fresh random secret, shared with whatever
-  calls `transactional/preview.ts` (the Go API, per its existing comment).
+- `RESEND_WEBHOOK_SECRET` — currently a placeholder
+  (`placeholder_pending_hosting_migration`), intentionally left unresolved
+  per the user — blocked on the hosting move, needs a public URL before a
+  Resend webhook endpoint can be created and give a real `whsec_...` secret.
+  `suppression.ts` is code-complete and correct but not live-tested.
+- `EMAIL_PREVIEW_API_KEY` — already added to `.env`, not yet exercised
+  against `transactional/preview.ts` (low-risk — it's a read-only preview
+  endpoint, no send/queue/DB-mutation involved).
+
+Phase 3 is otherwise fully closed: every code path live-verified against
+the real, correctly-provisioned database.
 
 The `/lovable/email/...` route path prefix itself was left unchanged —
 renaming it is a separate, optional cleanup (would need updating whatever
@@ -298,7 +321,7 @@ comment — it's the actual source of truth for what needs replacing 1:1.
 2. ✅ **Phase 1** — cosmetic, zero prerequisites, done.
 3. ✅ **Phase 2a** — AI gateway call sites rewritten to call Gemini natively, live-verified with a real `GEMINI_API_KEY` (running on `gemini-3.6-flash`, see note above).
 4. ✅ **Phase 2b** — sitemap-resubmit route rewritten to call Google directly, live-verified end-to-end with the Search Console service account.
-5. ✅ **Phase 3** — email pipeline rewritten for Resend, live-verified with a real send. Still need `RESEND_WEBHOOK_SECRET` and `EMAIL_PREVIEW_API_KEY` added, and the full queue-based path (vs. calling the sender directly) needs `SUPABASE_SERVICE_ROLE_KEY` to actually test.
+5. ✅ **Phase 3** — email pipeline rewritten for Resend, full queue path (`send.ts` → enqueue → pgmq → `queue/process.ts` → Resend) live-verified end to end against the real database. Only `RESEND_WEBHOOK_SECRET` remains, intentionally blocked on the hosting move.
 6. **Phase 4** — decide deployment target, manually reconstruct the Vite/Nitro config, retire `@lovable.dev/vite-tanstack-config`.
 
 After Phase 4, `package.json` should have zero `@lovable.dev/*` packages and
