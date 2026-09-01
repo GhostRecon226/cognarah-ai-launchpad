@@ -547,6 +547,55 @@ Platform Under the Digital Services Act`, `OpenClaw 2.0 Brings Multiplayer
 Sessions and Enterprise Controls to AI Agents`) verified present in the
 `articles` table with `status: "draft"`, matching the run log exactly.
 
+### ✅ Fixed (2026-09-02) — Admin CMS "permission denied for schema private" / "Could not load analytics: Forbidden"
+
+Reported by Peter as "backend not working, nothing showing" on the CMS.
+Turned out unrelated to hosting/deploy entirely — a plain Postgres privilege
+gap left over from the Supabase self-migration.
+
+**Root cause**: `supabase/migrations/20260818153055_2a1ab71c-5b80-4f9f-b9a8-e586908159c2.sql`
+creates a `private` schema holding two `SECURITY DEFINER` role-check
+functions (`private.has_role`, `private.has_any_role`), wrapped by thin
+`SECURITY INVOKER` passthroughs in `public.has_role`/`public.has_any_role`
+(the only ones the app ever calls — confirmed zero `.schema('private')`
+references anywhere in `src/`). Because the wrappers are `SECURITY INVOKER`,
+the inner `private.` call executes as whatever Postgres role invoked the
+wrapper, which needs its own `USAGE`/`EXECUTE` grant on the `private`
+schema/functions — a plain `GRANT`, not part of a standard schema+data dump,
+and it didn't carry over in the self-migration to `bgybhqjnzjpzzqinkfkm`.
+Confirmed **not** a PostgREST "exposed schemas" issue (that setting is
+unrelated to this — `private` is deliberately not meant to be in that list;
+adding it there would widen the API surface without fixing anything).
+
+Two error paths traced back to this exact gap: `src/lib/analytics.functions.ts`
+calls `.rpc("has_any_role", ...)` directly (→ "Could not load analytics:
+Forbidden"), and RLS policies across the schema (13 migration files
+reference these functions) gate table access the same way (→ "permission
+denied for schema private" on the articles list). The CMS's Supabase client
+(`auth-middleware.ts`) attaches the logged-in user's JWT, meaning the
+Postgres role actually executing these calls is `authenticated` — not
+`service_role`, which is why server-side checks using the service role key
+looked fine while the CMS itself broke.
+
+**Fix** (run directly via the SQL editor, same pattern as the cron job fix):
+```sql
+GRANT USAGE ON SCHEMA private TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION private.has_role(uuid, public.app_role) TO authenticated, service_role;
+GRANT EXECUTE ON FUNCTION private.has_any_role(uuid, public.app_role[]) TO authenticated, service_role;
+```
+
+**Verified properly** — not just via `service_role` (which bypasses RLS and
+wouldn't have caught the real bug), but by signing in as the `qa-internal`
+test account (see Phase 3's live-testing notes) to get a genuine user JWT
+and querying through a client carrying that token, exactly matching how the
+CMS itself authenticates:
+```
+AS AUTHENTICATED -- has_any_role -> OK, result: true
+AS AUTHENTICATED -- articles select -> OK, rows: 3
+```
+Both of Peter's exact reported failures reproduced as fixed on the real
+`authenticated` path, not just inferred from a `service_role` check.
+
 ## Summary sequence
 
 1. ✅ **Resolve the build baseline blocker** (vite.config.ts entities alias) — fixed via `package.json` overrides, see Baseline status above.
