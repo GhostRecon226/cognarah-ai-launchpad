@@ -162,11 +162,20 @@ function sniffImageDimensions(buf: Buffer): { width: number; height: number } | 
   return null;
 }
 
-// Direct Google Generative Language API model ids. Use the "-latest" aliases so
-// free-tier keys keep working when Google retires a specific dated snapshot
-// (which is what caused every draft to fail with a 404 on gemini-2.5-flash).
-// Overridable via env so we can swap without a redeploy.
-const GEMINI_TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-flash-latest";
+// Direct Google Generative Language API model ids. Overridable via env so we
+// can swap without a redeploy.
+//
+// GEMINI_TEXT_MODEL was originally the "-latest" alias so free-tier keys kept
+// working when Google retired a specific dated snapshot (a 404 on
+// gemini-2.5-flash was the incident that led to that choice). But "-latest"
+// is a moving target: as of 2026-09-01 it resolves to a model returning
+// persistent 503 "high demand" errors (confirmed directly against the API,
+// same failure that killed every candidate in a live agent run — 0/2 drafts
+// created despite the pipeline itself completing cleanly). Pinned to
+// gemini-3.6-flash instead, same fix already applied to src/lib/gemini.server.ts
+// during the Lovable migration for the identical overload issue on
+// gemini-3.7-flash. Revisit if this pinned version is ever deprecated.
+const GEMINI_TEXT_MODEL = process.env.GEMINI_TEXT_MODEL || "gemini-3.6-flash";
 const GEMINI_IMAGE_MODEL = process.env.GEMINI_IMAGE_MODEL || "gemini-2.5-flash-image";
 
 // Sentinel error message the worker pool checks so a model 404 aborts the

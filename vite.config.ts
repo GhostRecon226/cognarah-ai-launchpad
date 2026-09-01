@@ -108,7 +108,17 @@ export default defineConfig(({ command, mode }): UserConfig => {
               // fallback) — persists across builds since it's baked in here, not passed
               // ad hoc on the CLI. nitro.options.cloudflare.wrangler is merged into the
               // generated wrangler.json with higher precedence than nitro's own defaults.
-              cloudflare: { wrangler: { name: "cognarah" } },
+              //
+              // limits.subrequests: explicit, not left to the account plan's implicit
+              // default. The AI news agent's pipeline (search -> per-candidate
+              // scrape/score/relevance-check/draft/refine, plus every Supabase call)
+              // was hitting "Too many subrequests by single Worker invocation" and
+              // getting killed as "hung" by the Workers runtime (confirmed live via
+              // wrangler tail — Cloudflare error 1101) even after upgrading to Workers
+              // Paid, which strongly suggested the account was still being metered at
+              // the Free tier's 50-subrequest default rather than Paid's 10,000. Setting
+              // this explicitly removes that ambiguity regardless of account/plan state.
+              cloudflare: { wrangler: { name: "cognarah", limits: { subrequests: 10000 } } },
               rolldownConfig: {
                 output: {
                   codeSplitting: {

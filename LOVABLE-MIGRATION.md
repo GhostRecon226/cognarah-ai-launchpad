@@ -472,6 +472,81 @@ itself is registered at `https://cognarah.com/lovable/email/suppression`.
   Phase 2/3 credentials were (no explicit test of the Claude refinement
   pass, skill-scraping, or skill-publishing paths against production yet).
 
+### ✅ Fixed (2026-09-01/02) — AI News Agent manual run failing on Cloudflare Workers
+
+Reported as "Stalled: no heartbeat" in the admin panel (started, ran ~373s,
+0/2 drafts). Two genuinely separate bugs stacked on top of each other; both
+needed fixing before a real run would complete.
+
+**Bug 1 — Cloudflare subrequest limit, not CPU time.** The initial hypothesis
+(CPU-time budget exceeded across a long-running, mostly-I/O-bound pipeline)
+turned out wrong. Live-captured via `wrangler tail` while triggering a run:
+
+```
+LOG (×3): "Error: Too many subrequests by single Worker invocation."
+EXCEPTION: "The Workers runtime canceled this request because it detected
+            that your Worker's code had hung and would never generate a
+            response."
+```
+
+A "subrequest" is any `fetch()` a Worker makes in one invocation — every
+Supabase call counts too, not just the Firecrawl/Gemini/Claude calls. Free
+plan defaults to 50 subrequests/invocation; this pipeline's search → per-
+candidate scrape/score/relevance-check/draft/refine loop, plus every Supabase
+insert/update, blows past that easily. The account was upgraded to Workers
+Paid (default 10,000/invocation) but the failure persisted identically —
+suggesting the plan change hadn't fully taken effect for this Worker, or an
+explicit value was safer than relying on an implicit plan-tier default
+either way. Fixed by setting the limit explicitly in
+[vite.config.ts](vite.config.ts)'s `nitro()` call:
+
+```ts
+cloudflare: { wrangler: { name: "cognarah", limits: { subrequests: 10000 } } },
+```
+
+(Same `nitro.options.cloudflare.wrangler` mechanism already used for the
+Worker name — merges into the generated `wrangler.json` regardless of
+account plan state.) Verified: a run that previously died in ~38-40s (edge
+error 1101, once the CPU-time fix above stopped masking this second issue)
+instead ran the full pipeline for 117s+ with real search/scrape/score
+activity across 35 candidates, no subrequest error, no hang.
+
+**Bug 2 — `agent-core.server.ts`'s own Gemini model config, unrelated to
+Phase 2's fix.** Once Bug 1 was fixed, the run completed cleanly at the
+platform level but created 0/2 drafts — every candidate's newsworthiness
+scoring failed with `Gemini 503: "This model is currently experiencing high
+demand"`. This is a *different* Gemini call site than
+[gemini.server.ts](src/lib/gemini.server.ts) (fixed in Phase 2a) —
+`agent-core.server.ts` is the AI News Agent specifically and has always
+called Gemini directly, independent of that shared helper. It defaulted to
+the `"gemini-flash-latest"` alias rather than a pinned version, on the
+reasoning (documented in a pre-existing code comment) that aliases survive
+Google retiring dated snapshots — which had already caused one prior
+incident (a 404 on `gemini-2.5-flash`). Confirmed directly against the API
+that `gemini-flash-latest` was resolving to the same class of overloaded
+model Phase 2a moved away from. Pinned `GEMINI_TEXT_MODEL` to
+`gemini-3.6-flash` in `agent-core.server.ts`, matching `gemini.server.ts`'s
+existing pin.
+
+**The transient-overload caveat — important for future-you**: after
+deploying the pin, the *very next* run still hit Gemini 503 on all 8/8
+scoring attempts (100%, not partial). This looked like the fix hadn't
+worked. It had — a fresh, isolated manual call to `gemini-3.6-flash`
+succeeded immediately after that failed run, and a second full agent-run
+retry a few minutes later completed with **zero** Gemini errors and both
+drafts created successfully. The pinned model itself experienced a genuine,
+short-lived Google-side overload window that happened to coincide with one
+specific run — not a code regression, not evidence the pin is wrong. **If
+this recurs**: check whether the pinned model 503s on an isolated manual
+call *right now* before concluding the pin needs to change again — if an
+isolated call succeeds but a full run doesn't, that's this same transient
+class of issue, and the fix is "wait and retry," not "swap the model."
+
+Confirmed end-to-end: both drafts (`EU Designates ChatGPT as a Very Large
+Platform Under the Digital Services Act`, `OpenClaw 2.0 Brings Multiplayer
+Sessions and Enterprise Controls to AI Agents`) verified present in the
+`articles` table with `status: "draft"`, matching the run log exactly.
+
 ## Summary sequence
 
 1. ✅ **Resolve the build baseline blocker** (vite.config.ts entities alias) — fixed via `package.json` overrides, see Baseline status above.
