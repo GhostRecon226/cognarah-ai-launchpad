@@ -247,18 +247,26 @@ the sender in isolation.
 - Recipient was `info@cognarah.com` (the `skills-auto-published` template's
   fixed `to`) — user confirmed it arrived.
 
-**Still needed, not yet added:**
-- `RESEND_WEBHOOK_SECRET` — currently a placeholder
-  (`placeholder_pending_hosting_migration`), intentionally left unresolved
-  per the user — blocked on the hosting move, needs a public URL before a
-  Resend webhook endpoint can be created and give a real `whsec_...` secret.
-  `suppression.ts` is code-complete and correct but not live-tested.
+**Update 2026-09-02**: `RESEND_WEBHOOK_SECRET` is now the real value (was a
+placeholder, blocked on the hosting move — that's done, see Phase 5). The
+webhook endpoint is live at `https://cognarah.com/lovable/email/suppression`,
+`cognarah.com` being the already-bound, verified custom domain in front of
+the deployed Worker. `suppression.ts` was code-complete and correct before
+this but not live-tested with a real signed request; the Cloudflare Workers
+secret was updated via `wrangler secret put` (applies immediately, no
+redeploy needed) and confirmed live — an unsigned test POST to the route
+correctly returned `401` (invalid signature) rather than the `500`
+config-missing error it returned before the secret was set, confirming the
+route now sees and checks against the real secret.
+
+**Still open:**
 - `EMAIL_PREVIEW_API_KEY` — already added to `.env`, not yet exercised
   against `transactional/preview.ts` (low-risk — it's a read-only preview
   endpoint, no send/queue/DB-mutation involved).
 
-Phase 3 is otherwise fully closed: every code path live-verified against
-the real, correctly-provisioned database.
+**Phase 3 is fully closed.** Every code path — the queue send pipeline and
+now the suppression webhook too — is live-verified against the real,
+correctly-provisioned database and the real deployed Worker.
 
 The `/lovable/email/...` route path prefix itself was left unchanged —
 renaming it is a separate, optional cleanup (would need updating whatever
@@ -394,7 +402,7 @@ simulator — no live Cloudflare account/deployment was available to test
 against in this session. Worth a real deploy-and-check before fully trusting
 Phase 5 on this.
 
-## Phase 5 — Hosting move 🟡 In progress (2026-09-01) — deployed to workers.dev, custom domain not yet connected
+## Phase 5 — Hosting move 🟡 In progress (2026-09-02) — deployed, custom domain connected, a few credentials unverified
 
 The domain was disconnected from Lovable and down, so this moved with real
 urgency rather than waiting for a full Phase 5 plan.
@@ -436,8 +444,9 @@ an article page, `/auth`, and an API route (`resubmit-sitemap`, correctly
    `wrangler secret list` after): `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
    `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`,
    `GOOGLE_SEARCH_CONSOLE_CLIENT_EMAIL`, `GOOGLE_SEARCH_CONSOLE_PRIVATE_KEY`,
-   `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET` (still the placeholder value —
-   real one needs a live public URL to register with Resend first),
+   `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET` (still the placeholder value at
+   the time — updated to the real value shortly after, see "Still open"
+   below),
    `AGENT_CRON_SECRET`, `EMAIL_PREVIEW_API_KEY`, `ANTHROPIC_API_KEY`,
    `FIRECRAWL_API_KEY`, `GITHUB_TOKEN`. Skipped `GEMINI_TEXT_MODEL` /
    `GEMINI_IMAGE_MODEL` (defaults are fine) and `SITE_URL` / `PUBLIC_SITE_URL`
@@ -449,13 +458,15 @@ an article page, `/auth`, and an API route (`resubmit-sitemap`, correctly
    config.json` conflict as every other `wrangler` invocation in this repo —
    see Phase 4's repro notes).
 
-**Still open / deliberately not touched this pass:**
-- **DNS / custom domain** — explicitly deferred; the app is only reachable
-  at the `*.workers.dev` URL right now, not `cognarah.com`.
-- **`RESEND_WEBHOOK_SECRET`** — still the placeholder value. Needs a real
-  Resend webhook endpoint registered against a public URL (the `workers.dev`
-  URL now qualifies, once DNS/domain questions are settled) before this can
-  be replaced with the real signing secret from Resend's dashboard.
+**Update 2026-09-02**: `cognarah.com` is bound as the custom domain in front
+of the deployed Worker and confirmed working (done outside this document's
+tracking — noted here for the record). With a real public URL live,
+`RESEND_WEBHOOK_SECRET` was updated from the placeholder to the real value
+via `wrangler secret put` (applies immediately, no redeploy needed) and
+confirmed working — see Phase 3's update above. The Resend webhook endpoint
+itself is registered at `https://cognarah.com/lovable/email/suppression`.
+
+**Still open:**
 - **`ANTHROPIC_API_KEY`/`FIRECRAWL_API_KEY`/`GITHUB_TOKEN`** were supplied
   fresh by the user in this session — not verified live-working the way the
   Phase 2/3 credentials were (no explicit test of the Claude refinement
@@ -467,9 +478,9 @@ an article page, `/auth`, and an API route (`resubmit-sitemap`, correctly
 2. ✅ **Phase 1** — cosmetic, zero prerequisites, done.
 3. ✅ **Phase 2a** — AI gateway call sites rewritten to call Gemini natively, live-verified with a real `GEMINI_API_KEY` (running on `gemini-3.6-flash`, see note above).
 4. ✅ **Phase 2b** — sitemap-resubmit route rewritten to call Google directly, live-verified end-to-end with the Search Console service account.
-5. ✅ **Phase 3** — email pipeline rewritten for Resend, full queue path (`send.ts` → enqueue → pgmq → `queue/process.ts` → Resend) live-verified end to end against the real database. Only `RESEND_WEBHOOK_SECRET` remains, intentionally blocked on the hosting move.
+5. ✅ **Phase 3** — email pipeline rewritten for Resend, fully closed: the full queue path (`send.ts` → enqueue → pgmq → `queue/process.ts` → Resend) and the suppression webhook (`https://cognarah.com/lovable/email/suppression`, real `RESEND_WEBHOOK_SECRET`) are both live-verified end to end.
 6. ✅ **Phase 4** — `vite.config.ts` rewritten by hand, `@lovable.dev/vite-tanstack-config` fully retired. `npm run dev` and `npm run build` both verified working. Also surfaced *and fixed* a pre-existing, unrelated Cloudflare Workers runtime bug (`__exportAll is not a function`) — see "Fixed" writeup above.
-7. 🟡 **Phase 5** — deployed for real to `https://cognarah.cognarah.workers.dev`, all 13 server-only secrets set, `__exportAll` fix confirmed holding on the actual deployed Worker (not just `wrangler dev`). DNS/custom domain and the real `RESEND_WEBHOOK_SECRET` are still open — see Phase 5 above.
+7. 🟡 **Phase 5** — deployed for real, live at the `cognarah.com` custom domain (bound and verified working) as well as `https://cognarah.cognarah.workers.dev`. All 14 server-only secrets set (including the real `RESEND_WEBHOOK_SECRET`), `__exportAll` fix confirmed holding on the actual deployed Worker. Still open: `ANTHROPIC_API_KEY`/`FIRECRAWL_API_KEY`/`GITHUB_TOKEN` haven't been live-tested against production yet — see Phase 5 above.
 
 `package.json` now has zero `@lovable.dev/*` packages. `grep -rniI lovable src`
 still returns the `/lovable/email/...` route path (deliberately unrenamed,
