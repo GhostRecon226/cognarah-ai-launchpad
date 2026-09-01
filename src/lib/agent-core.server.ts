@@ -64,6 +64,20 @@ function hashUrl(url: string) {
   return createHash("sha256").update(url.trim().toLowerCase()).digest("hex");
 }
 
+// Matches a written-out or ISO date near the top of a page's own markdown
+// (bylines like "Published August 31, 2026" or "31 August 2026" that many
+// sites render in-page without a matching meta tag). Used as a fallback date
+// signal alongside metadata and URL-date checks below.
+const MONTH_NAMES = "January|February|March|April|May|June|July|August|September|October|November|December";
+const TEXT_DATE_REGEX = new RegExp(
+  `\\b(?:${MONTH_NAMES})\\s+\\d{1,2},?\\s+(?:19|20)\\d{2}\\b` +
+  `|\\b\\d{1,2}\\s+(?:${MONTH_NAMES})\\s+(?:19|20)\\d{2}\\b` +
+  // (?!\d) instead of a trailing \b: a full ISO timestamp like
+  // "2026-08-31T12:00:00Z" has no word boundary between "31" and "T"
+  // (both \w chars), which a trailing \b would miss.
+  `|\\b(?:19|20)\\d{2}-\\d{2}-\\d{2}(?!\\d)`,
+);
+
 
 function looksLikeArticleUrl(rawUrl: string): { ok: boolean; reason?: string } {
   let u: URL;
@@ -195,6 +209,11 @@ async function callGemini(opts: {
   userParts: GeminiPart[];
   json?: boolean;
   responseModalities?: string[];
+  /** Unset = API default. Scoring/classification calls should pass a low
+   *  value for consistent judgments; the drafting call should pass a
+   *  moderate value, lower than the API default, to curb fabrication while
+   *  still allowing editorial voice. */
+  temperature?: number;
 }): Promise<any> {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error("GEMINI_API_KEY missing");
@@ -206,6 +225,7 @@ async function callGemini(opts: {
   if (opts.system) body.systemInstruction = { parts: [{ text: opts.system }] };
   if (opts.json) body.generationConfig.responseMimeType = "application/json";
   if (opts.responseModalities) body.generationConfig.responseModalities = opts.responseModalities;
+  if (opts.temperature !== undefined) body.generationConfig.temperature = opts.temperature;
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`;
   const maxAttempts = 3;
@@ -356,6 +376,7 @@ async function isImageRelevant(
         { inline_data: { mime_type: contentType, data: b64 } },
       ],
       json: true,
+      temperature: 0.1,
     });
     const content = geminiText(json).replace(/```(?:json)?\s*|\s*```/gi, "").trim();
     let parsed: any;
@@ -504,6 +525,7 @@ async function assessAfricaRelevance(
       system: AFRICA_ASSESS_SYSTEM,
       userParts: [{ text: `Source URL: ${sourceUrl}\nTitle: ${title}\n\nSource content:\n${markdown.slice(0, 8000)}` }],
       json: true,
+      temperature: 0.15,
     });
     const raw = geminiText(res).trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
     const parsed = JSON.parse(raw) as { score?: unknown; reason?: unknown; evidence?: unknown; angle_type?: unknown };
@@ -600,6 +622,7 @@ async function qaCritiqueDraft(
           `DRAFT JSON:\n${JSON.stringify(draft)}`,
       }],
       json: true,
+      temperature: 0.15,
     });
     const raw = geminiText(res).trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
     const parsed = JSON.parse(raw) as { pass?: unknown; issues?: unknown; critical?: unknown };
@@ -809,6 +832,7 @@ export async function assessNewsworthiness(
         text: `Source URL: ${sourceUrl}\nSource tier: ${tier}. ${tierNote}\nTitle: ${title}\n\nSource content:\n${markdown.slice(0, 8000)}`,
       }],
       json: true,
+      temperature: 0.15,
     });
     const raw = geminiText(res).trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
     const parsed = JSON.parse(raw) as {
@@ -911,6 +935,7 @@ async function checkDuplicateStory(
         text: `Candidate story: ${candidateTitle}\nCandidate event: ${storyKey}\n\nExisting Cognarah headlines from the last 21 days:\n${near.map((n) => `- ${n.title}`).join("\n")}`,
       }],
       json: true,
+      temperature: 0.1,
     });
     const raw = geminiText(res).trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
     const parsed = JSON.parse(raw) as DuplicateCheck;
@@ -1145,11 +1170,21 @@ export async function runAgentCore(args: RunAgentArgs) {
 
         const bodyWords = md.split(/\s+/).filter(Boolean).length;
         if (bodyWords < 600) { logLine(`Skipped: page has only ${bodyWords} words (not article)`); return; }
+        // Broadened beyond the original 3 fields: sites vary in which meta
+        // tag (if any) they set, and some only carry a modified-time or a
+        // non-standard analytics-plugin date field.
         const published: string | undefined =
-          meta.publishedTime || meta["article:published_time"] || meta.publishedDate;
+          meta.publishedTime || meta["article:published_time"] || meta.publishedDate ||
+          meta.datePublished || meta["date"] || meta.modifiedTime || meta["article:modified_time"] ||
+          meta.dateModified || meta["og:updated_time"] || meta.updatedTime ||
+          meta["parsely-pub-date"] || meta["sailthru.date"];
         const hasUrlDate = /\/(19|20)\d{2}\//.test(cand.url);
-        if (!published && !hasUrlDate) {
-          logLine(`Skipped: no publication date on page or in URL`);
+        // Last resort: a written-out or ISO date visible in the page's own
+        // text (many blog/support pages render a byline date with no
+        // matching meta tag at all).
+        const hasTextDate = TEXT_DATE_REGEX.test(md.slice(0, 2000));
+        if (!published && !hasUrlDate && !hasTextDate) {
+          logLine(`Skipped: no publication date on page, in URL, or near article top`);
           return;
         }
 
@@ -1238,6 +1273,10 @@ export async function runAgentCore(args: RunAgentArgs) {
             system: SYSTEM_PROMPT,
             userParts: [{ text: buildUserPrompt(nudge) }],
             json: true,
+            // Lower than the API default: still enough range for editorial
+            // voice and prose quality, but curbs the tendency to invent
+            // specifics observed at default temperature.
+            temperature: 0.55,
           });
 
           const content: string = geminiText(aiRes);
