@@ -89,6 +89,80 @@ function normalizeWebsiteUrl(raw: unknown): string {
   return url.toString().replace(/\/$/, "");
 }
 
+// ============ AUTOMATED SUBMISSION SCORING ============
+// Two independent dimensions, scored 0-100 each, computed once at
+// submission time so admins see them immediately when triaging the queue
+// (src/routes/_authenticated/admin/startups.tsx). Kept separate rather than
+// combined into one number: a real company building a non-AI product and a
+// fake "AI" submission need different admin responses, and averaging them
+// together would hide which one it is.
+
+const STARTUP_SCORE_SYSTEM =
+  "You are Cognarah's startup submissions reviewer. Assess a startup submission on two independent dimensions, each scored 0-100.\n\n" +
+  "LEGITIMACY (0-100): does this read as a real, coherent company, not spam, a test/placeholder entry, or an obvious scam. " +
+  "Weigh internal consistency (does the product description match the stated AI technologies, company stage and team size coherently, e.g. a '50+' team claiming 'Idea' stage is inconsistent), whether the website URL looks like a real company domain rather than a link shortener or gibberish, plausible founding year for the stated stage, and whether the writing reads like a genuine product description rather than lorem-ipsum, copy-pasted marketing filler, or nonsense. " +
+  "Score low for: placeholder or templated text, internally contradictory details, a vague or non-existent-sounding product, or anything that reads like someone testing the form rather than describing a real company. Score high for a submission that is internally consistent and specific, even if small/early-stage.\n\n" +
+  "AI_RELEVANCE (0-100): is AI genuinely central to this product, matching Cognarah's 'Everything AI. Nothing Else.' focus, not a generic SaaS or app that checked an AI-technology box for free exposure. " +
+  "Score high when the product description explains a real, specific role AI plays in the core value proposition. Score low when AI is an unexplained bolt-on, buzzword-only, or absent from the actual product description despite a technology being selected.\n\n" +
+  "Return ONLY strict JSON, no markdown: " +
+  '{"legitimacy":0,"ai_relevance":0,"reason":"one or two sentences covering both scores","flags":["short_flag",...]}\n' +
+  'Flags are short machine-readable strings for specific concerns worth a human\'s attention, for example "inconsistent_stage_team", "placeholder_text", "vague_ai_claim", "generic_saas_not_ai", "suspicious_url". Empty array if there are no concerns.';
+
+function buildStartupScorePrompt(s: Record<string, unknown>): string {
+  const cofounders = Array.isArray(s.cofounders)
+    ? (s.cofounders as Array<{ name?: string; role?: string; linkedin?: string }>)
+        .map((c) => [c?.name, c?.role, c?.linkedin].filter(Boolean).join(" - "))
+        .filter(Boolean)
+        .join("; ")
+    : "";
+  const lines = [
+    `Company name: ${s.company_name}`,
+    `Tagline: ${s.tagline || "not provided"}`,
+    `Website: ${s.website_url}`,
+    `Headquarters: ${s.city}, ${s.country}`,
+    `Year founded: ${s.year_founded}`,
+    `Company stage: ${s.company_stage}`,
+    `Product: ${s.product_description}`,
+    `Problem solved: ${s.problem_solved}`,
+    `Differentiator: ${s.differentiator || "not provided"}`,
+    `Target audience: ${s.target_audience}`,
+    `AI technology selected: ${Array.isArray(s.ai_technologies) ? (s.ai_technologies as string[]).join(", ") : ""}`,
+    `Founder: ${s.founder_name}`,
+    `Co-founders: ${cofounders || "not provided"}`,
+    `Team size: ${s.team_size}`,
+    `Users / customers: ${s.user_count || "not disclosed"}`,
+    `Revenue stage: ${s.revenue_stage}`,
+    `Funding raised: ${s.funding_raised || "not disclosed"}`,
+  ];
+  return `Assess this startup submission:\n\n${lines.join("\n")}\n\nReturn strict JSON per the schema.`;
+}
+
+export interface StartupScore {
+  legitimacy: number;
+  ai_relevance: number;
+  reason: string;
+  flags: string[];
+}
+
+/** Never throws: a scoring failure should never block a submission. */
+async function assessStartupSubmission(s: Record<string, unknown>): Promise<StartupScore | null> {
+  try {
+    const { callGeminiJSON } = await import("./gemini.server");
+    const text = await callGeminiJSON(STARTUP_SCORE_SYSTEM, buildStartupScorePrompt(s), { temperature: 0.15 });
+    const cleaned = text.trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    const parsed = JSON.parse(cleaned) as { legitimacy?: unknown; ai_relevance?: unknown; reason?: unknown; flags?: unknown };
+    const clamp = (v: unknown) => Math.max(0, Math.min(100, Math.round(Number(v) || 0)));
+    return {
+      legitimacy: clamp(parsed.legitimacy),
+      ai_relevance: clamp(parsed.ai_relevance),
+      reason: typeof parsed.reason === "string" ? parsed.reason.slice(0, 500) : "",
+      flags: Array.isArray(parsed.flags) ? parsed.flags.map((f) => String(f)).slice(0, 8) : [],
+    };
+  } catch (err) {
+    console.error("[startup-submissions] scoring failed", err);
+    return null;
+  }
+}
 
 export const submitStartup = createServerFn({ method: "POST" })
   .inputValidator((data: StartupSubmissionInput) => {
@@ -302,6 +376,26 @@ export const submitStartup = createServerFn({ method: "POST" })
       });
     } catch (err) {
       console.error("Failed to enqueue startup submission notification", err);
+    }
+
+    // Score legitimacy + AI-relevance so admins see it immediately when
+    // triaging (never blocks the submission response on failure).
+    const score = await assessStartupSubmission(row);
+    if (score) {
+      try {
+        await supabaseAdmin
+          .from("startup_submissions")
+          .update({
+            ai_legitimacy_score: score.legitimacy,
+            ai_relevance_score: score.ai_relevance,
+            ai_score_reason: score.reason,
+            ai_flags: score.flags,
+            ai_scored_at: new Date().toISOString(),
+          })
+          .eq("id", inserted.id);
+      } catch (err) {
+        console.error("Failed to save startup submission score", err);
+      }
     }
 
     return { ok: true };

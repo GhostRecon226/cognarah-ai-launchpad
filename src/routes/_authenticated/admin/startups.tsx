@@ -71,6 +71,11 @@ interface Submission {
   contact_method: string;
   whatsapp_number: string | null;
   article_id: string | null;
+  ai_legitimacy_score: number | null;
+  ai_relevance_score: number | null;
+  ai_score_reason: string | null;
+  ai_flags: string[];
+  ai_scored_at: string | null;
 }
 
 const STATUS_STYLES: Record<Status, string> = {
@@ -81,6 +86,32 @@ const STATUS_STYLES: Record<Status, string> = {
 };
 
 const STATUS_FILTERS: (Status | "all")[] = ["all", "pending", "approved", "rejected", "published"];
+
+/** L = legitimacy (spam/coherence signal), F = AI-fit. Color follows whichever
+ *  of the two is weaker, since either one being low is worth a second look. */
+function ScoreBadge({ legitimacy, relevance }: { legitimacy: number | null | undefined; relevance: number | null | undefined }) {
+  // Loose check on purpose: a row fetched before the ai_* columns exist on
+  // the table (or before Postgrest's schema cache picks them up) has these
+  // fields missing (undefined) rather than null.
+  if (legitimacy == null || relevance == null) {
+    return <span className="text-xs text-muted-foreground">Not scored</span>;
+  }
+  const worst = Math.min(legitimacy, relevance);
+  const style =
+    worst < 40
+      ? "bg-red-100 text-red-900 border-red-300"
+      : worst < 70
+        ? "bg-yellow-100 text-yellow-900 border-yellow-300"
+        : "bg-green-100 text-green-900 border-green-300";
+  return (
+    <span
+      className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold", style)}
+      title={`Legitimacy ${legitimacy}/100, AI relevance ${relevance}/100`}
+    >
+      L{legitimacy} &middot; F{relevance}
+    </span>
+  );
+}
 
 function StatusBadge({ status }: { status: Status }) {
   return (
@@ -99,7 +130,7 @@ function StartupsPage() {
 }
 
 const COLS =
-  "md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_100px_368px]";
+  "md:grid-cols-[minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,0.8fr)_minmax(0,0.8fr)_100px_110px_368px]";
 
 function StartupsTable() {
   const [subs, setSubs] = useState<Submission[]>([]);
@@ -227,6 +258,7 @@ function StartupsTable() {
           <div className="min-w-0">Stage</div>
           <div className="min-w-0">Submitted</div>
           <div>Status</div>
+          <div>AI Score</div>
           <div className="text-right">Actions</div>
         </div>
 
@@ -261,6 +293,7 @@ function StartupsTable() {
                 <div className="min-w-0 truncate text-sm text-muted-foreground">{s.company_stage}</div>
                 <div className="min-w-0 truncate text-sm text-muted-foreground">{new Date(s.submitted_at).toLocaleDateString()}</div>
                 <div><StatusBadge status={s.status} /></div>
+                <div><ScoreBadge legitimacy={s.ai_legitimacy_score} relevance={s.ai_relevance_score} /></div>
                 <div className="flex flex-wrap items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
 
                   <Link
@@ -350,6 +383,27 @@ function StartupsTable() {
                     )}
                   </div>
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <Detail label="AI review" full>
+                      {s.ai_legitimacy_score == null || s.ai_relevance_score == null ? (
+                        <span className="text-muted-foreground">Not scored</span>
+                      ) : (
+                        <div className="space-y-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <ScoreBadge legitimacy={s.ai_legitimacy_score} relevance={s.ai_relevance_score} />
+                            {(s.ai_flags ?? []).length > 0 && (
+                              <span className="flex flex-wrap gap-1">
+                                {(s.ai_flags ?? []).map((f) => (
+                                  <span key={f} className="rounded border border-border bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
+                                    {f}
+                                  </span>
+                                ))}
+                              </span>
+                            )}
+                          </div>
+                          {s.ai_score_reason && <p className="text-xs text-muted-foreground">{s.ai_score_reason}</p>}
+                        </div>
+                      )}
+                    </Detail>
                     {s.tagline && <Detail label="Tagline" full>{s.tagline}</Detail>}
                     <Detail label="Website"><ExternalA href={s.website_url}>{s.website_url}</ExternalA></Detail>
                     <Detail label="Year founded">{s.year_founded}</Detail>

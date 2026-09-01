@@ -834,6 +834,11 @@ export type Database = {
       startup_submissions: {
         Row: {
           admin_notes: string | null
+          ai_flags: string[]
+          ai_legitimacy_score: number | null
+          ai_relevance_score: number | null
+          ai_score_reason: string | null
+          ai_scored_at: string | null
           ai_technologies: string[]
           article_id: string | null
           awards: string | null
@@ -884,6 +889,11 @@ export type Database = {
         }
         Insert: {
           admin_notes?: string | null
+          ai_flags?: string[]
+          ai_legitimacy_score?: number | null
+          ai_relevance_score?: number | null
+          ai_score_reason?: string | null
+          ai_scored_at?: string | null
           ai_technologies?: string[]
           article_id?: string | null
           awards?: string | null
@@ -934,6 +944,11 @@ export type Database = {
         }
         Update: {
           admin_notes?: string | null
+          ai_flags?: string[]
+          ai_legitimacy_score?: number | null
+          ai_relevance_score?: number | null
+          ai_score_reason?: string | null
+          ai_scored_at?: string | null
           ai_technologies?: string[]
           article_id?: string | null
           awards?: string | null

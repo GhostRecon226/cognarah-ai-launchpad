@@ -13,9 +13,12 @@
 // Worth revisiting once 3.7 capacity settles.
 const GEMINI_MODEL = "gemini-3.6-flash";
 
-export async function callGeminiJSON(system: string, user: string): Promise<string> {
+export async function callGeminiJSON(system: string, user: string, opts?: { temperature?: number }): Promise<string> {
   const key = process.env.GEMINI_API_KEY;
   if (!key) throw new Error("GEMINI_API_KEY missing");
+
+  const generationConfig: Record<string, unknown> = { responseMimeType: "application/json" };
+  if (opts?.temperature !== undefined) generationConfig.temperature = opts.temperature;
 
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${key}`,
@@ -25,7 +28,7 @@ export async function callGeminiJSON(system: string, user: string): Promise<stri
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: system }] },
         contents: [{ role: "user", parts: [{ text: user }] }],
-        generationConfig: { responseMimeType: "application/json" },
+        generationConfig,
       }),
     },
   );
