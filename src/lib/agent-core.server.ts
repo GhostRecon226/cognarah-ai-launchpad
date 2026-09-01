@@ -264,20 +264,27 @@ async function refineWithClaude(
   draft: DraftPayload,
   sourceUrl: string,
   africa?: AfricaAssessment,
+  fixIssues?: string[],
 ): Promise<DraftPayload | null> {
   const key = process.env.ANTHROPIC_API_KEY;
   if (!key) return null;
-  const editorInstruction =
-    "You are the senior editor. Refine the following draft for tone, structure, flow, and editorial quality per the SYSTEM_PROMPT above. " +
-    "STRICT CONSTRAINTS: do NOT change any facts, figures, names, dates, quotes, or <a href=\"...\"> links. " +
-    "Preserve the Source URL and the 'Reporting sourced from' footer link exactly. Preserve the <h2>The Cognarah Angle</h2> divider. " +
-    "Do NOT move source citations or attribution into the Cognarah Angle or the closing line, those sections are Cognarah's own voice. " +
-    "Keep the same JSON schema. " +
-    "Improve writing only, sharpen headline/dek within their word limits, tighten prose, fix awkward phrasing, ensure required sections exist, and keep the editorial edge (a clear stance and one pointed question or contrarian observation in the Cognarah Angle or closing line). " +
-    (africa ? africaEditorConstraint(africa) : "") +
-    "Return ONLY strict JSON matching the original shape, no markdown, no code fences, no commentary.\n\n" +
-    `Source URL (must be preserved in the footer link): ${sourceUrl}\n\n` +
-    `DRAFT JSON:\n${JSON.stringify(draft)}`;
+  const editorInstruction = fixIssues && fixIssues.length
+    ? "You are the senior editor doing a targeted correction pass, not a full rewrite. The copy chief's QA check flagged these specific issues; fix ONLY them, changing as little else as possible:\n" +
+      fixIssues.map((i) => `- ${i}`).join("\n") + "\n\n" +
+      "Do NOT change any other facts, figures, names, dates, quotes, or <a href=\"...\"> links. Preserve the Source URL and the 'Reporting sourced from' footer link exactly, unless fixing it is one of the listed issues. Keep the same JSON schema. " +
+      "Return ONLY strict JSON matching the original shape, no markdown, no code fences, no commentary.\n\n" +
+      `Source URL (must be preserved in the footer link): ${sourceUrl}\n\n` +
+      `DRAFT JSON:\n${JSON.stringify(draft)}`
+    : "You are the senior editor. Refine the following draft for tone, structure, flow, and editorial quality per the SYSTEM_PROMPT above. " +
+      "STRICT CONSTRAINTS: do NOT change any facts, figures, names, dates, quotes, or <a href=\"...\"> links. " +
+      "Preserve the Source URL and the 'Reporting sourced from' footer link exactly. Preserve the <h2>The Cognarah Angle</h2> divider. " +
+      "Do NOT move source citations or attribution into the Cognarah Angle or the closing line, those sections are Cognarah's own voice. " +
+      "Keep the same JSON schema. " +
+      "Improve writing only, sharpen headline/dek within their word limits, tighten prose, fix awkward phrasing, ensure required sections exist, and keep the editorial edge (a clear stance and one pointed question or contrarian observation in the Cognarah Angle or closing line). " +
+      (africa ? africaEditorConstraint(africa) : "") +
+      "Return ONLY strict JSON matching the original shape, no markdown, no code fences, no commentary.\n\n" +
+      `Source URL (must be preserved in the footer link): ${sourceUrl}\n\n` +
+      `DRAFT JSON:\n${JSON.stringify(draft)}`;
 
 
   try {
@@ -515,18 +522,13 @@ async function assessAfricaRelevance(
   }
 }
 
-/** One targeted search into the African dimension of a story scoring 3+. */
-async function researchAfricaAngle(
-  fc: any,
-  title: string,
-  assessment: AfricaAssessment,
-): Promise<string> {
+/** Shared Firecrawl search -> formatted notes helper, used by the Africa
+ *  angle research and the general corroboration research below. */
+async function webSearchNotes(fc: any, query: string, limit: number): Promise<string> {
   try {
-    const focusBits = [assessment.angle_type, ...assessment.evidence.slice(0, 2)].filter(Boolean).join(" ");
-    const query = `${title} Africa ${focusBits}`.slice(0, 220);
-    const searchRes: any = await fc.search(query, { limit: 5 });
+    const searchRes: any = await fc.search(query.slice(0, 220), { limit });
     const results: any[] = searchRes?.web ?? searchRes?.data ?? [];
-    const notes = results
+    return results
       .map((r: any) => {
         const desc = String(r?.description ?? "").trim();
         return desc ? `- ${String(r?.title ?? "").trim()}: ${desc} (${r?.url ?? ""})` : "";
@@ -534,9 +536,79 @@ async function researchAfricaAngle(
       .filter(Boolean)
       .slice(0, 5)
       .join("\n");
-    return notes;
   } catch {
     return "";
+  }
+}
+
+/** One targeted search into the African dimension of a story scoring 3+. */
+async function researchAfricaAngle(
+  fc: any,
+  title: string,
+  assessment: AfricaAssessment,
+): Promise<string> {
+  const focusBits = [assessment.angle_type, ...assessment.evidence.slice(0, 2)].filter(Boolean).join(" ");
+  return webSearchNotes(fc, `${title} Africa ${focusBits}`, 5);
+}
+
+// ============ GENERAL CORROBORATION RESEARCH ============
+// Unlike the Africa-angle research above (targeted, Africa-relevant stories
+// only), this pulls a second outlet's coverage of the SAME event for
+// high-value or single-source-thin stories, so drafts aren't built from one
+// outlet's framing alone. Bounded to one search per qualifying candidate to
+// keep the added Firecrawl calls and latency proportionate.
+const CORROBORATION_NEWSWORTHINESS_MIN = 70;
+const CORROBORATION_THIN_WORDS = 900;
+
+// ============ SELF-CORRECTION QA PASS ============
+// A fresh model pass (not the same call that wrote or polished the draft)
+// checks the finished draft against its source before it's ever inserted,
+// catching what validateDraft's length/title checks can't: banned phrases,
+// missing required structure, an unsupported/fabricated claim, or a source
+// link that doesn't match. Fixable issues get one targeted Claude revision;
+// a critical issue (fabrication, wrong source link) skips the candidate
+// instead of publishing a flawed draft.
+
+const QA_CRITIQUE_SYSTEM =
+  "You are Cognarah's copy chief doing a final pre-publish check. Compare the draft strictly against the SOURCE content and these hard rules:\n" +
+  "1. Headline: max 12 words, names a specific actor and action, no clickbait.\n" +
+  "2. Dek: 20-40 words, states at least one concrete fact (name, number, or date) from the source.\n" +
+  "3. Body contains, in order: an opening paragraph with who/what/why, reported context paragraphs, then exactly one <h2>The Cognarah Angle</h2> section, then a closing punchy line, then the 'Reporting sourced from' footer link pointing at the exact given Source URL.\n" +
+  "4. Every factual claim, number, quote or name in the reported (non-Angle) sections must be traceable to the SOURCE content or the ADDITIONAL RESEARCH notes if provided. Flag anything that looks fabricated or unsupported.\n" +
+  "5. Banned phrases anywhere: 'groundbreaking', 'revolutionary', 'game-changing', 'the future is here', 'this could transform businesses across Africa', 'a major opportunity for African startups', 'African businesses could benefit significantly', 'this could accelerate digital transformation across the continent'.\n" +
+  "6. If an African angle is present, it must match the supplied AFRICAN RELEVANCE POLICY score (do not flag if no policy given, or if score <= 1 and no angle is present).\n" +
+  "Return ONLY strict JSON: {\"pass\":true|false,\"issues\":[\"specific, actionable issue\"],\"critical\":true|false}. " +
+  "critical=true only when a claim is fabricated/unsupported or the source link is wrong, i.e. not safely fixable by a copy edit.";
+
+interface QaCritique { pass: boolean; issues: string[]; critical: boolean }
+
+/** Never blocks the run if the check itself fails; returns pass=true in that case. */
+async function qaCritiqueDraft(
+  draft: DraftPayload,
+  sourceUrl: string,
+  sourceMarkdown: string,
+  corroborationNotes: string,
+  africa: AfricaAssessment,
+): Promise<QaCritique> {
+  try {
+    const res: any = await callGemini({
+      system: QA_CRITIQUE_SYSTEM,
+      userParts: [{
+        text: `Source URL: ${sourceUrl}\n\nSOURCE content:\n${sourceMarkdown.slice(0, 8000)}\n\n` +
+          (corroborationNotes ? `ADDITIONAL RESEARCH:\n${corroborationNotes}\n\n` : "") +
+          `AFRICAN RELEVANCE POLICY: score ${africa.score}, angle_used=${africa.angle_used}\n\n` +
+          `DRAFT JSON:\n${JSON.stringify(draft)}`,
+      }],
+      json: true,
+    });
+    const raw = geminiText(res).trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
+    const parsed = JSON.parse(raw) as { pass?: unknown; issues?: unknown; critical?: unknown };
+    const issues = Array.isArray(parsed.issues)
+      ? parsed.issues.map((i) => String(i)).filter(Boolean).slice(0, 8)
+      : [];
+    return { pass: parsed.pass === true && issues.length === 0, issues, critical: parsed.critical === true };
+  } catch {
+    return { pass: true, issues: [], critical: false };
   }
 }
 
@@ -1046,8 +1118,23 @@ export async function runAgentCore(args: RunAgentArgs) {
         africa.angle_used = africa.score >= 2;
         const africaInstruction = africaStructureInstruction(africa);
 
+        // General corroboration research: a second outlet's coverage of the
+        // same event, for high-value stories or ones where the scraped page
+        // is thin on specifics. Generalizes the Africa-only research above
+        // to every story, capped at one search to bound cost.
+        let corroborationNotes = "";
+        if (news.score >= CORROBORATION_NEWSWORTHINESS_MIN || bodyWords < CORROBORATION_THIN_WORDS) {
+          await heartbeat("corroboration research");
+          corroborationNotes = await webSearchNotes(fc, news.story_key || cand.title || meta.title || "", 5);
+          if (corroborationNotes) logLine("Corroboration research completed");
+        }
+
         const buildUserPrompt = (nudge?: string) =>
-          `Focus: ${focusPart}\nSource URL: ${cand.url}\nSource title: ${cand.title ?? meta.title ?? ""}\n\n${africaInstruction}\nSource content:\n${md.slice(0, 12000)}` +
+          `Focus: ${focusPart}\nSource URL: ${cand.url}\nSource title: ${cand.title ?? meta.title ?? ""}\n\n${africaInstruction}\n` +
+          (corroborationNotes
+            ? `ADDITIONAL CORROBORATING RESEARCH (other outlets on this same story; use only to verify facts or add supporting context, the source you cite/link stays the PRIMARY source below):\n${corroborationNotes}\n\n`
+            : "") +
+          `Source content:\n${md.slice(0, 12000)}` +
           (nudge ? `\n\nEDITOR NOTE: ${nudge}` : "");
 
         let draft: DraftPayload | null = null;
@@ -1084,6 +1171,37 @@ export async function runAgentCore(args: RunAgentArgs) {
           logLine("Claude editor pass skipped/failed, using Gemini draft");
         }
         await heartbeat("claude pass complete");
+
+        // Self-correction QA pass: fresh-eyes check against the source before
+        // this draft is ever inserted. Fixable issues get one targeted Claude
+        // revision and a recheck; a critical issue skips the candidate.
+        await heartbeat("qa critique");
+        const qa = await qaCritiqueDraft(draft, cand.url, md, corroborationNotes, africa);
+        if (!qa.pass) {
+          logLine(`QA critique flagged: ${qa.issues.join("; ")}${qa.critical ? " (critical)" : ""}`);
+          if (qa.critical) {
+            logLine("Skipped: QA critique found a critical, unfixable issue");
+            return;
+          }
+          const corrected = await refineWithClaude(draft, cand.url, africa, qa.issues);
+          if (corrected) {
+            draft = corrected;
+            logLine("Applied targeted QA correction pass");
+            const recheck = await qaCritiqueDraft(draft, cand.url, md, corroborationNotes, africa);
+            if (!recheck.pass && recheck.critical) {
+              logLine(`Skipped: QA correction still critical: ${recheck.issues.join("; ")}`);
+              return;
+            }
+            logLine(recheck.pass
+              ? "QA recheck passed"
+              : `QA still flags non-critical issues after correction, proceeding: ${recheck.issues.join("; ")}`);
+          } else {
+            logLine("QA correction pass failed/unavailable, proceeding with flagged draft (non-critical)");
+          }
+        } else {
+          logLine("QA critique passed");
+        }
+        await heartbeat("qa complete");
 
         const stripDashes = (s: string | undefined | null) =>
           typeof s === "string" ? stripEmDashes(s) : s;
