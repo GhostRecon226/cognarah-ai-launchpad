@@ -100,7 +100,31 @@ export default defineConfig(({ command, mode }): UserConfig => {
         server: { entry: "server" },
       }),
       // nitro is build-only — the original wrapper never added it during `vite dev` either.
-      ...(command === "build" ? [nitro({ defaultPreset: "cloudflare-module" })] : []),
+      ...(command === "build"
+        ? [
+            nitro({
+              defaultPreset: "cloudflare-module",
+              rolldownConfig: {
+                output: {
+                  codeSplitting: {
+                    // Nitro's SSR service pre-bundles TanStack Start's server entry into
+                    // a single asset (.nitro/vite/services/ssr/assets/server-*.js), but
+                    // Rolldown's default chunking then splits THAT one module into two
+                    // output chunks that circularly re-export a synthetic __exportAll
+                    // helper through each other. Under workerd's module loader that
+                    // circular pair resolves with __exportAll still unassigned at call
+                    // time (TypeError: __exportAll is not a function) — reproduces
+                    // identically on wrangler dev, pre-existing before this fix. Forcing
+                    // this one source module into a single named chunk removes the split
+                    // (and the circularity) entirely; nitro's own node_modules group
+                    // (for _libs/*) is untouched since this doesn't match that test.
+                    groups: [{ test: (id: string) => /\/assets\/server-[\w-]+\.js$/.test(id), name: "server-entry" }],
+                  },
+                },
+              },
+            }),
+          ]
+        : []),
       viteReact(),
       VitePWA({
         strategies: "generateSW",

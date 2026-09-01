@@ -315,52 +315,100 @@ A/B-confirmed to exist identically on the *old* config too (not a
 regression). `npm run build` succeeds, produces the identical
 `cloudflare-module` Nitro/wrangler output as before.
 
-### ⚠️ Known pre-existing issue, blocks Phase 5 (hosting move) — `__exportAll is not a function`
+### ✅ Fixed (2026-09-01) — `__exportAll is not a function`
 
-Discovered while verifying Phase 4, but **confirmed pre-existing and
-unrelated to the vite.config.ts rewrite** — reproduces identically with the
-old, Lovable-wrapped config too (see repro below, done as an A/B test against
-both configs). This means the current Cloudflare Workers build target for
-this app may never have actually been runtime-verified before — every prior
-check in this migration only confirmed `npm run build`'s exit code, never
-actually executed the built output. `npm run build`'s success (exit 0, valid
-`wrangler.json`) is **not sufficient evidence the Workers build actually
-runs**.
+Was pre-existing (confirmed via A/B test against both the old and new
+vite.config.ts — see history below), discovered while verifying Phase 4.
+Root-caused and fixed; Phase 5 is no longer blocked by this.
 
-**Repro:**
-```bash
-npm run build
-cd .output/server
-npx wrangler dev --port 8788
-# in another shell:
-curl -i http://localhost:8788/
+**Root cause:** Nitro's Vite SSR service pre-bundles TanStack Start's server
+entry into a single intermediate asset
+(`node_modules/.nitro/vite/services/ssr/assets/server-*.js`). Nitro's own
+Rolldown build then further chunks that *one* module into **two** output
+files (`_ssr/server-<hash>.mjs` and `_ssr/server-<hash>2.mjs`) that
+circularly re-export a synthetic `__exportAll` CJS-interop helper through
+each other: chunk 1 (14 lines) imports `server_exports` from chunk 2, chunk 2
+(1900+ lines, the real content) imports `__exportAll` from chunk 1. Under
+spec-compliant ESM this circular pair should still resolve correctly, but
+`workerd`'s module loader doesn't guarantee that — `__exportAll` is still an
+unassigned `var` (`undefined`) at the point chunk 2 calls it, producing
+`TypeError: __exportAll is not a function`. Tried and ruled out first:
+- `no_bundle: false` (rebundling through wrangler's own esbuild) — same
+  error, just renamed to `__exportAll2`. Confirms it's not a `no_bundle`
+  artifact; the circularity survives being re-bundled into one file.
+- `rolldownConfig.output.hoistTransitiveImports: false` (the fix Nitro's own
+  `deno-server` preset already uses for an analogous edge-runtime + circular
+  chunk problem) — changed the generated shape (inlined the helper into
+  chunk 1 instead of pulling from `_runtime.mjs`) but the cross-chunk
+  circularity, and the error, remained.
+- `nitro({inlineDynamicImports: true})` — silently had no effect. Traced via
+  a debug patch into `nitro/dist/vite.mjs`: the `cloudflare-module` preset's
+  own `rollupConfig.output.inlineDynamicImports: false` is deliberately
+  hardcoded and out-merge-prioritizes any option we pass — Cloudflare's
+  modern Workers module format is intentionally built around multi-module
+  output, so forcing single-file output fights the preset's actual design
+  rather than fixing the real bug.
+- Bumping `nitro` from `3.0.260603-beta` to the latest `3.0.260610-beta` —
+  same error, not yet fixed upstream as of that release.
+- Plain `manualChunks` — silently ignored; this project's Vite 8 install
+  uses **Rolldown**, not classic Rollup, and Rolldown's actual chunking API
+  is `output.codeSplitting.groups`, a different shape entirely.
+
+**Actual fix**, in [vite.config.ts](vite.config.ts)'s `nitro()` call:
+```ts
+rolldownConfig: {
+  output: {
+    codeSplitting: {
+      groups: [{ test: (id) => /\/assets\/server-[\w-]+\.js$/.test(id), name: "server-entry" }],
+    },
+  },
+},
 ```
-Result: HTTP 500, app's own SSR error fallback page ("This page didn't
-load"). The real error, visible via wrangler's local observability API:
-```bash
-curl -s -X POST http://localhost:8788/cdn-cgi/local/explorer/api/local/observability/query \
-  -H 'Content-Type: application/json' \
-  -d '{"sql":"SELECT * FROM logs ORDER BY rowid DESC LIMIT 10"}'
-# -> "TypeError: __exportAll is not a function"
-```
+Nitro's default `codeSplitting.groups` (which buckets `node_modules` code
+into `_libs/*` chunks) is defu-deep-merged with ours, not replaced — our
+group just claims the one source module Rolldown was splitting and forces
+it into a single named chunk (`_ssr/server-entry.mjs`), eliminating the
+circular reference at the source. Nothing else about the chunking behavior
+changes.
 
-**What's known:** `_runtime.mjs` in the built output defines and exports
-`__exportAll` (aliased `r`); several chunks (`domutils.mjs`,
-`dom-serializer+[...].mjs`, `htmlparser2.mjs`, `@react-email/render+[...].mjs`,
-`@tiptap/core+[...].mjs`, `@mendable/firecrawl-js+[...].mjs` — all
-CJS-originated packages needing synthetic ESM export helpers) import it from
-there. At runtime under `workerd` the imported binding isn't actually a
-function when called — looks like a chunk-splitting/module-evaluation-order
-hazard specific to how Nitro's Rollup/Rolldown output behaves once loaded as
-real Workers modules (`wrangler.json` has `no_bundle: true`, so each `.mjs`
-file ships as its own ES module rather than being re-bundled by wrangler —
-worth checking whether that's the right setting, or whether the ordering
-hazard is inside Nitro's own output). Not yet investigated further per your
-instruction — this needs someone to actually dig into Nitro's
-`cloudflare-module` preset output before Phase 5 (moving hosting) can be
-considered viable on Cloudflare Workers as currently configured. Whether this
-also reproduces on real deployed Cloudflare (vs. just wrangler's local
-`workerd` simulator) is unconfirmed.
+**Verified:**
+- `npm run build` → clean rebuild → `_ssr/server-DwPNQnRi.mjs` /
+  `-DwPNQnRi2.mjs` gone, replaced by one `_ssr/server-entry.mjs` containing
+  both (previously circular) `__exportAll` definitions self-contained.
+- `wrangler dev` against the built output: `GET /` → `200`, real article
+  content in the body (not the error fallback). Also checked `/article/...`
+  (200, real body text), `/auth` (200), and the `resubmit-sitemap` API route
+  (`401` unauthenticated, as expected — confirms server functions execute
+  correctly too, not just page SSR). Zero rows in wrangler's error log
+  across all of the above.
+- `npm run dev` and `npx tsc --noEmit` both still pass — this only affects
+  the `command === "build"` branch.
+- Bundle size: 5.7 MB / 170 files vs. the 5.9 MB / 171 files baseline —
+  essentially unchanged (marginally smaller, from merging two files into
+  one). `no_bundle` stays at Nitro's own default (`true`); the Workers
+  multi-module format is untouched.
+
+**Not confirmed:** whether this bug (or the fix) reproduces on an actual
+*deployed* Cloudflare Worker, only on `wrangler dev`'s local `workerd`
+simulator — no live Cloudflare account/deployment was available to test
+against in this session. Worth a real deploy-and-check before fully trusting
+Phase 5 on this.
+
+## Phase 5 — Hosting move (not started)
+
+Not yet scoped or planned — this section exists to hold one open question
+until Phase 5 actually starts:
+
+- **Unconfirmed: does the `__exportAll` circular-chunk bug (see the "Fixed"
+  writeup under Phase 4) actually occur on a real, deployed Cloudflare
+  Worker, or was it only ever a `wrangler dev` local-simulator issue?** The
+  fix that was applied (forcing Nitro's split server-entry chunk back into
+  one) was verified only against `wrangler dev`'s local `workerd` simulator
+  — no live Cloudflare account/deployment was available to test against in
+  that session. Whoever picks up Phase 5 should do a real `wrangler deploy`
+  (or equivalent) and re-run the same verification (homepage, an article
+  page, `/auth`, an API route) against the actual deployed Worker before
+  trusting this is fully resolved in production.
 
 ## Summary sequence
 
@@ -369,7 +417,7 @@ also reproduces on real deployed Cloudflare (vs. just wrangler's local
 3. ✅ **Phase 2a** — AI gateway call sites rewritten to call Gemini natively, live-verified with a real `GEMINI_API_KEY` (running on `gemini-3.6-flash`, see note above).
 4. ✅ **Phase 2b** — sitemap-resubmit route rewritten to call Google directly, live-verified end-to-end with the Search Console service account.
 5. ✅ **Phase 3** — email pipeline rewritten for Resend, full queue path (`send.ts` → enqueue → pgmq → `queue/process.ts` → Resend) live-verified end to end against the real database. Only `RESEND_WEBHOOK_SECRET` remains, intentionally blocked on the hosting move.
-6. ✅ **Phase 4** — `vite.config.ts` rewritten by hand, `@lovable.dev/vite-tanstack-config` fully retired. `npm run dev` and `npm run build` both verified working. Surfaced (but deliberately not fixed) a pre-existing, unrelated Cloudflare Workers runtime bug — see "Known pre-existing issue" above — that needs resolving before Phase 5 (hosting move) is viable.
+6. ✅ **Phase 4** — `vite.config.ts` rewritten by hand, `@lovable.dev/vite-tanstack-config` fully retired. `npm run dev` and `npm run build` both verified working. Also surfaced *and fixed* a pre-existing, unrelated Cloudflare Workers runtime bug (`__exportAll is not a function`) — see "Fixed" writeup above — verified against `wrangler dev`'s local simulator; a real Cloudflare deploy still needs checking before fully trusting Phase 5 on this.
 
 `package.json` now has zero `@lovable.dev/*` packages. `grep -rniI lovable src`
 still returns the `/lovable/email/...` route path (deliberately unrenamed,
