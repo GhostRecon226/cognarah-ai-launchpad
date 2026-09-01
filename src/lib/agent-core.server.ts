@@ -680,10 +680,10 @@ const SYSTEM_PROMPT =
   "3. Body: 3-5 short paragraphs expanding the story with context, numbers, and named sources where available. This is straight reporting. Any external fact, number, quote, or claim in this section must be tied to the source (inline link or clear attribution). Keep Cognarah opinion OUT of these paragraphs.\n" +
   "4. Cognarah Angle: begin this section with the exact subheading <h2>The Cognarah Angle</h2>. This is Cognarah's own analysis, not reporting. At least one paragraph explaining what the development actually means and why it matters. Whether it carries an African angle is decided per story by the AFRICAN RELEVANCE POLICY supplied with the story; follow that policy exactly and never add an African angle it does not authorise. Do NOT cite, link, or attribute anything in this section to the source publication. If it references outside facts (a named bill, a named startup, a data point), name them plainly but do not credit the news source for that context.\n" +
   "5. Closing line: one punchy sentence that leaves the reader with a pointed question or a sharp opinion. No summaries. No 'time will tell'. No both-sides mush.\n\n" +
-  "ARTICLE LENGTH (HARD REQUIREMENT)\n" +
+  "ARTICLE LENGTH (HARD REQUIREMENT, subordinate to FACTUAL ACCURACY in SOURCING below)\n" +
   "- News articles: minimum 500 words, target 500-700.\n" +
   "- Analysis or opinion pieces: minimum 800 words, target 800-1300.\n" +
-  "- If the source is thin, expand with verifiable context, background, and a full Cognarah Angle section. Never invent facts. Never pad, but never under-deliver on length.\n\n" +
+  "- If the source is thin, expand through explanation, background, and a DEEPER Cognarah Angle: more on why this matters, how it fits the wider AI landscape, what plausibly follows next. Do NOT expand by inventing reported facts, numbers, dollar figures, technical specs, named partners, deals, or quotes. A shorter but 100% accurate article always beats one that hits the word count with a single fabricated specific.\n\n" +
   "WHAT TO COVER (prioritize stories meeting at least one):\n" +
   "- Major AI model releases or research breakthroughs.\n" +
   "- AI startup funding rounds, especially African ones.\n" +
@@ -701,7 +701,8 @@ const SYSTEM_PROMPT =
   "- Bad: 'Artificial Intelligence Is Transforming the Way We Work Forever'. Good: 'OpenAI Launches GPT-5 With Real-Time Voice and Vision Capabilities'.\n" +
   "- Bad: 'This New AI Tool Could Change Everything for African Businesses'. Good: 'Nigerian Startup Lendsqr Adds AI Credit Scoring for Underbanked Users'.\n\n" +
   "SOURCING (scope this carefully)\n" +
-  "- The Opening paragraph and Body are reported news. Cite the original source there, either inline or via the footer link. If a claim in these sections cannot be verified from the source, do not include it.\n" +
+  "- The Opening paragraph and Body are reported news. Cite the original source there, either inline or via the footer link. If a claim in these sections cannot be verified from the SOURCE content or the ADDITIONAL CORROBORATING RESEARCH notes when provided, do not include it, full stop, even if it would make the article feel more complete or help reach the word count.\n" +
+  "- FACTUAL ACCURACY (highest priority, overrides ARTICLE LENGTH): never state a specific number, dollar figure, date, statistic, technical spec, named partner, deal, or quote in the reported sections unless it appears in the SOURCE content or ADDITIONAL CORROBORATING RESEARCH. Do not draw on general or background knowledge for specifics, even if it sounds plausible or you believe it's probably true. Before finishing, re-check every specific claim in the Body against that text; if you cannot point to where it came from, cut it or rewrite the sentence without it.\n" +
   "- The Cognarah Angle and Closing line are Cognarah's own voice and analysis. Do NOT attribute them to the source publication. No 'according to TechCrunch' inside the Cognarah Angle.\n" +
   "- Attribute quotes directly. Never paraphrase a quote and present it as direct speech.\n\n" +
   "AFRICAN RELEVANCE (core editorial rule: Cognarah is African-first, not Africa-forced)\n" +
@@ -1232,7 +1233,7 @@ export async function runAgentCore(args: RunAgentArgs) {
           attempts++;
           const nudge = i === 0
             ? undefined
-            : `Your previous draft was ${lastWords} words and failed with: ${lastReason}. Rewrite to AT LEAST 500 words by deepening the analysis and adding verifiable context drawn from the source. Do not invent facts and do not add an African angle beyond what the AFRICAN RELEVANCE POLICY allows. Ensure a specific actor+action headline and a dek containing at least one concrete fact (name, number, or date).`;
+            : `Your previous draft was ${lastWords} words and failed with: ${lastReason}. Rewrite to AT LEAST 500 words by making the Cognarah Angle deeper and more substantive (more context, more analysis, more of what plausibly follows), NOT by adding new reported facts, numbers or details to the Body beyond what the SOURCE content or ADDITIONAL CORROBORATING RESEARCH actually states. Do not invent facts and do not add an African angle beyond what the AFRICAN RELEVANCE POLICY allows. Ensure a specific actor+action headline and a dek containing at least one concrete fact (name, number, or date) that is genuinely in the source.`;
           const aiRes: any = await callGemini({
             system: SYSTEM_PROMPT,
             userParts: [{ text: buildUserPrompt(nudge) }],
@@ -1260,30 +1261,44 @@ export async function runAgentCore(args: RunAgentArgs) {
         await heartbeat("claude pass complete");
 
         // Self-correction QA pass: fresh-eyes check against the source before
-        // this draft is ever inserted. Fixable issues get one targeted Claude
-        // revision and a recheck; a critical issue skips the candidate.
+        // this draft is ever inserted. A critical finding (fabricated claim,
+        // wrong source link) gets one DELETION-focused correction pass rather
+        // than an immediate skip: removing an unverifiable claim is always
+        // safe, unlike trying to reword it into something that still sounds
+        // sourced. Non-critical issues get a normal targeted fix. Either way
+        // a recheck (and, since deletion can legitimately shorten the draft,
+        // a length/structure re-validation) gates whether it proceeds.
         await heartbeat("qa critique");
         const qa = await qaCritiqueDraft(draft, cand.url, md, corroborationNotes, africa);
         if (!qa.pass) {
           logLine(`QA critique flagged: ${qa.issues.join("; ")}${qa.critical ? " (critical)" : ""}`);
-          if (qa.critical) {
-            logLine("Skipped: QA critique found a critical, unfixable issue");
-            return;
-          }
-          const corrected = await refineWithClaude(draft, cand.url, africa, qa.issues);
-          if (corrected) {
+          const fixIssues = qa.critical
+            ? qa.issues.map((i) =>
+                `This is unverifiable and MUST be deleted entirely, not reworded or softened: ${i}. ` +
+                "If removing it noticeably shortens the Body, compensate by expanding the Cognarah Angle with more legitimate analysis, never by adding a new reported fact.")
+            : qa.issues;
+          const corrected = await refineWithClaude(draft, cand.url, africa, fixIssues);
+          if (!corrected) {
+            logLine(qa.critical
+              ? "Deletion correction pass unavailable, skipping (critical issue unresolved)"
+              : "QA correction pass failed/unavailable, proceeding with flagged draft (non-critical)");
+            if (qa.critical) return;
+          } else {
             draft = corrected;
-            logLine("Applied targeted QA correction pass");
+            logLine(qa.critical ? "Applied deletion correction for critical QA issue(s)" : "Applied targeted QA correction pass");
             const recheck = await qaCritiqueDraft(draft, cand.url, md, corroborationNotes, africa);
             if (!recheck.pass && recheck.critical) {
-              logLine(`Skipped: QA correction still critical: ${recheck.issues.join("; ")}`);
+              logLine(`Skipped: still critical after correction attempt: ${recheck.issues.join("; ")}`);
+              return;
+            }
+            const lengthCheck = validateDraft(draft);
+            if (!lengthCheck.ok) {
+              logLine(`Skipped: draft fails length/structure requirements after QA correction (${lengthCheck.reason})`);
               return;
             }
             logLine(recheck.pass
               ? "QA recheck passed"
               : `QA still flags non-critical issues after correction, proceeding: ${recheck.issues.join("; ")}`);
-          } else {
-            logLine("QA correction pass failed/unavailable, proceeding with flagged draft (non-critical)");
           }
         } else {
           logLine("QA critique passed");
