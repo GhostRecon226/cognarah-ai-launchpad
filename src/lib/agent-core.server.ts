@@ -722,42 +722,118 @@ const SYSTEM_PROMPT =
   `{"title":"...","dek":"...","body_html":"<p>...</p><h2>The Cognarah Angle</h2><p>...</p><p><em>Reporting sourced from</em> <a href=\"SOURCE_URL\">Publication</a>. Analysis and Cognarah Angle are Cognarah's own.</p>","tags":["...","..."],"seo_title":"...","meta_description":"...","category_slug":"one of: ${CATEGORY_HINTS.join(", ")}"}`;
 
 // ============ NEWSWORTHINESS FILTER ============
+// Multi-criteria scoring (novelty/credibility/impact/specificity, each 0-25)
+// instead of one holistic 0-100 number: a story that's high-impact but
+// low-credibility (a hyped rumor) is visible and gated on that dimension
+// specifically, not averaged away by an otherwise-strong score. Source tier
+// is handed to the model as scoring context, not a hard filter — an unknown
+// source isn't rejected, it's held to a higher evidentiary bar for the
+// CREDIBILITY dimension.
 
 const NEWSWORTHINESS_MIN = 45;
+const CREDIBILITY_FLOOR = 5; // out of 25 — an unreliable/unverified claim is rejected regardless of total score.
+
+// Known, reputable outlets. A signal for the CREDIBILITY dimension, not a
+// hard allowlist — unlisted sources can still score well on their own merit.
+const TIER1_HOSTS = new Set([
+  "techcrunch.com", "www.techcrunch.com", "wired.com", "www.wired.com",
+  "theverge.com", "www.theverge.com", "reuters.com", "www.reuters.com",
+  "bloomberg.com", "www.bloomberg.com", "ft.com", "www.ft.com",
+  "wsj.com", "www.wsj.com", "axios.com", "www.axios.com",
+  "semafor.com", "www.semafor.com", "restofworld.org", "www.restofworld.org",
+  "venturebeat.com", "www.venturebeat.com", "cnbc.com", "www.cnbc.com",
+  "bbc.com", "www.bbc.com", "bbc.co.uk", "www.bbc.co.uk",
+  "arstechnica.com", "www.arstechnica.com", "theinformation.com", "www.theinformation.com",
+]);
+
+// Primary-source company/lab blogs: reliable for their own announcements,
+// but carry an obvious promotional interest worth flagging to the model.
+const TIER1_PRIMARY_HOSTS = new Set([
+  "openai.com", "www.openai.com", "anthropic.com", "www.anthropic.com",
+  "deepmind.google", "blog.google", "ai.meta.com", "aws.amazon.com",
+  "azure.microsoft.com", "blogs.microsoft.com", "huggingface.co",
+  "nvidia.com", "blogs.nvidia.com",
+]);
+
+type SourceTier = "tier1" | "primary" | "unknown";
+
+function sourceTier(url: string): SourceTier {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (TIER1_HOSTS.has(host)) return "tier1";
+    if (TIER1_PRIMARY_HOSTS.has(host)) return "primary";
+    return "unknown";
+  } catch {
+    return "unknown";
+  }
+}
 
 const NEWSWORTHINESS_SYSTEM =
-  "You are Cognarah's news desk editor. Score how newsworthy a story is for an African-first AI publication, from 0 to 100.\n\n" +
-  "Score high (70-100): a genuine development that changes something. New model or product launch, funding round, acquisition, regulation, policy decision, research breakthrough, major partnership, outage or incident, verifiable adoption data, an African AI company or government doing something concrete.\n" +
-  "Score medium (45-69): real but incremental. Feature updates, minor releases, executive commentary with substance, credible market reports.\n" +
-  "Score low (0-44): opinion columns with no new facts, listicles, how-to and tutorial content, sponsored or promotional posts, product reviews, recycled coverage of an old event, vague trend pieces, event announcements with no substance, press release rewrites with no verifiable detail.\n\n" +
-  "Penalise stories with no named actor, no date, no numbers, or no verifiable claim.\n" +
+  "You are Cognarah's news desk editor. Score a candidate story for an African-first AI publication across four dimensions, each 0-25:\n\n" +
+  "NOVELTY (0-25): how new is this. 25 = breaking, not yet widely reported. 15 = recent but already covered elsewhere. 0 = old news, recycled coverage.\n" +
+  "CREDIBILITY (0-25): how reliable is THIS claim. Weigh the given source tier AND content signals: named actors, on-record quotes, official statements, verifiable data. 25 = official announcement or on-record reporting with named sources. 10 = plausible but relies on unnamed sources or a single outlet's claim. 0 = rumor, speculation, or no verifiable basis.\n" +
+  "IMPACT (0-25): how much this actually changes for readers. 25 = a genuine development that changes something (new model/product, funding round, acquisition, regulation, research breakthrough, major partnership, incident, verifiable adoption data). 10 = incremental (feature update, minor release, executive commentary with substance). 0 = no real-world consequence (opinion column, listicle, how-to, sponsored or promotional post, product review).\n" +
+  "SPECIFICITY (0-25): concrete facts vs vague. 25 = named actor, numbers, dates, verifiable claims. 0 = no named actor, no date, no numbers, no verifiable claim.\n\n" +
   "Return ONLY strict JSON, no markdown:\n" +
-  '{"score":0,"reason":"one sentence","story_key":"short canonical description of the underlying event, max 12 words"}';
+  '{"novelty":0,"credibility":0,"impact":0,"specificity":0,"reason":"one sentence naming the weakest dimension and why","story_key":"short canonical description of the underlying event, max 12 words"}';
 
-interface Newsworthiness { score: number; reason: string; story_key: string }
+interface Newsworthiness {
+  score: number;
+  novelty: number;
+  credibility: number;
+  impact: number;
+  specificity: number;
+  reason: string;
+  story_key: string;
+  source_tier: SourceTier;
+}
 
-/** Score a scraped story 0-100. On failure returns a neutral score so the run continues. */
+/** Score a scraped story 0-100 (sum of 4 sub-scores). On failure returns a
+ *  neutral score so the run continues. */
 export async function assessNewsworthiness(
   title: string,
   sourceUrl: string,
   markdown: string,
 ): Promise<Newsworthiness> {
+  const tier = sourceTier(sourceUrl);
+  const tierNote = tier === "tier1"
+    ? "This source is a known, reputable outlet."
+    : tier === "primary"
+      ? "This source is the company/lab publishing about its own work: highly reliable for its own announcements, but has an obvious promotional interest."
+      : "This source is not on the known-reputable list. Hold CREDIBILITY to a higher bar: require named actors or verifiable, corroborating detail in the text itself, not just the outlet's say-so.";
   try {
     const res: any = await callGemini({
       system: NEWSWORTHINESS_SYSTEM,
-      userParts: [{ text: `Source URL: ${sourceUrl}\nTitle: ${title}\n\nSource content:\n${markdown.slice(0, 8000)}` }],
+      userParts: [{
+        text: `Source URL: ${sourceUrl}\nSource tier: ${tier}. ${tierNote}\nTitle: ${title}\n\nSource content:\n${markdown.slice(0, 8000)}`,
+      }],
       json: true,
     });
     const raw = geminiText(res).trim().replace(/^```(?:json)?\s*/i, "").replace(/```\s*$/i, "").trim();
-    const parsed = JSON.parse(raw) as { score?: unknown; reason?: unknown; story_key?: unknown };
-    const score = Math.max(0, Math.min(100, Math.round(Number(parsed.score) || 0)));
+    const parsed = JSON.parse(raw) as {
+      novelty?: unknown; credibility?: unknown; impact?: unknown; specificity?: unknown;
+      reason?: unknown; story_key?: unknown;
+    };
+    const clamp25 = (v: unknown) => Math.max(0, Math.min(25, Math.round(Number(v) || 0)));
+    const novelty = clamp25(parsed.novelty);
+    const credibility = clamp25(parsed.credibility);
+    const impact = clamp25(parsed.impact);
+    const specificity = clamp25(parsed.specificity);
     return {
-      score,
+      score: novelty + credibility + impact + specificity,
+      novelty, credibility, impact, specificity,
       reason: typeof parsed.reason === "string" ? parsed.reason.slice(0, 400) : "",
       story_key: typeof parsed.story_key === "string" ? parsed.story_key.slice(0, 160) : title.slice(0, 160),
+      source_tier: tier,
     };
   } catch {
-    return { score: 60, reason: "newsworthiness assessment unavailable", story_key: title.slice(0, 160) };
+    // Neutral, passing sub-scores so an assessment-call failure doesn't
+    // block the run — but this only happens when the check itself errored,
+    // not as a way to skip real scoring.
+    return {
+      score: 60, novelty: 15, credibility: 15, impact: 15, specificity: 15,
+      reason: "newsworthiness assessment unavailable", story_key: title.slice(0, 160), source_tier: tier,
+    };
   }
 }
 
@@ -1079,7 +1155,18 @@ export async function runAgentCore(args: RunAgentArgs) {
         // Newsworthiness filter: drop opinion pieces, listicles and promo posts early.
         await heartbeat("scoring newsworthiness");
         const news = await assessNewsworthiness(cand.title ?? meta.title ?? "", cand.url, md);
-        logLine(`Newsworthiness: ${news.score}/100${news.reason ? ` (${news.reason})` : ""}`);
+        logLine(
+          `Newsworthiness: ${news.score}/100 (novelty ${news.novelty}, credibility ${news.credibility}, ` +
+          `impact ${news.impact}, specificity ${news.specificity}, source_tier=${news.source_tier})` +
+          `${news.reason ? ` — ${news.reason}` : ""}`,
+        );
+        // Credibility floor: a hyped-but-unreliable claim is rejected on that
+        // dimension specifically, even if novelty/impact/specificity are high
+        // enough to carry the total score past the threshold below.
+        if (news.credibility < CREDIBILITY_FLOOR) {
+          logLine(`Skipped: credibility below floor (${news.credibility} < ${CREDIBILITY_FLOOR}), unreliable/unverified claim`);
+          return;
+        }
         if (news.score < NEWSWORTHINESS_MIN) {
           logLine(`Skipped: below newsworthiness threshold (${news.score} < ${NEWSWORTHINESS_MIN})`);
           return;
