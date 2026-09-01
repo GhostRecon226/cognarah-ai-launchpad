@@ -394,21 +394,72 @@ simulator — no live Cloudflare account/deployment was available to test
 against in this session. Worth a real deploy-and-check before fully trusting
 Phase 5 on this.
 
-## Phase 5 — Hosting move (not started)
+## Phase 5 — Hosting move 🟡 In progress (2026-09-01) — deployed to workers.dev, custom domain not yet connected
 
-Not yet scoped or planned — this section exists to hold one open question
-until Phase 5 actually starts:
+The domain was disconnected from Lovable and down, so this moved with real
+urgency rather than waiting for a full Phase 5 plan.
 
-- **Unconfirmed: does the `__exportAll` circular-chunk bug (see the "Fixed"
-  writeup under Phase 4) actually occur on a real, deployed Cloudflare
-  Worker, or was it only ever a `wrangler dev` local-simulator issue?** The
-  fix that was applied (forcing Nitro's split server-entry chunk back into
-  one) was verified only against `wrangler dev`'s local `workerd` simulator
-  — no live Cloudflare account/deployment was available to test against in
-  that session. Whoever picks up Phase 5 should do a real `wrangler deploy`
-  (or equivalent) and re-run the same verification (homepage, an article
-  page, `/auth`, an API route) against the actual deployed Worker before
-  trusting this is fully resolved in production.
+**Live now**: `https://cognarah.cognarah.workers.dev` (Worker name
+`cognarah`, real name persisted in `vite.config.ts`'s `nitro()` call via
+`cloudflare.wrangler.name` — not a one-off CLI flag, so it survives every
+future build).
+
+Previously-open question — **now resolved**: does the `__exportAll`
+circular-chunk bug (see the "Fixed" writeup under Phase 4) actually occur on
+a real, deployed Cloudflare Worker, or was it only ever a `wrangler dev`
+local-simulator issue? The fix holds on the real deployed Worker — homepage,
+an article page, `/auth`, and an API route (`resubmit-sitemap`, correctly
+`401` unauthenticated) all verified `200`/correct status directly against
+`https://cognarah.cognarah.workers.dev`, not just `wrangler dev`.
+
+**What was done:**
+1. Enumerated every env var the app reads at runtime (`grep -r process.env
+   src/`) and every `VITE_`-prefixed one separately, since those two need
+   fundamentally different handling: `VITE_*` gets statically baked into the
+   client bundle at `npm run build` time (must be in `.env` before building,
+   never a Workers secret), everything else is read at request time via
+   `process.env` (must be a real Workers secret, `.env` alone does nothing
+   once deployed). Turned up `SUPABASE_PROJECT_ID` in `.env` but never
+   actually read by app code anywhere — skipped, not needed as a secret.
+   `ANTHROPIC_API_KEY`, `FIRECRAWL_API_KEY`, `GITHUB_TOKEN` were missing from
+   local `.env` entirely; user supplied values, added to `.env` for local-dev
+   consistency too.
+2. Registered a real `workers.dev` subdomain for this Cloudflare account —
+   it had never had one before (first-ever Workers deploy here), which
+   blocked the first deploy attempt outright. Registered non-interactively
+   via a direct API call (`PUT /accounts/{id}/workers/subdomain
+   {"subdomain":"cognarah"}`) rather than the interactive dashboard flow
+   `wrangler` wanted to fall back to. That's the source of the
+   `cognarah.cognarah.workers.dev` naming — Worker name and account
+   subdomain both happen to be "cognarah".
+3. Set 13 server-only secrets via `wrangler secret put` (confirmed with
+   `wrangler secret list` after): `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`,
+   `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`,
+   `GOOGLE_SEARCH_CONSOLE_CLIENT_EMAIL`, `GOOGLE_SEARCH_CONSOLE_PRIVATE_KEY`,
+   `RESEND_API_KEY`, `RESEND_WEBHOOK_SECRET` (still the placeholder value —
+   real one needs a live public URL to register with Resend first),
+   `AGENT_CRON_SECRET`, `EMAIL_PREVIEW_API_KEY`, `ANTHROPIC_API_KEY`,
+   `FIRECRAWL_API_KEY`, `GITHUB_TOKEN`. Skipped `GEMINI_TEXT_MODEL` /
+   `GEMINI_IMAGE_MODEL` (defaults are fine) and `SITE_URL` / `PUBLIC_SITE_URL`
+   (hardcoded `https://cognarah.com` fallback is fine for now).
+4. Built with the `VITE_*` vars present (pointing at the `bgybhqjnzjpzzqinkfkm`
+   Supabase project, same as local `.env`) and deployed with `npx wrangler
+   deploy` from `.output/server` (needs `--config .output/server/wrangler.json`
+   run from the project root, same `wrangler.json`-vs-`.wrangler/deploy/
+   config.json` conflict as every other `wrangler` invocation in this repo —
+   see Phase 4's repro notes).
+
+**Still open / deliberately not touched this pass:**
+- **DNS / custom domain** — explicitly deferred; the app is only reachable
+  at the `*.workers.dev` URL right now, not `cognarah.com`.
+- **`RESEND_WEBHOOK_SECRET`** — still the placeholder value. Needs a real
+  Resend webhook endpoint registered against a public URL (the `workers.dev`
+  URL now qualifies, once DNS/domain questions are settled) before this can
+  be replaced with the real signing secret from Resend's dashboard.
+- **`ANTHROPIC_API_KEY`/`FIRECRAWL_API_KEY`/`GITHUB_TOKEN`** were supplied
+  fresh by the user in this session — not verified live-working the way the
+  Phase 2/3 credentials were (no explicit test of the Claude refinement
+  pass, skill-scraping, or skill-publishing paths against production yet).
 
 ## Summary sequence
 
@@ -417,7 +468,8 @@ until Phase 5 actually starts:
 3. ✅ **Phase 2a** — AI gateway call sites rewritten to call Gemini natively, live-verified with a real `GEMINI_API_KEY` (running on `gemini-3.6-flash`, see note above).
 4. ✅ **Phase 2b** — sitemap-resubmit route rewritten to call Google directly, live-verified end-to-end with the Search Console service account.
 5. ✅ **Phase 3** — email pipeline rewritten for Resend, full queue path (`send.ts` → enqueue → pgmq → `queue/process.ts` → Resend) live-verified end to end against the real database. Only `RESEND_WEBHOOK_SECRET` remains, intentionally blocked on the hosting move.
-6. ✅ **Phase 4** — `vite.config.ts` rewritten by hand, `@lovable.dev/vite-tanstack-config` fully retired. `npm run dev` and `npm run build` both verified working. Also surfaced *and fixed* a pre-existing, unrelated Cloudflare Workers runtime bug (`__exportAll is not a function`) — see "Fixed" writeup above — verified against `wrangler dev`'s local simulator; a real Cloudflare deploy still needs checking before fully trusting Phase 5 on this.
+6. ✅ **Phase 4** — `vite.config.ts` rewritten by hand, `@lovable.dev/vite-tanstack-config` fully retired. `npm run dev` and `npm run build` both verified working. Also surfaced *and fixed* a pre-existing, unrelated Cloudflare Workers runtime bug (`__exportAll is not a function`) — see "Fixed" writeup above.
+7. 🟡 **Phase 5** — deployed for real to `https://cognarah.cognarah.workers.dev`, all 13 server-only secrets set, `__exportAll` fix confirmed holding on the actual deployed Worker (not just `wrangler dev`). DNS/custom domain and the real `RESEND_WEBHOOK_SECRET` are still open — see Phase 5 above.
 
 `package.json` now has zero `@lovable.dev/*` packages. `grep -rniI lovable src`
 still returns the `/lovable/email/...` route path (deliberately unrenamed,

@@ -104,6 +104,11 @@ export default defineConfig(({ command, mode }): UserConfig => {
         ? [
             nitro({
               defaultPreset: "cloudflare-module",
+              // Real Worker name (not the auto-generated ghostrecon226-cognarah-ai-launchpad
+              // fallback) — persists across builds since it's baked in here, not passed
+              // ad hoc on the CLI. nitro.options.cloudflare.wrangler is merged into the
+              // generated wrangler.json with higher precedence than nitro's own defaults.
+              cloudflare: { wrangler: { name: "cognarah" } },
               rolldownConfig: {
                 output: {
                   codeSplitting: {
