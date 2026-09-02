@@ -2,8 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { withEdgeCache } from "@/lib/edge-cache.server";
-
-const BASE_URL = "https://cognarah.com";
+import { SITE_URL as BASE_URL } from "@/lib/types";
 
 export const Route = createFileRoute("/llms-full.txt")({
   server: {

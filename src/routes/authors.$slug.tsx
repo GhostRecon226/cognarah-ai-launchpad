@@ -10,6 +10,7 @@ import { Pagination } from "@/components/site/pagination";
 import { PAGE_SIZE_LIST, getRange, totalPages as calcTotalPages } from "@/lib/pagination";
 import type { Article, Author } from "@/lib/types";
 import { SITE_URL } from "@/lib/types";
+import logoMarkUrl from "@/assets/cognarah-logo-mark.png";
 
 const searchSchema = z.object({
   page: fallback(z.number().int(), 1).default(1),
@@ -71,6 +72,9 @@ export const Route = createFileRoute("/authors/$slug")({
     if (page < total) {
       links.push({ rel: "next", href: `${baseUrl}?page=${page + 1}` });
     }
+    // Falls back to the site logo when the author has no photo, same as
+    // category pages, rather than shares showing no image at all.
+    const ogImage = au?.photo_url || `${SITE_URL}${logoMarkUrl}`;
     return {
       meta: [
         { title },
@@ -79,11 +83,9 @@ export const Route = createFileRoute("/authors/$slug")({
         { property: "og:description", content: desc },
         { property: "og:type", content: "profile" },
         { property: "og:url", content: url },
-        ...(au?.photo_url ? [
-          { property: "og:image", content: au.photo_url },
-          { name: "twitter:image", content: au.photo_url },
-          { name: "twitter:card", content: "summary" },
-        ] : []),
+        { property: "og:image", content: ogImage },
+        { name: "twitter:image", content: ogImage },
+        { name: "twitter:card", content: "summary" },
       ],
       links,
       scripts: au && page === 1 ? [
@@ -98,6 +100,17 @@ export const Route = createFileRoute("/authors/$slug")({
             url: baseUrl,
             sameAs: sameAs.length ? sameAs : undefined,
             worksFor: { "@type": "Organization", name: "Cognarah", url: SITE_URL },
+          }),
+        },
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+              { "@type": "ListItem", position: 2, name: au.name, item: baseUrl },
+            ],
           }),
         },
       ] : undefined,

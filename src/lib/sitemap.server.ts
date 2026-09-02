@@ -3,9 +3,13 @@
 // and the admin-triggered call fired from the article publish/update flow
 // (src/lib/seo.functions.ts).
 import { getGoogleAccessToken } from "./google-service-account.server";
+import { SITE_URL } from "./types";
 
-const SITE_URL = "https://cognarah.com/";
-const SITEMAP_URL = "https://cognarah.com/sitemap.xml";
+// Search Console properties are registered with a trailing slash for
+// domain-prefixed http(s) properties — kept local to this file's API call,
+// not part of the shared SITE_URL constant (which has no trailing slash).
+const GSC_SITE_URL = `${SITE_URL}/`;
+const SITEMAP_URL = `${SITE_URL}/sitemap.xml`;
 // Search Console's Sitemaps resource only exists on the legacy Webmasters API v3 host —
 // it was never ported to the newer searchconsole.googleapis.com host.
 const SEARCH_CONSOLE_API = "https://www.googleapis.com/webmasters/v3";
@@ -21,7 +25,7 @@ export async function pingGoogleSitemap(): Promise<
     return { ok: false, error: `Search Console connector not configured: ${e?.message || e}` };
   }
 
-  const siteEnc = encodeURIComponent(SITE_URL);
+  const siteEnc = encodeURIComponent(GSC_SITE_URL);
   const sitemapEnc = encodeURIComponent(SITEMAP_URL);
   const url = `${SEARCH_CONSOLE_API}/sites/${siteEnc}/sitemaps/${sitemapEnc}`;
 

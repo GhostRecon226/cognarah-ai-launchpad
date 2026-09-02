@@ -10,6 +10,7 @@ import { Pagination } from "@/components/site/pagination";
 import { PAGE_SIZE_LIST, getRange, totalPages as calcTotalPages } from "@/lib/pagination";
 import type { Article, Category } from "@/lib/types";
 import { SITE_URL } from "@/lib/types";
+import logoMarkUrl from "@/assets/cognarah-logo-mark.png";
 import { SponsoredBanner } from "@/components/site/sponsored-banner";
 import { fetchLiveAd, STARTUP_SECTION_SLUGS, type SponsoredAd } from "@/lib/sponsored-ads";
 
@@ -83,6 +84,9 @@ export const Route = createFileRoute("/category/$slug")({
     if (page < total) {
       links.push({ rel: "next", href: `${baseUrl}?page=${page + 1}` });
     }
+    // Categories have no dedicated image (only a color), so shares always
+    // fall back to the site logo rather than showing no image at all.
+    const ogImage = `${SITE_URL}${logoMarkUrl}`;
     return {
       meta: [
         { title },
@@ -91,8 +95,24 @@ export const Route = createFileRoute("/category/$slug")({
         { property: "og:description", content: desc },
         { property: "og:type", content: "website" },
         { property: "og:url", content: url },
+        { property: "og:image", content: ogImage },
+        { name: "twitter:image", content: ogImage },
+        { name: "twitter:card", content: "summary" },
       ],
       links,
+      scripts: c ? [
+        {
+          type: "application/ld+json",
+          children: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "BreadcrumbList",
+            itemListElement: [
+              { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+              { "@type": "ListItem", position: 2, name: c.name, item: baseUrl },
+            ],
+          }),
+        },
+      ] : undefined,
     };
   },
   component: CategoryPage,

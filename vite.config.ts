@@ -26,6 +26,29 @@ import viteReact from "@vitejs/plugin-react";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+// Explicit cache-control for plain SSR/document routes (previously unset,
+// falling back to browser/CDN heuristics). "must-revalidate" rather than a
+// real max-age since content changes on publish, not on a fixed schedule;
+// still lets conditional requests (304) avoid a full re-fetch.
+//
+// Listed as explicit, non-overlapping path patterns rather than a single
+// "/**" catch-all: Cloudflare's Worker Static Assets _headers mechanism
+// (which is what nitro's routeRules compiles to) does NOT apply "most
+// specific path wins" the way Cloudflare Pages' _headers does — verified
+// empirically that a "/**" rule instead gets literally concatenated onto
+// whatever a more specific matching rule already set, corrupting it (e.g.
+// "public, max-age=31536000, immutable, TEST-CATCHALL-DELETE-ME" on the
+// hashed /assets/* files, which already have their own correct immutable
+// rule). Each pattern below is structurally disjoint from /assets/** and
+// from the routes that set their own Cache-Control in-handler (sitemap.xml,
+// llms-full.txt, the media redirect), so there's nothing for it to collide
+// with regardless of Cloudflare's exact merge semantics.
+const SSR_PAGE_CACHE_CONTROL = "public, max-age=0, must-revalidate";
+const SSR_PAGE_PATTERNS = [
+  "/", "/about", "/search", "/state-of-african-ai",
+  "/article/**", "/category/**", "/authors/**", "/resources/**", "/startups/**",
+];
+
 // Load ALL env vars (no prefix) into process.env for server-side code (email routes need SUPABASE_SERVICE_ROLE_KEY).
 // Do NOT expose these to the client bundle.
 const serverEnv = loadEnv(process.env.NODE_ENV ?? "development", process.cwd(), "");
@@ -112,6 +135,14 @@ export default defineConfig(({ command, mode }): UserConfig => {
         ? [
             nitro({
               defaultPreset: "cloudflare-module",
+              // Nitro's own default is "latest", which resolves to the current date at
+              // EVERY build — meaning each deploy could silently pick up unreviewed
+              // Workers runtime behavior changes with no corresponding code change to
+              // review. Pinned to a specific date instead; bump deliberately.
+              compatibilityDate: "2026-09-02",
+              routeRules: Object.fromEntries(
+                SSR_PAGE_PATTERNS.map((p) => [p, { headers: { "cache-control": SSR_PAGE_CACHE_CONTROL } } as any]),
+              ),
               // Real Worker name (not the auto-generated ghostrecon226-cognarah-ai-launchpad
               // fallback) — persists across builds since it's baked in here, not passed
               // ad hoc on the CLI. nitro.options.cloudflare.wrangler is merged into the
@@ -126,7 +157,14 @@ export default defineConfig(({ command, mode }): UserConfig => {
               // Paid, which strongly suggested the account was still being metered at
               // the Free tier's 50-subrequest default rather than Paid's 10,000. Setting
               // this explicitly removes that ambiguity regardless of account/plan state.
-              cloudflare: { wrangler: { name: "cognarah", limits: { subrequests: 10000 } } },
+              //
+              // limits.cpu_ms: same reasoning, set explicitly rather than trusting the
+              // account plan's implicit default (Paid defaults to 30s, same class of
+              // ambiguity that bit the subrequests limit above). Set to Paid's 5-minute
+              // max since the agent webhook is the one route that could plausibly need
+              // it, even though its wall-clock runtime is mostly spent awaiting external
+              // API calls rather than active CPU time.
+              cloudflare: { wrangler: { name: "cognarah", limits: { subrequests: 10000, cpu_ms: 300000 } } },
               rolldownConfig: {
                 output: {
                   codeSplitting: {

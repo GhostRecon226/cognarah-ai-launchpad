@@ -2,14 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
 import { withEdgeCache } from "@/lib/edge-cache.server";
-
-const BASE_URL = "https://cognarah.com";
+import { SITE_URL as BASE_URL } from "@/lib/types";
 
 const STATIC_PATHS = ["/", "/about", "/search", "/startups/submit", "/resources/skills", "/state-of-african-ai"];
-const CATEGORIES = [
-  "news", "startups", "funding", "tools", "trends", "opinions",
-  "analysis", "interviews", "africa-ai", "policy-ethics", "events",
-];
 
 export const Route = createFileRoute("/sitemap.xml")({
   server: {
@@ -20,15 +15,21 @@ export const Route = createFileRoute("/sitemap.xml")({
           process.env.SUPABASE_PUBLISHABLE_KEY!,
           { auth: { storage: undefined, persistSession: false, autoRefreshToken: false } },
         );
-        const [{ data: articles }, { data: authors }, { data: skills }] = await Promise.all([
+        const [{ data: articles }, { data: authors }, { data: skills }, { data: categories }] = await Promise.all([
           supabase.from("articles").select("slug, updated_at").eq("status", "published"),
           supabase.from("authors").select("slug, updated_at"),
           supabase.from("skills").select("slug, updated_at").eq("published", true),
+          supabase.from("categories").select("slug, updated_at"),
         ]);
 
         const entries = [
           ...STATIC_PATHS.map((p) => ({ loc: `${BASE_URL}${p}`, changefreq: "weekly", priority: p === "/" ? "1.0" : "0.7" })),
-          ...CATEGORIES.map((s) => ({ loc: `${BASE_URL}/category/${s}`, changefreq: "daily", priority: "0.8" })),
+          ...((categories ?? []) as { slug: string; updated_at: string }[]).map((c) => ({
+            loc: `${BASE_URL}/category/${c.slug}`,
+            lastmod: c.updated_at,
+            changefreq: "daily",
+            priority: "0.8",
+          })),
           ...((articles ?? []) as { slug: string; updated_at: string }[]).map((a) => ({
             loc: `${BASE_URL}/article/${a.slug}`,
             lastmod: a.updated_at,
