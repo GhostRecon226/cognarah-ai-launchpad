@@ -73,23 +73,43 @@ longer used anywhere in this repo as of Phase 3 completion.
   banner has been removed from AGENTS.md along with the file itself since it
   had no other content).
 
-## Post-migration goals (stated by Peter, 2026-08-30)
+## Post-migration goals (stated by Peter, 2026-08-30) — both done as of 2026-09-02
 
-Once fully off Lovable (LOVABLE-MIGRATION.md phases complete), the priority isn't
-parity, it's making Cognarah meaningfully better than the Lovable-built version in
-two specific areas he named:
+Once fully off Lovable (LOVABLE-MIGRATION.md phases complete), the priority wasn't
+parity, it was making Cognarah meaningfully better than the Lovable-built version in
+two specific areas he named. Both are now substantially complete:
 
-1. AI agent capability — go beyond "same agent, new host." Look for real upgrades
-   to agent-core.server.ts / agent-skills.server.ts: research/scoring quality,
-   more autonomous or multi-step pipeline behavior, better use of Firecrawl and
-   Gemini, smarter startup-submission scoring.
-2. Performance & SEO — Core Web Vitals, load speed, technical SEO, actual search
-   ranking impact, not just visual polish.
+1. **AI agent capability** — go beyond "same agent, new host." Shipped to
+   agent-core.server.ts: multi-step pipeline autonomy (QA self-correction pass with
+   deletion-focused correction on fabricated claims, generalized corroboration
+   research), multi-criteria newsworthiness scoring (novelty/credibility/impact/
+   specificity sub-scores + source-tier signal, replacing one holistic number),
+   Gemini temperature tuning per call type, broader publish-date detection. Also
+   added automated legitimacy + AI-relevance scoring for startup submissions
+   (previously fully manual triage) — see src/lib/startup-submissions.functions.ts
+   and the AI Score column on /admin/startups.
+2. **Performance & SEO** — audited Core Web Vitals, technical SEO, and Cloudflare-
+   specific hosting concerns, then fixed every critical/high and medium finding:
+   a dead Organization-schema logo reference (was 404 on every page, plus visibly
+   broken on 4 more pages including the whole admin panel), several hydration-
+   mismatch bugs (same class as a prior AdSense ad-unit bug), missing image
+   dimensions, sitemap resubmission wired to the real publish flow (was dead code),
+   a genuinely broken service worker (sw.js was a live 404 despite a clean build —
+   root cause was nitro's build orchestration discarding dist/client before
+   vite-plugin-pwa ever scanned it; fixed with an explicit post-build script,
+   scripts/generate-sw.mjs), Cloudflare edge caching on cacheable routes, sanitize-
+   html moved from render-time to write-time (removed ~164KB from the article page's
+   client bundle), a hardcoded-domain-string / hardcoded-sitemap-categories cleanup,
+   BreadcrumbList schema and OG-image fallbacks on category/author pages, and a
+   pinned compatibility_date + explicit cpu_ms limit. Critical-CSS inlining was
+   deliberately skipped (see git history on vite.config.ts for why). Full detail
+   in commit history: "Performance & SEO: fix all 7 critical/high findings from the
+   audit" and "Performance & SEO: medium-priority audit items".
 
-Explicitly NOT prioritized right now: visual design/branding and new
-content/feature surface area. Don't go there unless asked.
+Remaining, low-priority/non-blocking: Cloudflare's default robots.txt blocks AI
+crawlers (GPTBot, ClaudeBot, etc.) — confirm with Peter whether that's a deliberate
+content-licensing stance before touching it. No Bing IndexNow integration (no
+organic-search impact either way).
 
-Recommended sequencing: finish LOVABLE-MIGRATION.md phases 2-4 to a stable,
-fully-decoupled state first, before layering these improvements on. Mixing new
-capability work into an in-progress infra migration makes both harder to debug
-if something breaks.
+Explicitly NOT prioritized: visual design/branding and new content/feature surface
+area. Don't go there unless asked.
