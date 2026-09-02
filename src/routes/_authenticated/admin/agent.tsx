@@ -426,7 +426,7 @@ function RunStatusPanel({ run, onRefresh, onReset, resetting }: { run: Run; onRe
             <h2 className="text-lg font-semibold">
               {isRunning ? "Run in progress" : isSuccess ? "Last run succeeded" : isError ? "Last run failed" : "Last run"}
             </h2>
-            <p className="mt-0.5 text-xs text-muted-foreground">
+            <p className="mt-0.5 text-xs text-muted-foreground" suppressHydrationWarning>
               {isSkills ? "Skills" : "News"} · started {format(started, "MMM d, HH:mm:ss")} · {isRunning ? `${elapsed} elapsed` : `took ${Math.max(1, Math.round(elapsedMs / 1000))}s`}
               {run.focus ? ` · focus: ${run.focus}` : ""}
             </p>

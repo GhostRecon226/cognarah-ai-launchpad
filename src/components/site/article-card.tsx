@@ -14,6 +14,7 @@ export function ArticleCard({
 }) {
   const date = article.published_at ?? article.created_at;
   const aspect = size === "sm" ? "aspect-[16/9]" : "aspect-[16/10]";
+  const imgHeight = size === "sm" ? 900 : 1000;
   const headingClass =
     size === "lg"
       ? "text-2xl sm:text-3xl"
@@ -35,6 +36,8 @@ export function ArticleCard({
           fallbackClassName={`${aspect} w-full`}
           loading="lazy"
           showIcon={false}
+          width={1600}
+          height={imgHeight}
         />
       </Link>
       <div className={size === "sm" ? "mt-3 flex flex-col" : "mt-4 flex flex-col"}>

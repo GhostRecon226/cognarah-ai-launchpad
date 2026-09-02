@@ -17,7 +17,6 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig, loadEnv, type UserConfig } from "vite";
-import { VitePWA } from "vite-plugin-pwa";
 import { devtools } from "@tanstack/devtools-vite";
 import tailwindcss from "@tailwindcss/vite";
 import tsConfigPaths from "vite-tsconfig-paths";
@@ -99,6 +98,15 @@ export default defineConfig(({ command, mode }): UserConfig => {
         // nitro/vite builds from this
         server: { entry: "server" },
       }),
+      viteReact(),
+      // The service worker is generated as an explicit post-build step against
+      // .output/public (scripts/generate-sw.mjs, run from package.json's "build"
+      // script), not via a vite-plugin-pwa build hook here. dist/client is not the
+      // real deployed client output in this pipeline — nitro's buildApp hook builds
+      // the client environment separately and copies the result straight into
+      // .output/public, so a same-phase closeBundle-based plugin (which is how
+      // vite-plugin-pwa's generateSW works) has nothing to scan. See
+      // scripts/generate-sw.mjs for the full explanation and history.
       // nitro is build-only — the original wrapper never added it during `vite dev` either.
       ...(command === "build"
         ? [
@@ -140,61 +148,6 @@ export default defineConfig(({ command, mode }): UserConfig => {
             }),
           ]
         : []),
-      viteReact(),
-      VitePWA({
-        strategies: "generateSW",
-        registerType: "autoUpdate",
-        injectRegister: null,
-        filename: "sw.js",
-        outDir: "dist/client",
-        manifest: false,
-
-        devOptions: { enabled: false },
-        includeAssets: ["offline.html", "favicon.png", "icon-192.png", "icon-512.png"],
-        workbox: {
-          globPatterns: ["**/*.{js,css,woff,woff2,png,svg,ico,html}"],
-          navigateFallback: null,
-          cleanupOutdatedCaches: true,
-          clientsClaim: true,
-          skipWaiting: true,
-          runtimeCaching: [
-            {
-              urlPattern: ({ request, url }: { request: Request; url: URL }) =>
-                request.mode === "navigate" &&
-                !url.pathname.startsWith("/~oauth") &&
-                !url.pathname.startsWith("/api/") &&
-                !url.pathname.startsWith("/admin") &&
-                !url.pathname.startsWith("/auth"),
-              handler: "NetworkFirst",
-              options: {
-                cacheName: "cognarah-pages",
-                networkTimeoutSeconds: 8,
-                expiration: { maxEntries: 60, maxAgeSeconds: 60 * 60 * 24 * 14 },
-                cacheableResponse: { statuses: [200] },
-                precacheFallback: { fallbackURL: "/offline.html" },
-              },
-            },
-            {
-              urlPattern: ({ request, sameOrigin }: { request: Request; sameOrigin: boolean }) =>
-                sameOrigin && ["style", "script", "font"].includes(request.destination),
-              handler: "StaleWhileRevalidate",
-              options: {
-                cacheName: "cognarah-assets",
-                expiration: { maxEntries: 100, maxAgeSeconds: 60 * 60 * 24 * 30 },
-              },
-            },
-            {
-              urlPattern: ({ request }: { request: Request }) => request.destination === "image",
-              handler: "CacheFirst",
-              options: {
-                cacheName: "cognarah-images",
-                expiration: { maxEntries: 120, maxAgeSeconds: 60 * 60 * 24 * 30 },
-                cacheableResponse: { statuses: [0, 200] },
-              },
-            },
-          ],
-        },
-      }),
     ],
   };
 });

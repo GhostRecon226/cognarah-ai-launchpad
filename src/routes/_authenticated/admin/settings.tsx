@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { toast } from "sonner";
+import { backfillSanitization } from "@/lib/maintenance.functions";
 
 interface Settings {
   id: number; site_name: string; tagline: string; logo_url: string | null;
@@ -17,6 +19,23 @@ export const Route = createFileRoute("/_authenticated/admin/settings")({
 
 function SettingsPage() {
   const [s, setS] = useState<Settings | null>(null);
+  const [sanitizing, setSanitizing] = useState(false);
+  const runBackfillSanitization = useServerFn(backfillSanitization);
+
+  async function runSanitizationBackfill() {
+    setSanitizing(true);
+    try {
+      const res = await runBackfillSanitization();
+      toast.success(
+        `Sanitized ${res.articles_changed}/${res.articles_scanned} articles, ` +
+        `${res.translations_changed}/${res.translations_scanned} translations`,
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Backfill failed");
+    } finally {
+      setSanitizing(false);
+    }
+  }
 
   useEffect(() => {
     (async () => {
@@ -53,6 +72,21 @@ function SettingsPage() {
         </div>
         <Field label="Newsletter provider (e.g. Mailchimp, Resend)" value={s.newsletter_provider ?? ""} onChange={(v) => upd("newsletter_provider", v)} />
         <button onClick={save} className="rounded-md bg-brand px-5 py-2 font-semibold text-white">Save settings</button>
+      </div>
+
+      <div className="mt-6 max-w-2xl space-y-2 rounded-lg border border-border bg-background p-6">
+        <h2 className="text-sm font-semibold">Content sanitization backfill</h2>
+        <p className="text-sm text-muted-foreground">
+          Sanitizes existing article and translation bodies written before sanitization moved to write
+          time. Safe to re-run; only changed rows get written.
+        </p>
+        <button
+          onClick={runSanitizationBackfill}
+          disabled={sanitizing}
+          className="rounded-md border border-border bg-background px-5 py-2 font-semibold hover:bg-secondary disabled:opacity-60"
+        >
+          {sanitizing ? "Sanitizing…" : "Run sanitization backfill"}
+        </button>
       </div>
     </AdminShell>
   );

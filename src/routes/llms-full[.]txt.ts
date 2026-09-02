@@ -1,13 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import type {} from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
+import { withEdgeCache } from "@/lib/edge-cache.server";
 
 const BASE_URL = "https://cognarah.com";
 
 export const Route = createFileRoute("/llms-full.txt")({
   server: {
     handlers: {
-      GET: async () => {
+      GET: async ({ request }) => withEdgeCache(request, async () => {
         const supabase = createClient(
           process.env.SUPABASE_URL!,
           process.env.SUPABASE_PUBLISHABLE_KEY!,
@@ -55,7 +56,7 @@ export const Route = createFileRoute("/llms-full.txt")({
             "Cache-Control": "public, max-age=3600",
           },
         });
-      },
+      }),
     },
   },
 });

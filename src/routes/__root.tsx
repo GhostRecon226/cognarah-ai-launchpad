@@ -11,8 +11,10 @@ import { useEffect, type ReactNode } from "react";
 import { Toaster } from "sonner";
 
 import appCss from "../styles.css?url";
+import logoMarkUrl from "@/assets/cognarah-logo-mark.png";
 import { registerServiceWorker } from "../lib/register-sw";
 import { InstallPrompt } from "@/components/site/install-prompt";
+import { SITE_URL } from "@/lib/types";
 
 
 function NotFoundComponent() {
@@ -126,9 +128,9 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
           url: "https://cognarah.com",
           logo: {
             "@type": "ImageObject",
-            url: "https://cognarah.com/__l5e/assets-v1/1ba8d09a-14df-43f5-b409-61947d7ccfba/cognarah-logo.png",
-            width: 512,
-            height: 512,
+            url: `${SITE_URL}${logoMarkUrl}`,
+            width: 1301,
+            height: 441,
           },
           description:
             "The definitive media platform for everything AI. News, startups, funding, tools, policy, and the global builders shaping AI.",

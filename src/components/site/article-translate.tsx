@@ -25,10 +25,21 @@ export function ArticleTranslate({ slug, publishedAt, active, onTranslated }: Pr
   const [suggested, setSuggested] = useState<string | null>(null);
   const requestId = useRef(0);
 
-  const tooOld = publishedAt
-    ? Date.now() - new Date(publishedAt).getTime() >
-      TRANSLATION_MAX_AGE_DAYS * 24 * 60 * 60 * 1000
-    : false;
+  // Defaults to false (matching SSR) and is corrected client-side in an
+  // effect rather than computed directly in render: Date.now() evaluated at
+  // server-render time vs. client-hydration time can disagree right at the
+  // day boundary, which would otherwise cause a hydration mismatch (the same
+  // bug class as the AdSense ad-unit issue) since this branches to a
+  // structurally different subtree.
+  const [tooOld, setTooOld] = useState(false);
+
+  useEffect(() => {
+    if (!publishedAt) return;
+    setTooOld(
+      Date.now() - new Date(publishedAt).getTime() >
+        TRANSLATION_MAX_AGE_DAYS * 24 * 60 * 60 * 1000,
+    );
+  }, [publishedAt]);
 
   useEffect(() => {
     if (typeof window === "undefined" || tooOld) return;

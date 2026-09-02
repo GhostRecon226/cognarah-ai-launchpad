@@ -3,12 +3,13 @@ import { SiteNav } from "@/components/site/nav";
 import { SiteFooter } from "@/components/site/footer";
 import { NewsletterSignup } from "@/components/site/newsletter";
 import { SITE_URL } from "@/lib/types";
+import logoMarkUrl from "@/assets/cognarah-logo-mark.png";
 
 const TITLE = "The State of African AI: 2026 Guide to Startups, Funding & Policy";
 const DESC =
   "Cognarah's flagship reference on African AI: the startups shipping, the funding rounds closing, the research hubs producing talent, and the policy shaping how the continent builds AI.";
 const URL = `${SITE_URL}/state-of-african-ai`;
-const HERO_IMAGE = `${SITE_URL}/__l5e/assets-v1/1ba8d09a-14df-43f5-b409-61947d7ccfba/cognarah-logo.png`;
+const HERO_IMAGE = `${SITE_URL}${logoMarkUrl}`;
 
 const FAQS: { q: string; a: string }[] = [
   {

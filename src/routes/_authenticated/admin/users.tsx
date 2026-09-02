@@ -83,11 +83,11 @@ function UsersPage() {
                 <tr key={u.id} className="align-top">
                   <td className="px-4 py-3">
                     <div className="font-medium">{u.email || "None"}</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-xs text-muted-foreground" suppressHydrationWarning>
                       Joined {formatDistanceToNow(new Date(u.created_at), { addSuffix: true })}
                     </div>
                   </td>
-                  <td className="px-4 py-3 text-muted-foreground">
+                  <td className="px-4 py-3 text-muted-foreground" suppressHydrationWarning>
                     {u.last_sign_in_at ? formatDistanceToNow(new Date(u.last_sign_in_at), { addSuffix: true }) : "Never"}
                   </td>
                   <td className="px-4 py-3">

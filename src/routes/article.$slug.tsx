@@ -9,7 +9,6 @@ import { SiteNav } from "@/components/site/nav";
 import { SiteFooter } from "@/components/site/footer";
 import { NewsletterSignup } from "@/components/site/newsletter";
 import { ArticleCard } from "@/components/site/article-card";
-import { sanitizeHtml } from "@/lib/sanitize";
 import { mediaUrl } from "@/lib/media-url";
 import { MediaImage } from "@/components/site/media-image";
 import type { Article } from "@/lib/types";
@@ -198,6 +197,10 @@ function ArticlePage() {
               alt={article.title}
               className="mt-8 aspect-[16/9] w-full rounded-xl object-cover"
               fallbackClassName="mt-8 aspect-[16/9] w-full rounded-xl"
+              width={1600}
+              height={900}
+              loading="eager"
+              fetchPriority="high"
             />
           )}
           {article.key_takeaways && article.key_takeaways.length > 0 && (
@@ -219,7 +222,12 @@ function ArticlePage() {
             </aside>
           )}
           {(() => {
-            const [firstPart, restPart] = splitBodyAfterSecondParagraph(sanitizeHtml(displayBody));
+            // Not sanitized here: body/translation.body are now sanitized at
+            // write time (agent-core.server.ts, admin article editor,
+            // startup-submissions.functions.ts, translate.server.ts) rather
+            // than on every render, removing sanitize-html (~164KB) from
+            // this page's client bundle.
+            const [firstPart, restPart] = splitBodyAfterSecondParagraph(displayBody);
             return (
               <>
                 <div

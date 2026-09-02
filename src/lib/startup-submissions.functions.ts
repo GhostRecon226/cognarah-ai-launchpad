@@ -706,6 +706,13 @@ export const generateStartupDraft = createServerFn({ method: "POST" })
     const draft = sanitizeDraft(working);
     draft.body_html = ensureScreenshots(draft.body_html, String(sub.company_name), shots);
 
+    // HTML/XSS sanitization at write time (distinct from sanitizeDraft above,
+    // which only strips em dashes): this is the only place body_html gets
+    // persisted for this pipeline, and article.$slug.tsx no longer sanitizes
+    // on render.
+    const { sanitizeHtml } = await import("./sanitize");
+    draft.body_html = sanitizeHtml(draft.body_html);
+
 
     // Resolve category and AI author
     const [{ data: cats }, { data: authorRow }] = await Promise.all([

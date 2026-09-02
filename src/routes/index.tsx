@@ -83,6 +83,10 @@ function HomePage() {
                       alt={lead.title}
                       className="aspect-[16/10] w-full object-cover"
                       fallbackClassName="aspect-[16/10] w-full"
+                      width={1600}
+                      height={1000}
+                      loading="eager"
+                      fetchPriority="high"
                     />
                   )}
                 </Link>
@@ -232,6 +236,9 @@ function HomePage() {
                       alt={africa.title}
                       className="aspect-[16/9] w-full object-cover"
                       fallbackClassName="aspect-[16/9] w-full"
+                      width={1600}
+                      height={900}
+                      loading="lazy"
                     />
                   )}
                 </Link>

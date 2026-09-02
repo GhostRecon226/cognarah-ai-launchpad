@@ -1,7 +1,7 @@
 import { Link, useRouter, useLocation } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import logoAsset from "@/assets/cognarah-logo.png.asset.json";
+import logoMark from "@/assets/cognarah-logo-mark.png";
 import { LayoutDashboard, FileText, Tags, Users, Image, Settings, LogOut, ExternalLink, Menu, X, Shield, RefreshCw, Sparkles, Rocket, Mail, GraduationCap, Megaphone, BadgeDollarSign } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { RolesContext, type AppRole, ROLE_LABELS } from "@/lib/admin-roles";
@@ -120,7 +120,7 @@ export function AdminShell({ children, title, requiredRoles = ["admin", "editor"
     const hasAnyRole = roles.length > 0;
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-navy p-8 text-white">
-        <img src={logoAsset.url} alt="Cognarah" className="h-10" />
+        <img src={logoMark} alt="Cognarah" className="h-10" />
         <h1 className="text-2xl font-bold">Access restricted</h1>
         <p className="max-w-md text-center text-white/70">
           {hasAnyRole
@@ -196,7 +196,7 @@ export function AdminShell({ children, title, requiredRoles = ["admin", "editor"
       <div className="flex min-h-screen bg-secondary">
         <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-navy text-navy-foreground md:flex">
           <div className="flex items-center gap-2 border-b border-white/10 px-5 py-4">
-            <img src={logoAsset.url} alt="Cognarah" className="h-7" />
+            <img src={logoMark} alt="Cognarah" className="h-7" />
             <span className="text-xs font-semibold uppercase tracking-widest text-white/60">CMS</span>
           </div>
           <NavList />
@@ -208,7 +208,7 @@ export function AdminShell({ children, title, requiredRoles = ["admin", "editor"
             <aside className="absolute inset-y-0 left-0 flex w-72 max-w-[80%] flex-col bg-navy text-navy-foreground shadow-2xl">
               <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
                 <div className="flex items-center gap-2">
-                  <img src={logoAsset.url} alt="Cognarah" className="h-7" />
+                  <img src={logoMark} alt="Cognarah" className="h-7" />
                   <span className="text-xs font-semibold uppercase tracking-widest text-white/60">CMS</span>
                 </div>
                 <button onClick={() => setMobileOpen(false)} className="rounded-md p-1.5 text-white/70 hover:bg-white/10 hover:text-white" aria-label="Close menu">

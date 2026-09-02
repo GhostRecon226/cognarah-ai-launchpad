@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { hasAnyAdmin } from "@/lib/setup.functions";
 import { toast } from "sonner";
-import logoAsset from "@/assets/cognarah-logo.png.asset.json";
+import logoMark from "@/assets/cognarah-logo-mark.png";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -63,7 +63,7 @@ function AuthPage() {
     <div className="flex min-h-screen items-center justify-center bg-navy p-4">
       <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-2xl">
         <div className="mb-6 flex items-center gap-3">
-          <img src={logoAsset.url} alt="Cognarah" className="h-8" />
+          <img src={logoMark} alt="Cognarah" className="h-8" />
         </div>
 
         {needsSetup && (

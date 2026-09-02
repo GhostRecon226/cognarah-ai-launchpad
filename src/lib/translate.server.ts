@@ -2,6 +2,7 @@ import { createHash } from "crypto";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import { languageName } from "./languages";
 import { stripEmDashes } from "./strip-em-dashes";
+import { sanitizeHtml } from "./sanitize";
 
 export interface TranslationResultImpl {
   languageCode: string;
@@ -141,7 +142,11 @@ export async function translateArticleImpl(
   }
 
   const title = stripEmDashes(parsed.title ?? "").trim();
-  const body = stripEmDashes(parsed.body ?? "").trim();
+  // HTML/XSS sanitization at write time: Claude is instructed to preserve
+  // HTML tags verbatim while translating only visible text, but that's a
+  // prompt instruction, not a guarantee, and article.$slug.tsx no longer
+  // sanitizes translated bodies on render.
+  const body = sanitizeHtml(stripEmDashes(parsed.body ?? "").trim());
   if (!title || !body) throw new Error("Translation failed. Please try again.");
 
   const { error: insertError } = await supabaseAdmin

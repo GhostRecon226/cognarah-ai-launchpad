@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { hasAnyAdmin, claimInitialAdmin } from "@/lib/setup.functions";
 import { toast } from "sonner";
-import logoAsset from "@/assets/cognarah-logo.png.asset.json";
+import logoMark from "@/assets/cognarah-logo-mark.png";
 
 export const Route = createFileRoute("/setup")({
   ssr: false,
@@ -54,7 +54,7 @@ function SetupPage() {
     <div className="flex min-h-screen items-center justify-center bg-navy p-4">
       <div className="w-full max-w-md rounded-xl bg-white p-8 shadow-2xl">
         <div className="mb-6 flex items-center gap-3">
-          <img src={logoAsset.url} alt="Cognarah" className="h-8" />
+          <img src={logoMark} alt="Cognarah" className="h-8" />
         </div>
         <h1 className="text-2xl font-bold">First-time setup</h1>
         <p className="mt-1 text-sm text-muted-foreground">

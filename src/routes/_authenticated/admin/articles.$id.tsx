@@ -10,8 +10,10 @@ import slugify from "slugify";
 import type { Article, Category, Author } from "@/lib/types";
 import { MediaImage } from "@/components/site/media-image";
 import { regenerateArticleHero, validateArticleHero } from "@/lib/agent.functions";
+import { resubmitSitemap } from "@/lib/seo.functions";
 import { Sparkles, ShieldCheck, RefreshCw } from "lucide-react";
 import { stripEmDashes } from "@/lib/strip-em-dashes";
+import { sanitizeHtml } from "@/lib/sanitize";
 
 
 export const Route = createFileRoute("/_authenticated/admin/articles/$id")({
@@ -48,6 +50,7 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
   const initialHero = useRef<string | null>(null);
   const _regen = useServerFn(regenerateArticleHero);
   const _validate = useServerFn(validateArticleHero);
+  const _resubmitSitemap = useServerFn(resubmitSitemap);
 
 
   useEffect(() => {
@@ -145,7 +148,11 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
       title: stripEmDashes(a.title ?? ""),
       slug,
       excerpt: a.excerpt ? stripEmDashes(a.excerpt) : a.excerpt,
-      body: a.body ? stripEmDashes(a.body) : a.body,
+      // Sanitized at write time, same as the agent's draft-creation path
+      // (agent-core.server.ts) and the startup-draft pipeline: this is the
+      // only remaining place body gets persisted from the admin editor, and
+      // article.$slug.tsx no longer sanitizes on render.
+      body: a.body ? sanitizeHtml(stripEmDashes(a.body)) : a.body,
       hero_image: a.hero_image || null,
       author_id: a.author_id || null, category_id: a.category_id || null,
       tags: tagsInput.split(",").map((t) => stripEmDashes(t.trim())).filter(Boolean),
@@ -166,6 +173,12 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
     setLoading(false);
     if (res.error) { toast.error(res.error.message); return; }
     toast.success(publish ? "Published" : "Saved");
+    // Notify Google of the sitemap change immediately on publish or on any
+    // edit to an already-published article (lastmod changes either way),
+    // rather than waiting on a schedule. Never blocks the save/navigate flow.
+    if (payload.status === "published") {
+      _resubmitSitemap().catch((e) => console.error("Sitemap resubmit failed", e));
+    }
     if (publish && canPublish && payload.status === "published") {
       navigate({ to: "/admin/articles" });
       return;

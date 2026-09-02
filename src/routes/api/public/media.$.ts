@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { withEdgeCache } from "@/lib/edge-cache.server";
 
 export const Route = createFileRoute("/api/public/media/$")({
   server: {
     handlers: {
-      GET: async ({ params }) => {
+      GET: async ({ request, params }) => withEdgeCache(request, async () => {
         const path = (params as { _splat?: string })._splat ?? "";
         if (!path || path.includes("..")) {
           return new Response("Not found", { status: 404 });
@@ -22,7 +23,7 @@ export const Route = createFileRoute("/api/public/media/$")({
             "Cache-Control": "public, max-age=1800",
           },
         });
-      },
+      }),
     },
   },
 });

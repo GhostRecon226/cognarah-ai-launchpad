@@ -3,6 +3,7 @@ import Firecrawl from "@mendable/firecrawl-js";
 import slugify from "slugify";
 import { createHash } from "crypto";
 import { stripEmDashes } from "./strip-em-dashes";
+import { sanitizeHtml } from "./sanitize";
 
 type Sb = any;
 
@@ -1358,6 +1359,11 @@ export async function runAgentCore(args: RunAgentArgs) {
           };
           logLine(`Stripped ${beforeDashCount} em/en dash(es) from draft`);
         }
+
+        // Sanitize once, here, at write time: this is the only place
+        // body_html gets persisted for this pipeline, and article.$slug.tsx
+        // no longer sanitizes on render (moved off the client bundle).
+        draft = { ...draft, body_html: sanitizeHtml(draft.body_html) };
 
         const slug = slugify(draft.title, { lower: true, strict: true }).slice(0, 110) + "-" + Date.now().toString(36);
 
