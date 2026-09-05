@@ -107,6 +107,7 @@ export type Database = {
       agent_settings: {
         Row: {
           auto_publish_paused: boolean
+          auto_publish_threshold: number | null
           created_at: string
           cron_expression: string
           default_count: number
@@ -121,6 +122,7 @@ export type Database = {
         }
         Insert: {
           auto_publish_paused?: boolean
+          auto_publish_threshold?: number | null
           created_at?: string
           cron_expression?: string
           default_count?: number
@@ -135,6 +137,7 @@ export type Database = {
         }
         Update: {
           auto_publish_paused?: boolean
+          auto_publish_threshold?: number | null
           created_at?: string
           cron_expression?: string
           default_count?: number

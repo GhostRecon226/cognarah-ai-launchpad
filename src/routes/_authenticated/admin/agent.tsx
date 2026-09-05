@@ -40,6 +40,8 @@ interface Settings {
   system_prompt: string | null;
   search_time_window: "qdr:h" | "qdr:d" | "qdr:w" | "qdr:m" | "qdr:y";
   query_presets: string[];
+  /** Minimum newsworthiness score (0-100) to auto-publish instead of landing as a draft. null = disabled. */
+  auto_publish_threshold: number | null;
 }
 
 interface Source { id: string; label: string; kind: string; value: string; enabled: boolean }
@@ -86,6 +88,7 @@ function AgentInner() {
         system_prompt: raw.system_prompt ?? null,
         search_time_window: (raw.search_time_window as Settings["search_time_window"]) ?? "qdr:w",
         query_presets: Array.isArray(raw.query_presets) ? raw.query_presets : [],
+        auto_publish_threshold: raw.auto_publish_threshold ?? null,
       };
       setSettings(normalized);
       setPresetsText(normalized.query_presets.join("\n"));
@@ -276,6 +279,21 @@ function AgentInner() {
                 <option value="qdr:y">Past year</option>
               </select>
               <span className="text-xs text-muted-foreground">How fresh search results must be.</span>
+            </label>
+            <label className="block">Auto-publish threshold
+              <input
+                type="number"
+                min={0}
+                max={100}
+                value={settings.auto_publish_threshold ?? ""}
+                onChange={(e) => setSettings({ ...settings, auto_publish_threshold: e.target.value === "" ? null : Number(e.target.value) })}
+                className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5 text-sm"
+                placeholder="Disabled (every draft stays a draft)"
+              />
+              <span className="text-xs text-muted-foreground">
+                Drafts scoring at or above this newsworthiness score (0-100) publish immediately instead of
+                waiting for review. Leave empty to disable auto-publish entirely.
+              </span>
             </label>
             <label className="block">Query presets
               <textarea rows={5} value={presetsText} onChange={(e) => setPresetsText(e.target.value)} className="mt-1 w-full rounded border border-border bg-background px-2 py-1.5 font-mono text-xs" placeholder={"One query per line.\nUse {focus} to inject the topic focus.\nExample:\n{focus} enterprise deployment\nAfrican AI startup raise"} />

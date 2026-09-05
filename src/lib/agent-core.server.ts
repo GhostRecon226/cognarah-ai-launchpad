@@ -302,6 +302,7 @@ async function refineWithClaude(
       "Do NOT move source citations or attribution into the Cognarah Angle or the closing line, those sections are Cognarah's own voice. " +
       "Keep the same JSON schema. " +
       "Improve writing only, sharpen headline/dek within their word limits, tighten prose, fix awkward phrasing, ensure required sections exist, and keep the editorial edge (a clear stance and one pointed question or contrarian observation in the Cognarah Angle or closing line). " +
+      "While you're in there: cut any stock AI transition phrases you find (moreover, furthermore, additionally, in conclusion, in summary, overall, it is worth noting, it's worth noting, it is important to note, in today's world, plays a crucial role, a testament to, this underscores, this highlights) by deleting the transition and stating the point directly. Flatten reflexive hedging on facts the source states plainly ('appears to have', 'could potentially indicate' when the source just says it happened). If you see a run of three or more similarly-short sentences in a row, vary the rhythm, don't just shorten everything uniformly. " +
       (africa ? africaEditorConstraint(africa) : "") +
       "Return ONLY strict JSON matching the original shape, no markdown, no code fences, no commentary.\n\n" +
       `Source URL (must be preserved in the footer link): ${sourceUrl}\n\n` +
@@ -694,10 +695,15 @@ const SYSTEM_PROMPT =
   "- Confident but not arrogant. Clear but not simplistic.\n" +
   "- Avoid hype, superlatives, and buzzword stacking.\n" +
   "- Never say 'groundbreaking', 'revolutionary', 'game-changing', or 'the future is here'.\n" +
-  "- Use active voice. Short sentences. One idea per paragraph.\n" +
+  "- Use active voice. One idea per paragraph.\n" +
   "- Write for someone intelligent but not necessarily deeply technical.\n" +
   "- Never use em dashes (em dash) anywhere in articles. Use commas, periods, or semicolons instead.\n" +
   "- AGENT RULE: If an em dash appears in any draft, replace it before saving. It is not permitted in any Cognarah content.\n\n" +
+  "AVOID STOCK AI PATTERNS (this is what separates Cognarah from an obviously AI-written blog)\n" +
+  "- Banned transition words and phrases, anywhere in the piece: 'moreover', 'furthermore', 'additionally', 'in conclusion', 'in summary', 'overall', 'it is worth noting', \"it's worth noting\", 'it is important to note', 'in today's world', 'in an ever-evolving landscape', 'as we navigate', 'this underscores', 'this highlights', 'plays a crucial role', 'a testament to', 'at the end of the day'. If a draft is heading toward one of these, delete the transition and just state the next fact or idea directly.\n" +
+  "- Do not hedge a fact the source states plainly. If the source says X happened, write that X happened, not that it 'appears to have happened' or 'could potentially indicate'. Save 'may', 'might', 'could' for claims that are genuinely uncertain in the source itself, not as a reflexive softener.\n" +
+  "- Vary sentence length and rhythm on purpose. Do not write a run of three or four short sentences in a row; that produces the same flat, choppy cadence as the phrases above, just without the tell-tale words. Follow a short, direct sentence with a longer one that adds a specific detail, a consequence, or a comparison, then back to short. Read it back and if every sentence is roughly the same length, rewrite half of them.\n" +
+  "- Prefer a specific number, name, or comparison over a vague intensifier. Reach for 'significant', 'substantial', 'numerous', 'various' only when the source itself gives you nothing more specific to work with.\n\n" +
   "ARTICLE STRUCTURE (every draft must follow this):\n" +
   "1. Headline: clear, specific, direct. No clickbait, no controversy in the headline itself. Tells the reader exactly what happened. Max 12 words.\n" +
   "2. Opening paragraph: the most important facts in 2-3 sentences. Answer who, what, and why it matters. No throat-clearing. Straight reporting, tied to the source.\n" +
@@ -1047,7 +1053,7 @@ export async function runAgentCore(args: RunAgentArgs) {
     // 2. Load sources + settings (time window + query presets)
     const [{ data: sources }, { data: settingsRow }] = await Promise.all([
       supabase.from("agent_sources").select("kind,value").eq("enabled", true),
-      supabase.from("agent_settings").select("search_time_window,query_presets").eq("singleton", true).maybeSingle(),
+      supabase.from("agent_settings").select("search_time_window,query_presets,auto_publish_threshold,auto_publish_paused").eq("singleton", true).maybeSingle(),
     ]);
     const domains: string[] = (sources ?? [])
       .filter((s: any) => s.kind === "domain")
@@ -1057,7 +1063,16 @@ export async function runAgentCore(args: RunAgentArgs) {
     const presets: string[] = Array.isArray(settingsRow?.query_presets)
       ? settingsRow.query_presets.filter((q: unknown): q is string => typeof q === "string" && q.trim().length > 0)
       : [];
-    logLine(`Using time window ${tbs}; ${presets.length} custom query preset(s)`);
+    // Score-gated auto-publish, mirroring the skills agent's existing
+    // auto_publish_paused kill switch. null threshold = disabled (every
+    // draft stays a draft, the original behavior).
+    const autoPublishThreshold: number | null =
+      typeof settingsRow?.auto_publish_threshold === "number" ? settingsRow.auto_publish_threshold : null;
+    const autoPublishPaused = !!settingsRow?.auto_publish_paused;
+    logLine(
+      `Using time window ${tbs}; ${presets.length} custom query preset(s); ` +
+      `auto-publish ${autoPublishThreshold === null ? "disabled" : autoPublishPaused ? `threshold ${autoPublishThreshold} but PAUSED` : `threshold ${autoPublishThreshold}`}`,
+    );
     await heartbeat("settings loaded");
 
     // 3. Build search queries
@@ -1145,6 +1160,9 @@ export async function runAgentCore(args: RunAgentArgs) {
     const CONCURRENCY = 3;
     const SCRAPE_INTERVAL_MS = 1500;
     let created = 0;
+    let autoPublished = 0;
+    let manualReview = 0;
+    const autoPublishedItems: Array<{ title: string; score: number; articleId: string }> = [];
     let nextIdx = 0;
     let scrapeChain: Promise<unknown> = Promise.resolve();
     const acquireScrapeSlot = async () => {
@@ -1413,12 +1431,19 @@ export async function runAgentCore(args: RunAgentArgs) {
           || catBySlug.get("latest")
           || (cats ?? [])[0];
 
+        // Score-gated auto-publish: a candidate that cleared every upstream
+        // gate (newsworthiness floor, credibility floor, duplicate check, QA
+        // self-correction) and scores at or above the configured threshold
+        // publishes immediately instead of waiting for manual review.
+        const shouldAutoPublish = autoPublishThreshold !== null && !autoPublishPaused && news.score >= autoPublishThreshold;
+        const publishedAt = shouldAutoPublish ? new Date().toISOString() : null;
+
         // Promotion score for the distribution queue, computed at draft time.
         const { computePromotionScore } = await import("./editorial.server");
         const promotion = computePromotionScore({
           title: draft.title,
-          published_at: null,
-          status: "draft",
+          published_at: publishedAt,
+          status: shouldAutoPublish ? "published" : "draft",
           view_count: 0,
           tracked_views_7d: 0,
           newsworthiness_score: news.score,
@@ -1449,7 +1474,8 @@ export async function runAgentCore(args: RunAgentArgs) {
             seo_title: draft.seo_title?.slice(0, 200) ?? null,
             meta_description: draft.meta_description?.slice(0, 300) ?? null,
             read_time: Math.max(2, Math.round((draft.body_html.length / 1000) * 0.7)),
-            status: "draft",
+            status: shouldAutoPublish ? "published" : "draft",
+            published_at: publishedAt,
             is_featured: false,
             agent_run_id: runId,
             source_urls: [cand.url],
@@ -1478,7 +1504,14 @@ export async function runAgentCore(args: RunAgentArgs) {
           run_id: runId,
         });
         created++;
-        logLine(`Created draft (attempts=${attempts}): ${draft.title}`);
+        if (shouldAutoPublish) {
+          autoPublished++;
+          autoPublishedItems.push({ title: draft.title, score: news.score, articleId: insertedArticle.id });
+          logLine(`AUTO-PUBLISHED (attempts=${attempts}, score=${news.score}/100 >= threshold ${autoPublishThreshold}): ${draft.title}`);
+        } else {
+          manualReview++;
+          logLine(`Created draft (attempts=${attempts}): ${draft.title}`);
+        }
         await heartbeat(`draft created (${created}/${target})`);
       } catch (e: any) {
         const msg = String(e?.message || e);
@@ -1504,6 +1537,26 @@ export async function runAgentCore(args: RunAgentArgs) {
     }
     await Promise.all(Array.from({ length: Math.min(CONCURRENCY, fresh.length) }, () => worker()));
 
+    logLine(`Run summary: ${autoPublished} auto-published, ${manualReview} sent to manual review`);
+
+    // Same batched-notification pattern as the skills agent
+    // (agent-skills.server.ts): one email per run covering everything that
+    // auto-published, not one per article.
+    if (autoPublished > 0) {
+      try {
+        const { enqueueTransactionalEmail } = await import("./email/enqueue-internal.server");
+        const notif = await enqueueTransactionalEmail({
+          templateName: "article-auto-published",
+          templateData: { articles: autoPublishedItems, runId },
+          idempotencyKey: `article-auto-published:${runId}`,
+        });
+        if ("ok" in notif && notif.ok) logLine("Notification queued for auto-published articles");
+        else logLine(`Notification skipped: ${(notif as any).reason ?? "unknown"}`);
+      } catch (e: any) {
+        logLine(`Notification error: ${e?.message || e}`);
+      }
+    }
+
     const finalError = modelUnavailable
       ? `Gemini model unavailable: ${modelUnavailableMsg}`
       : created === 0
@@ -1514,13 +1567,15 @@ export async function runAgentCore(args: RunAgentArgs) {
       .update({
         status: created > 0 ? "success" : "error",
         drafts_created: created,
+        auto_published_count: autoPublished,
+        manual_review_count: manualReview,
         log: log.join("\n"),
         finished_at: new Date().toISOString(),
         error: finalError,
       })
       .eq("id", runId);
 
-    return { run_id: runId, drafts_created: created, log };
+    return { run_id: runId, drafts_created: created, auto_published: autoPublished, manual_review: manualReview, log };
   } catch (e: any) {
     await supabase
       .from("agent_runs")

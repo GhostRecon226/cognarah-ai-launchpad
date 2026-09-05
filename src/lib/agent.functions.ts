@@ -37,6 +37,7 @@ export const updateAgentSettings = createServerFn({ method: "POST" })
       system_prompt: z.string().max(4000).nullable().optional(),
       search_time_window: z.enum(["qdr:h", "qdr:d", "qdr:w", "qdr:m", "qdr:y"]).optional(),
       query_presets: z.array(z.string().min(1).max(200)).max(20).optional(),
+      auto_publish_threshold: z.number().int().min(0).max(100).nullable().optional(),
     }).parse(d),
   )
   .handler(async ({ context, data }) => {
@@ -50,6 +51,7 @@ export const updateAgentSettings = createServerFn({ method: "POST" })
     };
     if (data.search_time_window) update.search_time_window = data.search_time_window;
     if (data.query_presets) update.query_presets = data.query_presets;
+    if (data.auto_publish_threshold !== undefined) update.auto_publish_threshold = data.auto_publish_threshold;
     const { error } = await context.supabase
       .from("agent_settings")
       .update(update as any)

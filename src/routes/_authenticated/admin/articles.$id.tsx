@@ -186,6 +186,20 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
     if (isNew && res.data) navigate({ to: "/admin/articles/$id", params: { id: (res.data as any).id } });
   }
 
+  // Separate from save(): save()'s "Save draft" path deliberately never
+  // downgrades an already-published article's status, so this is currently
+  // the only way to take a live (including auto-published) article down.
+  const [unpublishing, setUnpublishing] = useState(false);
+  async function unpublish() {
+    if (isNew || !window.confirm("Unpublish this article? It will no longer be visible on the live site.")) return;
+    setUnpublishing(true);
+    const { error } = await supabase.from("articles").update({ status: "draft", published_at: null }).eq("id", id);
+    setUnpublishing(false);
+    if (error) { toast.error(error.message); return; }
+    setA((s) => ({ ...s, status: "draft", published_at: null }));
+    toast.success("Unpublished");
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-4 lg:col-span-2">
@@ -201,6 +215,11 @@ function EditArticleInner({ id, isNew }: { id: string; isNew: boolean }) {
               <button disabled={loading} onClick={() => save(false)} className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-secondary">Save draft</button>
               {canPublish && (
                 <button disabled={loading} onClick={() => save(true)} className="w-full rounded-md bg-brand px-3 py-2 text-sm font-semibold text-white hover:bg-brand/90">Publish</button>
+              )}
+              {canPublish && a.status === "published" && (
+                <button disabled={unpublishing} onClick={unpublish} className="w-full rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100">
+                  {unpublishing ? "Unpublishing…" : "Unpublish"}
+                </button>
               )}
             </div>
             <p className="mt-2 text-xs text-muted-foreground">Status: {a.status}{!canPublish && " · You can save drafts; an editor will publish."}</p>
