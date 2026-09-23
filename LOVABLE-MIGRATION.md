@@ -639,6 +639,48 @@ records, the one other subdomain CNAME is explicit).
 `curl -sI https://www.cognarah.com/startups/submit` return `HTTP/2 200` and
 `server: cloudflare`, same check used to confirm the apex fix originally.
 
+### ✅ Fixed (2026-09-23) — `notify.cognarah.com` unverified in Resend + `process-email-queue` cron job never re-created
+
+**Found while investigating the `www` DNS issue above**, unrelated to it.
+Two separate, compounding problems, both dating back to the original
+Supabase self-migration:
+
+**1. `notify.cognarah.com` was unverified in Resend.** All three DNS
+records Resend requires (DKIM TXT, SPF MX, SPF TXT) were completely absent
+from the Cloudflare zone — Resend's own API showed `status: "failed"` on
+the domain despite `LOVABLE-MIGRATION.md`'s Phase 3 claiming this was
+"done, live-verified" back on 2026-08-30. Added all three records
+(`resend._domainkey.notify`, `send.notify` MX → `feedback-smtp.eu-west-1.amazonses.com`,
+`send.notify` TXT SPF), triggered Resend's verify endpoint, confirmed
+`status: "verified"` within about a minute of DNS propagation.
+
+**2. The `process-email-queue` pg_cron job was never re-created**, same
+class of gap as `cognarah-agent-daily`: the original setup (see the
+POST-MIGRATION STEPS comment at the bottom of `20260706182926_email_infra.sql`)
+was applied by a Lovable-specific tool directly against the *old* Supabase
+project, never as tracked SQL, so it silently never carried over to the new
+project during the self-migration. Nothing was ever calling
+`/lovable/email/queue/process`. Recreated via
+`20260923120000_recreate_process_email_queue_cron_job.sql`, same shape and
+5-second interval as the original design, vault secret
+`email_queue_service_role_key` re-created to match (this route authenticates
+with the Supabase service role key as the Bearer token, not a custom
+secret like `AGENT_CRON_SECRET`).
+
+**Combined effect**: every transactional email enqueued since inception —
+startup submission notifications, `skills-auto-published`,
+`article-auto-published` — had been sitting in `email_send_log` as
+`pending` indefinitely. Recreating the cron job alone surfaced this
+immediately: the backlog (up to several weeks old) was correctly
+dead-lettered as stale rather than delivered (the route enforces a
+60-minute TTL on transactional emails, by design, so it refused to send
+wildly-late "an article was auto-published" notifications). Those old log
+rows are now permanently orphaned (no live queue message left to reprocess)
+but harmless — a historical record, not an ongoing issue.
+
+**Verified live, end to end**: with both fixes in place, a fresh test email
+went from `pending` to `sent` in under a second.
+
 ## Summary sequence
 
 1. ✅ **Resolve the build baseline blocker** (vite.config.ts entities alias) — fixed via `package.json` overrides, see Baseline status above.
