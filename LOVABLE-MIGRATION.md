@@ -596,6 +596,49 @@ AS AUTHENTICATED -- articles select -> OK, rows: 3
 Both of Peter's exact reported failures reproduced as fixed on the real
 `authenticated` path, not just inferred from a `service_role` check.
 
+### ✅ Fixed (2026-09-23) — `www.cognarah.com` Cloudflare Error 1000
+
+**Symptom**: the apex (`cognarah.com`) had been fine since the Cloudflare
+Workers move, but `www.cognarah.com` served Cloudflare Error 1000 ("DNS
+points to prohibited IP"). Surfaced via LinkedIn's link-safety wrapper
+(`linkedin.com/safety/go?url=...`), which rewrites shared links to the
+`www.` form before forwarding the click — so anyone opening a Cognarah link
+shared over LinkedIn messaging hit this, even though nobody had reported it
+by visiting `www.` directly.
+
+**Root cause, not what was suspected**: at the time the apex was bound as a
+Worker Custom Domain (2026-09-02), two wildcard `*.cognarah.com` A records
+were noticed and flagged as "likely defunct Lovable preview infra, low
+priority" (`216.198.79.65`, `64.29.17.1`) — but never actually chased down.
+They turned out to be a red herring for this specific bug: both resolve to
+`AS16509 Amazon.com, Inc.` (Walnut, CA), consistent with generic registrar
+domain-parking infrastructure, not Lovable at all, and irrelevant to `www`
+regardless since a wildcard record never wins over a more specific one.
+
+The actual cause was a **separate, undocumented `www.cognarah.com` A
+record** (`185.158.133.1`, DNS-only/unproxied) that the apex fix never
+touched. Its reverse hostname is `lovable-app-cd-1-4.p.l5e.io` — genuinely
+Lovable's own hosting infrastructure (the same `l5e.io` domain behind the
+broken `/__l5e/assets-v1/...` logo-asset paths fixed in the Performance &
+SEO audit). Being DNS-only rather than proxied through Cognarah's own zone,
+the connection still physically lands on Lovable's Cloudflare-fronted
+infrastructure, which no longer recognizes `www.cognarah.com` as a live
+custom domain on their side and serves Error 1000 in response — a
+Cloudflare error page, just generated on Lovable's zone, not Cognarah's.
+
+**Fix**: deleted the stale `www` A record, then added `www.cognarah.com` as
+a second Worker Custom Domain on the `cognarah` Worker (identical mechanism
+to the apex: `PUT /accounts/{account}/workers/domains`, same `service` and
+`environment`, Cloudflare issues its own managed cert automatically). Also
+deleted both wildcard A records while in there, closing out the
+"likely defunct, low priority" item instead of leaving it open indefinitely
+— nothing in the zone depends on wildcard fallback (mail is on explicit MX
+records, the one other subdomain CNAME is explicit).
+
+**Verified**: both `curl -sI https://www.cognarah.com` and
+`curl -sI https://www.cognarah.com/startups/submit` return `HTTP/2 200` and
+`server: cloudflare`, same check used to confirm the apex fix originally.
+
 ## Summary sequence
 
 1. ✅ **Resolve the build baseline blocker** (vite.config.ts entities alias) — fixed via `package.json` overrides, see Baseline status above.
